@@ -1,0 +1,899 @@
+Smart Start drafts before W-137. Historical only; each source is preserved below.
+
+===== SMART_START_APPLICATION.md =====
+# Smart Start — English working application
+
+**Draft reconciliation pending:** the [30 October applicant facts](SMART_START_FUND_QUESTION.md#current-applicant-facts-and-limits) supersede older staffing assumptions and any pre-application 3D prerequisite below. Stefan commits full-time to Megdan, fitting freelance work around it; his contribution is personal savings. Older hours/contract assumptions are not current facts. Budget amounts have not been recalculated. See the [shared backlog](../Roadmap/BACKLOG.md).
+
+Return to [preparation owner](SMART_START.md). Draft for discussion, not a completed official form. Headings mirror the version 6 application prompts; bracketed instructions are blockers, not text to submit. Do not copy this file into the portal as a substitute for the protected form. [Requirements and sources](SMART_START_REQUIREMENTS.md) govern limits and facts.
+
+## Brief summary
+
+Project title: **Megdan** [WORKING TITLE; complete name/trademark clearance before submission or publication]
+
+Project IF ID: [ASSIGNED PORTAL ID]
+
+Team name: **Braća**.
+
+One sentence: An original 3v3 turn-based tactical game with 3D presentation and a freely movable camera, for adult MOBA players who want coordinated hero-based competition without continuous reflex-driven execution.
+
+Duration: 9 months.
+
+Industry/sector: Creative industries — video games and interactive media [select the actual matching portal option].
+
+Budget: provisional maximum-case RSD 6,000,000 project budget excluding the separate mentor allocation: RSD 4,590,000 Human Resources; RSD 85,000 display tablet; provisional ceilings of RSD 60,000 test hosting, RSD 225,000 accounting/project administration, RSD 175,000 legal/IP support and RSD 30,000 licensed stock audio; and an internal RSD 835,000 residual reserve. The four official categories currently contain RSD 5,165,000 of concrete lines. The residual is not submission-ready until assigned to eligible evidenced scope; otherwise reduce total project cost and recalculate the 90/10 split. All non-HR lines require purchase evidence/quotations and eligibility review.
+
+Eligibility questionnaire working answers, to be re-confirmed immediately before submission: both members are Serbian residents; neither holds a stake in another Serbian company; each appears in only this current-call application; neither implements another Fund project; and this is not a repeat Smart Start application for the same/similar project.
+
+## Development phase and innovation level
+
+Confirmed stage selection: **Other** — a functional private prototype already exists and is played/tested; the proposed original product is in validation and pre-MVP production. A disclosed AI-assisted proof-of-direction presentation may demonstrate the proposed look with placeholders and no game audio; any completed pre-contract work remains self-funded baseline. The grant outcome is an original, rights-cleared and validated six-hero 3v3 MVP, not a finished commercial product: complete playable card sets with distinct readable compositions, one coherent 3D board world, free camera, sufficient shared/signature animation and VFX, functional audio and end-to-end match completion. The [saved inquiry](SMART_START_FUND_QUESTION.md) predates this refinement and must not be sent unrevised.
+
+Confirmed innovation selection: **Advanced Innovation**. The proposed combination is novel and practically useful enough to justify testing, but present evidence does not support a Breakthrough claim or a claim that a new market has been created.
+
+## Problem — maximum 300 words
+
+Some adult players still value the strategic coordination, distinct hero roles and shared victories of multiplayer online battle arena games, but no longer want continuous reflex-driven execution to determine their contribution. Our hypothesis is that these players lack a sufficiently appealing way to retain individual responsibility within a team while shifting competition toward deliberate tactical decisions.
+
+The starting point is the applicant's experience building and playing a private tactical prototype. Its match histories provide behavioral evidence that this form of play can sustain extended sessions. They do not yet establish the size of the target segment or prove demand for the proposed original product.
+
+We will test the problem with current and former MOBA players, distinguish execution pressure from time constraints and learning barriers, and compare responses with observed play. We will not assume that older players universally dislike real-time games or promise short sessions without evidence.
+
+[ADD VERIFIED PARTICIPANT CONTEXT, FIRST-HAND EXAMPLES AND SEGMENT SIZE; no invented interview quotations.]
+
+## Affected users and current alternatives — maximum 200 words
+
+Our initial customer hypothesis is adult PC players with MOBA experience who enjoy coordinated competition with friends but prefer deliberate decisions over continuous mechanical execution. Early adopters may overlap with tactical-strategy and tabletop-game communities.
+
+The direct behavioral alternative is continuing with a real-time MOBA such as Dota 2, which already supplies one-hero responsibility, role mastery, parties and matchmaking without an upfront game purchase. Tactical alternatives solve different parts of the problem: Skygard Arena offers 1v1 turn-based control of three-Champion squads; Gloomhaven offers cooperative card-driven hero tactics; and Blood Bowl 3 offers competitive turn-based positioning with one person controlling an entire team.
+
+Atlas Reactor is the closest identified historical precedent: coordinated 4v4 arena combat with one Freelancer focus and simultaneous timed turns. Its 2019 shutdown for lack of sustainability makes acquisition, retention and service cost central risks rather than evidence of an empty market. Megdan must demonstrate that three independently controlled heroes, card-driven initiative and lane/minion objectives create sufficient value to overcome group formation, match length and purchase friction. [Dated comparison and sources](SMART_START_REQUIREMENTS.md#initial-competitor-evidence).
+
+## Solution — maximum 300 words
+
+We propose an original 3v3 turn-based tactical game in which each player controls one hero and contributes to a shared team objective. The intended experience combines hero specialization, positional decisions and team coordination while moving skill expression away from continuous reflex execution.
+
+The next phase builds on a self-funded functional prototype and delivers an original, validated six-hero 3v3 MVP suitable for publisher due diligence. Six proven kits retain gameplay while receiving new identities, 108 playable card-face layouts and 108 distinct original MVP-quality compositions; six unused Handicap faces remain optional. A human-directed system may reuse rights-cleared original models, renders, environments and effects without duplicating card compositions or requiring 108 premium standalone paintings. Support would fund six hero and three minion model/rig families, one coherent original 3D map, required tokens/cues, a free camera, bounded animation/VFX and functional audio. Screen-space cards and controls remain 2D. Premium polish, broader content and launch infrastructure remain for later publisher-financed production.
+
+The working original six-hero presentation roster is Svarog, Stribog, Morana, Mokoš, Veles and Perun. Their distinct mythology-inspired expression, card presentation and production assets form part of the funded original-MVP work.
+
+[Approximately twenty further heroes remain a post-grant ambition. Clearly labelled AI-generated placeholder visuals may support the slice but are not presented as final production assets. Game audio is future grant-budgeted work.]
+
+Development will combine implementation, observed playtests and structured user feedback. AI tools assist code and visual prototyping, including the planned vertical slice; AI generation itself is not the customer value. The project will test whether the intended audience understands the game, returns voluntarily and values it enough to support a viable business.
+
+## Differentiation — one or two sentences, maximum 200 words
+
+For players who want MOBA-style coordination and individual hero responsibility without continuous reflex execution, Megdan is an original 3v3 card-and-initiative tactical arena in which each person owns one hero and deliberate decisions shape team success. Unlike squad-control tactics, and unlike Atlas Reactor's timed simultaneous prediction, Megdan combines independently controlled teammates with visible initiative, lane/minion pressure and a deliberately paced shared plan; this is a testable value proposition, not proven superiority.
+
+## Current technology and MVP steps — maximum 200 words
+
+A self-funded playable prototype supports private multiplayer from 2v2 to 5v5, 32 configured heroes and four maps. Its tactical loop includes cards, initiative, movement, combat, abilities, minions, lane progression, progression and victory scoring. It also provides reconnect/resynchronization, deterministic rules, snapshots and Undo/replay. An experimental cooperative mode exists. It currently has no audio. These are existing capabilities, not finished production assets. [Evidence and source/build distinctions](SMART_START_PROTOTYPE_EVIDENCE.md).
+
+The nine-month proposal starts with a baseline and production inventory, then completes the six kits' original MVP card/visual design, coherent 3D board world and cues, one map/free camera, bounded animation/VFX and functional audio in a stable end-to-end 3v3 build. Testing, target-group research, business-model work, rights evidence and a publisher due-diligence demonstration remain required. Timing and costs follow asset counts and specialist needs. The Fund has not confirmed fit.
+
+Reusable technology will be reviewed rather than assumed commercially clear. Online usability, group formation, content appeal and viable pricing remain material product questions. No public-service scalability or unsupported platform capability is claimed from private-host testing.
+
+## Potential-customer feedback — maximum 200 words
+
+Local build logs show 14 completed six-seat sessions lasting at least 30 minutes, totaling 21.14 elapsed match-hours across 10 play dates from September 17 to October 8, 2026 (UTC); mean duration was 90.61 minutes. Each has explicit start/end events. Short technical sessions and a repeated terminal observation are excluded. This supports sustained prototype use, not merely one concept demonstration. [Audit method and limitations](SMART_START_PROTOTYPE_EVIDENCE.md).
+
+The applicant estimates that approximately 20 unique people have played and that practically all have current or past MOBA experience to varying degrees. He reports that the game-development effort began because participants repeatedly asked to play again and requested additional places. These are founder-reported qualitative signals; logs do not independently verify identities, backgrounds, retention or referral rates.
+
+We have not yet established a consented, independently recruited target-user dataset for the original product. The next validation combines this evidence with a structured target-group survey and observed original-MVP sessions, recording reasons for returning, alternatives, group-formation barriers and willingness to pay.
+
+[ADD CONSENTED PARTICIPANT FEEDBACK. No quantified retention, referral or purchase result is asserted.]
+
+## Market size and trends — maximum 300 words
+
+[PARTIAL: platform context is sourced; reachable-market and conversion evidence remain missing.]
+
+The intended market is international PC gaming, with an initial focus on current/former MOBA players who also value tactical play and social coordination. Total gaming revenue is not a defensible estimate of our reachable market. We will build a bottom-up estimate from a defined launch geography/language, reachable communities, qualified interest and observed conversion, with explicit low/base/high assumptions.
+
+Valve reports that Steam reached 42 million peak concurrent users in 2025. This establishes that a PC title can use a global distribution platform; it does not establish Megdan's addressable audience. The same platform supports free-to-play Dota 2 and paid tactical products, so platform reach alone does not select our price or business model. [Valve platform source and competitor evidence](SMART_START_REQUIREMENTS.md#initial-competitor-evidence).
+
+For sensitivity only, 300, 1,500 and 5,000 complete three-player groups correspond to 900, 4,500 and 15,000 paid seats. At the USD 44.99 group-value target, approximate gross receipts would be USD 13,497, USD 67,485 and USD 224,950; all-individual purchases at USD 19.99 would produce USD 17,991, USD 89,955 and USD 299,850. These cases are not forecasts.
+
+The relevant commercial question is whether enough groups prefer this specific experience and can be reached at a cost compatible with net revenue per customer. Group formation and concurrent availability are risks, not benefits to assume away.
+
+[INSERT actual qualified-audience reach, conversion and price evidence; avoid applying general gamer age averages specifically to MOBA players.]
+
+## Target group — maximum 200 words
+
+The initial hypothesis is adult English-speaking PC players with present or past MOBA experience who retain an interest in team competition but prefer deliberate tactical execution. We will recruit both existing friend groups and participants outside the applicant's immediate network. Tactical and tabletop communities are secondary discovery channels, not automatically the same customer segment.
+
+Segmentation will distinguish current versus former MOBA players, preferred session length, ability to assemble a team, and prior spending on comparable games. This will help identify whether the strongest early audience is defined by age, play preference, social group or a combination of these factors.
+
+## Sustainable business and rollout — maximum 300 words
+
+The funded outcome is a rights-cleared, validated PC MVP suitable for publisher due diligence, not a finished or independently launched global service. After the project, we intend to approach suitable publishers for commercial-production financing, marketing, distribution and launch support. Publisher interest is not assumed; the build, player evidence, remaining-scope plan, budget, rights manifest and unit economics must make the opportunity assessable.
+
+Our consumer-price hypothesis is USD 19.99 per license, tested against a group-value target of USD 44.99 for three players: USD 15.00 per player, approximately 25% below three individual copies. These figures test value and commercial potential for both the team and a prospective partner; they are not validated willingness to pay, a sales forecast or a self-publishing commitment.
+
+Steam does not currently create new packages that grant multiple copies of the same application, so the three-player target cannot be presented as an available Steam three-pack. Before committing to it, we must confirm a compliant direct/external-key route or replace it with a platform-supported promotion. Validation will first measure unaided price expectations, then compare the individual and group propositions and record who would actually organize and pay for a team. Net receipts must account for platform/payment deductions, regional pricing, taxes and refunds where applicable, customer support and online operating costs.
+
+The rollout begins with invited MVP testing and a commercial-readiness decision. The post-grant route is a targeted publisher process using the validated evidence package. A public demo/store page, community campaign or self-published launch remains a later decision outside this grant. Marketing will not be placed in an ineligible grant category.
+
+Digital distribution enables international reach, but acquisition and concurrent participation constrain growth. We must quantify both for publisher due diligence.
+
+## Patent search and current IP — maximum 200 words
+
+[NOT READY FOR SIGNATURE: legal/provenance review remains outstanding.]
+
+No completed patent or freedom-to-operate search is asserted in this draft. The existing private prototype contains third-party-derived game content; permission for private or bounded source use must not be represented as commercial rights.
+
+The proposed product will use original hero/card expression, map, visuals and branding, with a documented review of reusable code, dependencies and licenses. Relevant name/trademark and patent checks will be recorded with their scope and results. Contributor and contractor agreements must secure the beneficiary's required rights. AI-assisted assets will have documented tool terms, references and human contributions, without unsupported claims of exclusivity.
+
+The application declaration will only be signed when its present-tense rights assurances are accurate.
+
+## Team — maximum 400 words, plus individual biographies
+
+The **Braća** team comprises proposed founders Stefan Petrovic and Veljko Petrovic. Both report Serbian residency, no share or representative role in another Serbian company, no other current Fund project/application and no previous substantially similar submission. Proposed ownership is 70/30; Stefan is the planned representative. The future DOO/company name remains a separate undecided matter.
+
+Stefan is the engineering, project and game-design lead and independently built the self-funded functional multiplayer prototype. He owns architecture, deterministic systems, networking, tools, integration, game/rules and map design, validation, business work, rights coordination and Fund delivery. He remains at Pmax Automation and commits 30 hours weekly for nine months (0.75 FTE-equivalent; 1,170 hours). The budget retains a provisional RSD 240,000 monthly / RSD 2,160,000 total Human Resources envelope, subject to Fund acceptance and accountant calculation for the planned founder/legal-representative and non-employed-director agreement route; it is not yet a salary or net-pay claim.
+
+Veljko is the visual-production lead. He freelances and has confirmed 40 hours weekly for nine months (1.0 FTE; 1,560 hours), with planned nine-month fixed-term full-time employment provisionally budgeted at RSD 270,000 monthly employer total (`bruto 2`) and RSD 2,430,000 total. His supplied history covers illustration since 2014, a 2022 UI/UX internship, graphic-design employment during 2022–2025 and freelance digital design since 2025. He owns concepts, 108 card compositions/layouts, 2D UI, 3D/texturing, rigging, bounded animation and VFX. External visual support is only a non-duplicative specialist contingency. Audio uses stock assets selected and integrated by Stefan.
+
+### Stefan Petrovic — working biography
+
+Stefan is an automation engineer and electrical/computer engineering graduate with professional experience since 2017. Since 2020 he has worked at Pmax Automation on industrial software, commissioning, systems integration, PLC communication and troubleshooting. His CV documents complex automated-handling, production and process-control projects, including international commissioning. For Megdan, the strongest direct evidence is the self-funded prototype and repository/build history.
+
+### Veljko Petrovic — working biography
+
+Veljko reports illustration practice since 2014; a UI/UX internship at 30Hills in 2022; graphic-design work at MVision from 2022 to 2025; and freelance digital-design work since 2025. His reported training comprises the Institute for Development and Innovation's “Pokreni se!” graphic-design course and a UI/UX practicum at 30Hills in 2022, an Unreal Engine training programme associated with 3Lateral and the Serbian Games Association in 2025, and a Nordeus UX/UR workshop in November 2025. His portfolio demonstrates illustration, UI/UX, branding and promotional composition. Follow-up evidence identifies his complete-concept work on a 2022 Wacky Sheep illustration and Serbian Games Week 2025 poster, and includes a full-angle turntable of a completed stylized cat character attributed to his modelling and texturing. The video demonstrates coherent character form, costume/accessory construction and material/colour treatment, but not topology, rigging or animation. He proposes segmented production ordered as map, six hero portraits, minions and 108 cards; the delivery plan adds an early full-pipeline test and interleaved hero packages. Confirm exact named references/permission and the remaining rigging/animation/VFX method before submission.
+
+## Video — maximum three minutes
+
+Proposed outline: 0:00–0:30 problem and how identified; 0:30–1:15 the AI-assisted proof-of-direction presentation demonstrating one 3v3 match, 3D board direction and free camera, with placeholders disclosed and no claim of finished game audio; 1:15–2:25 all members visibly introduce roles and contributions; 2:25–3:00 audited evidence, work required for the funded original MVP and its post-grant publisher route. Adjust timings for actual team size. English, clear spoken narration, accessible link, no recognizable borrowed-content demonstration. No video or presentation slice has yet been created under this plan.
+
+## Mentorship — maximum 200 words
+
+We would benefit from a mentor with experience commercializing multiplayer PC games, validating niche player demand and preparing small teams for publisher due diligence. Relevant expertise includes group participation barriers, pricing, production and service budgets, publisher positioning, pitch materials and evaluating whether proposed partnership terms support a sustainable studio.
+
+The most important question is: what evidence and MVP scope make this team-based tactical experience credible to both its intended players and an appropriate publishing partner? We seek a mentor who will challenge our audience, product and economic assumptions rather than optimize only the pitch.
+
+## Returning projects — maximum 200 words
+
+Not applicable — this is the team's first Smart Start application for this project, based on the applicant-reported application history. Re-confirm immediately before submission.
+
+## Simplified budget
+
+Use the provisional [costed delivery plan](SMART_START_PLAN.md). The current mapping to the protected form is:
+
+| Official cost category | Current concrete lines | RSD |
+| --- | --- | ---: |
+| Human resources | Stefan provisional HR compensation envelope; Veljko fixed-term full-time employment | 4,590,000 |
+| Office rent and business support | Project-only hosting; accounting/project administration | 285,000 |
+| Equipment and supplies needed for development | Display drawing tablet | 85,000 |
+| External development and/or business services | Legal/IP support; beneficiary-licensed stock audio | 205,000 |
+| Concrete project cost subtotal | Four official categories | **5,165,000** |
+
+The internal RSD 835,000 residual has no generic form category. Allocate it only to concrete eligible, evidenced and non-duplicative scope, or reduce total project cost and recalculate the Fund/applicant 90/10 split. The maximum-case RSD 6,000,000 plan uses RSD 5,400,000 Fund and RSD 600,000 applicant support; a RSD 5,165,000 project would arithmetically use RSD 4,648,500 and RSD 516,500 respectively, before Fund adjustment. Audio excludes voice/custom production and Stefan integrates it. A computer remains optional. Stefan is the sole contribution source through the provisionally preferred member additional cash payment; Veljko supplies no cash. Confirm that instrument, Stefan's compensation route, hosting and digital-license treatment before export; sign only when accurate.
+
+
+===== SMART_START_APPLICATION_READINESS.md =====
+# Smart Start application readiness audit
+
+**Draft reconciliation pending:** the [30 October applicant facts](SMART_START_FUND_QUESTION.md#current-applicant-facts-and-limits) supersede older staffing assumptions and any pre-application 3D prerequisite below. Stefan commits full-time to Megdan, fitting freelance work around it; his contribution is personal savings. Older hours/contract assumptions are not current facts. Budget amounts have not been recalculated. See the [shared backlog](../Roadmap/BACKLOG.md).
+
+Return to [preparation owner](SMART_START.md). This document maps every field in the current official locked version 6.0 application form to the Megdan working draft, retained evidence and smallest closing action. It is an internal preparation control, not a substitute for the protected form and not submission authorization.
+
+Audit basis: the official form linked from the Fund's September 2026 documentation page was downloaded again on 28 October 2026. Its SHA-256 is `B66335A2083CA329388371F36B77757D224E1B90B27B5B50EB12F59857AA512E`, matching the previously recorded copy. The complete DOCX structure contains 107 body paragraphs and 36 tables. Text, table labels, limits and response boxes were inspected. The official file remains unchanged and private under `tmp/smart-start-sources/`. The packaged Windows document runtime did not contain LibreOffice, so this work does not claim a fresh rendered-layout review; the form is not being edited or delivered.
+
+## Status meanings
+
+| Status | Meaning |
+| --- | --- |
+| Ready to transfer | The dossier supplies a bounded answer; only ordinary final review is required. |
+| Confirm | A proposed answer exists but Stefan, Veljko or the final portal record must affirm it. |
+| Evidence gap | The narrative exists but one factual proof point is still absent. |
+| External dependency | A Fund/accountant answer, provider quotation, clearance or portal-generated value is required. |
+| Not applicable | The field is not used for this two-person first application; state that accurately where the form requires a response. |
+
+## Brief summary and eligibility
+
+| Official field | Current answer or status | Status | Owner and smallest closing action |
+| --- | --- | --- | --- |
+| Title of project | **Megdan** | Confirm | Stefan confirms retention after ordinary name/trademark screening. |
+| Project IF ID | Not yet assigned | External dependency | Insert the portal-generated identifier. |
+| Team Name | **Braća** | Ready to transfer | Use the applicant-confirmed diacritic spelling. The future DOO/company name is a separate undecided matter. |
+| Description in one sentence | Original 3v3 turn-based tactical game with 3D presentation and a free camera for adult MOBA players seeking coordinated hero play without continuous reflex execution | Ready to transfer | Final English copy edit only. |
+| Duration | Nine months | Ready to transfer | Keep consistent with the monthly delivery plan and budget. |
+| Industry / Sector | Creative industries - video games and interactive media | External dependency | Select the exact matching portal label and copy it verbatim. |
+| Fund co-financing, applicant co-financing and totals | Maximum-case plan is RSD 5,400,000 Fund + RSD 600,000 applicant + RSD 600,000 mentorship, but RSD 835,000 of project cost is not yet assigned to an eligible form category | Evidence gap | Resolve the residual amount with actual eligible scope/quotes or reduce the project cost and recalculate the 90/10 split. |
+| At least 51% Serbian residents | Applicant reports **Yes** for both members | Confirm | Both members re-confirm immediately before submission. |
+| At least 51% have no stake in another Serbian company | Applicant reports **Yes** for both members | Confirm | Both members re-confirm against current APR facts immediately before submission. |
+| Each member appears in only one current-call application | Applicant reports **Yes** | Confirm | Both members re-confirm immediately before submission. |
+| No member/key person implements another Fund project | Applicant reports **Yes** | Confirm | Both members re-confirm immediately before submission. |
+| Previous Smart Start application with same/similar project | Applicant reports **No** | Confirm | Tick No and keep the returning-project narrative as not applicable. |
+
+## Development phase and innovation level
+
+| Official field | Current answer or status | Status | Owner and smallest closing action |
+| --- | --- | --- | --- |
+| Current stage of development | **Other** — a functional private prototype exists; the proposed original product is in validation/pre-MVP production stage | Ready to transfer | Applicant confirmed 28 October 2026. Do not select Idea Stage; Concept Validation understates the implemented prototype unless the Fund directs otherwise. |
+| Level of innovation | **Advanced Innovation** | Ready to transfer | Applicant confirmed 28 October 2026. Do not select Breakthrough merely because the combination is unusual. |
+
+## Narrative fields
+
+Current counts are preparation counts for the English working copy after excluding headings, link targets and bracketed internal blockers. Recount the exact text placed in the protected form before export.
+
+| Official prompt and limit | Current readiness | Current count | Status | Smallest closing action |
+| --- | --- | ---: | --- | --- |
+| Problem, max 300 | Clear target problem and honest evidence boundary | 149 | Evidence gap | Add consented first-hand participant context and a bounded segment-size basis; do not invent quotations. |
+| Who is affected and current alternatives, max 200 | Target hypothesis and four relevant alternatives are described | 182 | Ready to transfer | Refresh dated competitor facts/sources before final export and keep within limit. |
+| Proposed solution, max 300 | Six-hero 3v3 MVP, 3D world, camera, cards, VFX/audio and publisher-readiness outcome are defined | 251 | Ready to transfer | Keep internal source-kit names out of submission-facing prose; disclose placeholders separately. |
+| Difference and advantage, max 200 | One bounded customer-facing proposition | 75 | Ready to transfer | Final wording only; retain “testable value proposition” boundary. |
+| Current technology and MVP steps, max 200 | Implemented prototype and nine-month original-MVP path are separated | 182 | Ready to transfer | Ensure build/log claims continue matching the prototype evidence audit. |
+| Potential-customer feedback, max 200 | Audited sustained-session cohort plus applicant-estimated player/background context and founder-reported repeated demand that triggered development are reported with separate evidence labels | 172 | Evidence gap | Add consented actual participant feedback and quantified return/referral/purchase-intent evidence where true; do not present founder recollection as log-verified identity or rate data. |
+| Market size and trends, max 300 | Platform context and sensitivity cases exist | 231 | Evidence gap | Add bottom-up reachable audience, geography/language, qualified reach and conversion assumptions with dated sources. |
+| Target group, max 200 | Initial current/former MOBA segment and recruitment distinctions are defined | 100 | Ready to transfer | Validate whether age, play preference or existing friend group is the strongest qualifier. |
+| Sustainable business and rollout, max 300 | Publisher-led route, price hypotheses and group-formation risk are described | 298 | Confirm | Approve the publisher route and preserve headroom before adding evidence; confirm a platform-compliant group offer or remove the three-player bundle claim. |
+| Patent search and IP position, max 200 | Honest current boundary and intended clearance process are described | 116 | Evidence gap | Complete name/trademark, reusable code/dependency/license and contributor/AI-tool provenance review; sign only when the declaration is true. |
+| Why this team, max 400 | Complementary engineering/game/product and complete visual-production ownership are established | 270 | Evidence gap | Add only verified commercial/validation competence; do not spend this field on payroll mechanics. Close Veljko's rigging/animation/VFX method. |
+| Mentor profile and one question, max 200 | Multiplayer-PC commercialization/publisher mentor and one central evidence question are defined | 94 | Ready to transfer | Final wording only. |
+| Returning projects, max 200 | Applicant reports no prior same/similar Smart Start application | 0 | Not applicable | Tick No in eligibility; use “Not applicable - first application” only if the protected box cannot remain empty. |
+
+## Individual team-member fields
+
+| Official field | Stefan | Veljko | Status and closing action |
+| --- | --- | --- | --- |
+| Full name | Stefan Petrovic | Veljko Petrovic | Ready to transfer; use legal spelling matching IDs/portal. |
+| Job role at project | Engineering, game-design and project lead; planned representative | Visual-production lead | Ready to transfer; final short labels must match narrative and budget. |
+| Related work experience | Automation/software/systems work since 2017 plus complete self-funded Megdan prototype | Illustration since 2014; UI/UX, graphic design, freelance design and bounded character modelling/texturing evidence | Ready with evidence boundaries; obtain permission for named portfolio references. |
+| Current job | Pmax Automation | Freelance digital designer | Confirm immediately before submission. |
+| Education | Electrical/computer engineering graduate, ETF | Formal education not yet supplied; training is recorded but is not a substitute for the requested education field | **Veljko evidence gap:** supply highest completed formal education, institution, field and year, or an accurate “not applicable/no completed degree” statement. |
+| Members 3-5 | Not used | Not used | Leave unused member blocks blank unless the protected form requires an explicit N/A. Do not add nominal members. |
+
+## Video and submission package
+
+| Required item | Current status | Status | Smallest closing action |
+| --- | --- | --- | --- |
+| English video, maximum three minutes | Time-coded outline exists; no video/link exists | Evidence gap | Produce after narrative lock. Both members must be visible, introduce their roles and present the concept/plan; verify public accessibility before submission. |
+| Official application PDF | Locked DOCX is preserved and untouched | External dependency | Fill every required box only after narrative/budget lock, export directly to PDF and visually review the result. Do not scan. |
+| Applicant declaration PDF | Current official declaration is separately retained/reviewed | Confirm | Recheck every present-tense eligibility and rights statement, obtain all required signatures and export correctly. |
+| Portal submission | Not started | External dependency | Register early enough for processing, upload both PDFs and accessible video URL, then use Submit only with explicit user authorization. |
+
+## Simplified budget mapping
+
+The official form exposes exactly four cost categories; it has no “contingency” row. Current concrete planning lines map as follows:
+
+| Official category | Current concrete lines | RSD | Readiness |
+| --- | --- | ---: | --- |
+| Human resources | Stefan provisional HR compensation envelope; Veljko fixed-term full-time employment | 4,590,000 | Stefan's director-agreement eligibility and exact tax treatment require Fund/accountant confirmation. Veljko's route is structurally ready. |
+| Office rent and business support | Project-only hosting 60,000; accounting/project administration 225,000 | 285,000 | Obtain quotes; hosting category/technical need still requires confirmation. |
+| Equipment and supplies needed for development | Display drawing tablet | 85,000 | Obtain a beneficiary quotation for the defined new QHD-class device; VAT remains excluded. |
+| External development and/or business services | Legal/IP support 175,000; beneficiary-licensed stock audio 30,000 | 205,000 | Obtain itemized legal offer; confirm the digital-license category and retain license evidence. |
+| Concrete project cost subtotal | Above four categories | **5,165,000** | Source-backed planning subtotal, not yet the chosen submitted total. |
+| Residual internal reserve | No official form category | **835,000** | Must become a concrete eligible, evidenced, non-duplicative line or be removed by lowering total project cost. |
+| Current maximum-case project cost | Concrete subtotal plus unresolved reserve | **6,000,000** | Not submission-ready while the residual remains generic. |
+| Mentorship support | Fixed Fund amount | **600,000** | Enter exactly as the form provides; it cannot be relocated. |
+
+If the project is reduced to the current RSD 5,165,000 concrete subtotal, the arithmetical 90/10 split would be RSD 4,648,500 Fund and RSD 516,500 applicant, before any Fund adjustment. This is an internal sensitivity, not an approved budget decision. Stefan's RSD 600,000 capacity may instead support a larger approved project cost only when the additional RSD 835,000 is assigned legitimately.
+
+## Ordered closing list
+
+### Applicant decisions and facts
+
+1. Reconfirm **Megdan** after ordinary name/trademark screening; **Braća** is already confirmed as the application team name, separate from the future DOO/company name.
+2. Veljko supplies formal education details and confirms current freelance status, full-time project availability, named-reference permissions and his credible rigging/animation/VFX workflow/evidence.
+3. Both members re-confirm all five eligibility answers immediately before submission.
+4. Approve the publisher-led route and decide whether the proposed three-player price test remains after checking a compliant sales mechanism.
+
+### Evidence and external dependencies
+
+5. Add consented participant feedback and target-segment facts; complete the bottom-up reachable-market and price evidence.
+6. Complete the rights/provenance/name/dependency review required to sign the declaration truthfully.
+7. Obtain Fund/accountant confirmation for Stefan's HR route, the member additional cash payment, hosting and stock-audio category treatment.
+8. Obtain itemized quotations for the display tablet, hosting, accounting and legal/IP support.
+9. Assign the RSD 835,000 residual to concrete eligible work/equipment with evidence or reduce the total project cost and recalculate the 90/10 split.
+10. After narrative and budget lock, create the all-member English video, fill the protected forms, export/review PDFs and submit only with explicit user authorization.
+
+
+===== SMART_START_PLAN.md =====
+# Smart Start — proposed delivery and budget
+
+**Draft reconciliation pending:** the [30 October applicant facts](SMART_START_FUND_QUESTION.md#current-applicant-facts-and-limits) supersede older staffing assumptions and any pre-application 3D prerequisite below. Stefan commits full-time to Megdan, fitting freelance work around it; his contribution is personal savings. Older hours/contract assumptions are not current facts. Budget amounts have not been recalculated. See the [shared backlog](../Roadmap/BACKLOG.md).
+
+Return to [preparation owner](SMART_START.md). This is a proposal for discussion, not implementation authorization, a spending commitment or a promise of funding. Source requirements: [register](SMART_START_REQUIREMENTS.md), S3 sections 2.3–2.4 and 5; S8 reporting templates.
+
+## Nine-month proposal
+
+Conditional on Fund clarification of next-phase eligibility. The starting point is a functional, played/tested prototype developed with Stefan's own work and funds. A possible pre-application AI-assisted proof-of-direction presentation selects six proven kits and changes names, identities, illustrations and card/UI design while gameplay stays unchanged. Its placeholder 3D world includes map geometry, spaces/zones, heroes, minions, tokens/markers, props and board-bound selection, target, movement and attack cues, with temporary animation/VFX and an AI-assisted free camera. Screen-space cards, hand/hero panels, buttons, tooltips and scoreboard remain 2D. It includes no game-audio production and is not the funded MVP. The grant delivers an original, rights-cleared, stable and validated six-hero 3v3 MVP suitable for publisher due diligence; commercial-product polish and expansion remain post-grant. Prior work is not reimbursed.
+
+Working project title: **Megdan**, pending clearance. Approved presentation identities are Svarog, Stribog, Morana, Mokoš, Veles and Perun, mapped internally to the unchanged Brogan, Swift, Misa, Tali, Tigerclaw and Wasp kits. This records naming and scope only; hero visual design and card renaming remain future production tasks.
+
+The [production inventory](SMART_START_PRODUCTION_INVENTORY.md) establishes the source-backed quotation units. The ordinary 3v3 baseline requires 108 playable card-face layouts and 108 distinct original MVP-quality compositions across six heroes; six Handicap faces/artworks are optional and outside the strict MVP. Use a human-directed, rights-cleared production system that may reuse original hero models, poses/renders, environments, materials and VFX while giving every card a unique readable composition; do not plan 108 premium unrelated paintings. The fixed 3D baseline is six hero model/rig families, three minion families with team variants, one coherent original map/environment kit and Mokoš's three-piece shared token supply; Veles's six-instance/two-strength Poison state is dashboard/UI state unless a later presentation decision makes it world-space. Map/prop counts, signature-animation/VFX counts and exact audio clips require the map brief, 108-face action-presentation matrix and audio event map before final selection. No flat 2D token stand-ins are part of the target board presentation. Voice/barks are excluded. Record pre-contract visual/code work and exclude it from requested costs. Veljko has confirmed ownership of the full visual-production package, including 2D, 3D, rigging, bounded animation and VFX. The reviewed portfolio and follow-up establish the 2D/UI/art-direction basis and one bounded completed-character modelling/texturing example; the application must add a credible method, schedule and supporting evidence for rigging, animation, VFX and full production throughput. Any external visual purchase is a limited, explicitly non-duplicative contingency rather than the primary model. MVP audio uses a small standard-license stock set selected and integrated by Stefan, not a bespoke provider package.
+
+Months run from the eventual contractual start, not today's date. Applicant availability and approved scope must determine final dates.
+
+| Stage | Proposed timing | Deliverable and closing evidence |
+| --- | --- | --- |
+| Baseline and plan | Month 1 | Rights-cleared technical baseline, exact original-MVP scope, named owners, costs, measurement protocol and mentor/Fund-approved milestone plan |
+| Problem/market validation | Months 1–3 | Target-group survey, methods/sample/limitations, audited historical evidence and explicit decision on audience/value proposition; validation report |
+| Content and 3D production | Months 1–8 | Month 1 production system and representative proof; one complete hero package in each of Months 2–7; shared map, minions, tokens, 2D UI, camera and bounded animation/VFX; Month 8 completion and optimization; monthly in-build acceptance |
+| Stock-audio selection and integration | Months 3–8, provisional | Beneficiary-licensed music/ambience, UI and gameplay SFX stock set; event map, Stefan integration, basic mix and in-build review; no voice/barks or custom audio production |
+| MVP validation | Months 6–8 | Original-MVP demonstration, usability and technical evidence, issue disposition, rights manifest; MVP report in the second half of the contract, not earlier |
+| Business model | Months 6–8 | Competitor and pricing evidence, acquisition/group-formation assumptions, cost model, financial forecast and launch decision; business-model report |
+| Publisher due-diligence package | Months 7–9 | Rights-cleared MVP build, player/technical evidence summary, remaining commercial-production scope and cost model, rights manifest, pitch materials and target-partner criteria; no claim of publisher interest |
+| Final demonstration | Month 9 | Installable validated MVP and approximately 15-minute presentation: one stable end-to-end 3v3 match, coherent bounded MVP presentation/audio, validation and rights evidence, honest before/after status, publisher route with fallback decision, future commercial-production plan and settlement requirements |
+
+The reports occur in the required order even if development activities overlap. Agree exact dates with the mentor/Fund. Standard duration is 6–9 months; exceptional extension up to three months needs justification and Fund approval, requested at least 15 days before the end. Do not rely on an extension to make the original plan feasible.
+
+### Monthly founder delivery and acceptance plan
+
+Veljko's supplied initial work order divides production into smaller segments and proceeds through map, six hero portraits, minions and 108 cards. That preference informs asset batching but is not used as a strictly serial acceptance schedule: completing every card last would defer the largest repeated workload and its integration risk. The approved plan therefore proves one representative 2D/3D/rig/animation source-to-build path in Month 1, advances the shared map and minion families in bounded batches, and closes one complete hero/card package in each of Months 2–7.
+
+This is the approved planning sequence, not evidence that the work already exists. A "complete hero package" means one original hero identity; its 18 playable card layouts and 18 distinct readable compositions; game-ready model and textures; rig; agreed shared and bounded signature animation/VFX coverage; dashboard/profile/selection assets; in-engine integration; source files and provenance/acceptance records. Shared rigs, motions, shaders, materials, environment pieces and effect families may be reused when readability and identity remain intact. The exact order of the six heroes may change for dependency reasons without changing the six packages or total scope.
+
+| Month | Veljko — visual-production acceptance batch | Stefan — technical, evidence and delivery acceptance batch | Closing evidence |
+| --- | --- | --- | --- |
+| 1 | Visual bible; six silhouette/identity briefs; approved card/UI production template; map/environment art-direction brief and blockout treatment; representative end-to-end hero/card/3D pipeline proof | Freeze the self-funded baseline; define target PC, free-camera behavior, asset/import conventions, performance budget, 108-face action-presentation matrix, validation protocol, rights/provenance register and detailed milestone dependencies | Approved briefs and counts; one representative asset travels from editable source through import to an in-build review; baseline and rights records dated |
+| 2 | **Hero 1 — Svarog:** complete 18-card/identity/3D/rig package; shared humanoid motion base; map greybox visual pass and first board-material kit | Integrate Hero 1 and the first camera/board pass without changing rules; establish automated asset/count checks and representative rendering/performance capture | Hero 1 package complete in source register and playable build; 18 distinct compositions counted; camera/board review recorded |
+| 3 | **Hero 2 — Stribog:** complete package and ranged/projectile visual family; first minion model family; coherent environment-kit alpha | Integrate Hero 2, ranged feedback and first minion family; run target-group problem research and first structured build review; close Month 2 defects | Two complete hero packages and 36 compositions cumulatively; minion/environment alpha and affected technical evidence |
+| 4 | **Hero 3 — Morana:** complete package and its bounded signature visuals; second minion family; 2D overlay/UI alpha for lobby, selection and core match flow | Integrate Hero 3 and UI alpha; verify hidden information, seat ownership, choices, reconnect/resynchronization and readability on affected paths | Three complete packages and 54 compositions; first half-roster art/content gate; UI and network-state review recorded |
+| 5 | **Hero 4 — Mokoš:** complete package including three-piece shared token supply; third minion family; map/environment beta and board-bound interaction cues | Integrate Hero 4, all three minion families, token state and map beta; select and integrate the first licensed stock-audio assets where available; disposition performance and usability findings | Four complete packages and 72 compositions; all minion families and Mokoš tokens in build; map-beta evidence |
+| 6 | **Hero 5 — Veles:** complete package including six-instance/two-strength Poison UI state; complete shared 2D UI beta; camera and common animation/VFX beta | Integrate Hero 5 and Poison state; assemble five-hero technical beta; begin formal MVP-stage usability/technical validation and business-model evidence | Five complete packages and 90 compositions; UI/camera/common-feedback beta; validation dataset and issue log opened |
+| 7 | **Hero 6 — Perun:** complete package; close all 108 playable-card compositions; six-hero visual consistency pass and remaining bounded signature visuals | Integrate Hero 6; produce complete six-hero 3v3 beta; run repeatable full-match, reconnect/resynchronization, performance and structured player sessions; complete licensed stock-audio integration | Six complete packages and 108 distinct compositions; end-to-end 3v3 beta; test, player and audio-integration evidence |
+| 8 | Final map/minion/UI/animation/VFX completion; readability, optimization and issue-fix pass; final editable-source and provenance handoff | Stabilize the MVP; close prioritized validation defects; complete the stock-audio basic mix/in-build review, business model, cost model and publisher due-diligence draft | Feature/content complete release candidate; bounded known-issues disposition; rights manifest and publisher package draft |
+| 9 | Acceptance fixes only, final visual consistency and source-delivery corrections; no new hero/map scope | Final build and installation check; regression and target-PC evidence; final validation/business/rights reports, approximately 15-minute demonstration and settlement package | Rights-cleared validated MVP, reproducible evidence, final reports and demonstration; unresolved limits disclosed |
+
+Monthly acceptance is cumulative: a later batch may correct an earlier asset, but an incomplete package cannot be counted twice or silently deferred to Month 9. Month 1 must demonstrate that the selected 2D-to-3D production method and one representative rig/animation path are viable; if that gate fails, reduce visual complexity or use the explicitly budgeted non-duplicative specialist contingency before multiplying the approach across six heroes. Month 9 is stabilization, not a hidden production buffer.
+
+Not committed in this plan: replacing all 32 legacy heroes, expanding to the approximately twenty-hero post-grant ambition, ranked matchmaking, a live-service backend, mobile release, extra modes or AI gameplay research. Scope changes require a decision, not gradual additions to the six-hero grant promise.
+
+## Validation that builds on existing play
+
+The agreed short inquiry does not include the phrase about market validation. This editorial choice does not remove the program's survey, business-model or reporting requirements below. Preserve them in application planning without presenting them as already completed.
+
+First, reproduce the historical evidence audit: inventory relevant log formats across builds; record build/session IDs, host/client roles, start/end events, UTC timestamps, elapsed time and completion state; deduplicate mirrored sessions; label smoke tests and developer-controlled seats; retain exclusion reasons. Publish only approved aggregates, never raw private logs or personal details.
+
+Then establish target-user context through consented research. The program requires a relevant target-group survey; it need not replace gameplay evidence. Proposed pilot sizes, not Fund requirements or approved commitments: 15–20 problem interviews, 50 qualified survey responses and an original-MVP cohort of at least 24 people from multiple groups. Check feasibility and agree success thresholds before recruitment; a small convenience sample does not estimate population demand.
+
+Measure separately:
+
+- Qualified participant: current/former MOBA experience, preferred play style and available session time; age only with consent and a reason to collect it.
+- Activation: invited, installed, joined, completed first match; record each denominator and reasons for dropping out.
+- Return: unique participant completes another session within a predefined window, with opportunity to return; distinguish scheduled tests, compensation and voluntary play.
+- Social acquisition: actual invited friend participates, not merely “would invite.”
+- Commercial evidence: stated price acceptance is weaker than a genuine purchase; no payment collection is authorized. Later commercial tests need separate consent and scope.
+- Experience: duration median/spread, pauses, waiting, comprehension, coordination and enjoyment, by cohort/build. Long sessions can be acceptable if the audience wants them; do not change the promise to fit an assumed short-session market.
+
+Before tests, define decision thresholds with the applicant/mentor for comprehension, completion, return, pricing and group formation. Record negative results and pivots. Do not promise product-market fit merely for delivering the reports.
+
+### Pricing hypothesis
+
+Test USD 19.99 for one license against a three-player value target of USD 44.99 total (USD 15.00 per player, approximately 25% below three individual copies at USD 59.97). Ask unaided willingness-to-pay questions before showing either price. Separate “sounds fair” from a concrete choice, identify whether one organizer or three individuals would pay, and record currency/region. No payment collection is authorized by this plan.
+
+Do not describe the group target as a Steam three-pack: current Steamworks documentation says new packages cannot grant multiple copies of the same application. Confirm a compliant direct/external-key path and its payment, tax, refund, fraud and key-policy consequences, or test a platform-supported alternative. Until then the bottom-up model may compare individual and group economics, but the group channel remains unresolved.
+
+### Sales sensitivity — not a forecast
+
+These round cases test arithmetic only; they are not derived from audience reach, wishlists, conversion or validated demand. “Group-target gross” multiplies complete three-player groups by USD 44.99. “All-individual gross” multiplies the same paid seats by USD 19.99. Any mixed purchase result would fall between those gross columns before platform/payment deductions, regional pricing, tax treatment, refunds and operating costs.
+
+| Case | Complete paying groups | Paid seats | Group-target gross | All-individual gross |
+| --- | ---: | ---: | ---: | ---: |
+| Low sensitivity | 300 | 900 | USD 13,497 | USD 17,991 |
+| Base sensitivity | 1,500 | 4,500 | USD 67,485 | USD 89,955 |
+| High sensitivity | 5,000 | 15,000 | USD 224,950 | USD 299,850 |
+
+Do not label any case conservative, expected or achievable until a dated acquisition model supplies reachable qualified people, cost per qualified lead, store/demo conversion, team-formation completion and refund assumptions. Break-even also remains open until the costed production and operating model is approved. Convert to RSD only at an explicitly dated budget exchange rate.
+
+### Post-grant publisher route
+
+The grant outcome should be usable for publisher due diligence: an original rights-cleared six-hero MVP; reproducible player and technical evidence; defined audience and price hypotheses; remaining full-production scope, schedule and budget; operating assumptions; team biographies and capacity; and a concise pitch/video package. During the project, define what kind of publisher is suitable: multiplayer PC experience, relevant territories and channels, production/QA capability, marketing capacity, transparent recoup and revenue terms, IP/control expectations and realistic support for a small Serbian studio.
+
+For avoidance of doubt, this MVP is not a finished commercial product. It is one coherent original map and one full 3v3 match with six original playable heroes, complete readable card/UI presentation, the game-ready 3D board elements, camera, reused/shared plus bounded signature animation/VFX, clear game-state feedback and functional music/ambience/UI/gameplay sound needed to evaluate the experience. It must install, host/join, play through and finish reliably on the defined target PC configuration, with affected reconnect/resynchronization behavior checked. Premium asset polish, extensive unique animation, voice/barks, broader content and launch infrastructure remain in the publisher-stage production plan.
+
+Publisher outreach, negotiation and any exclusivity or rights transfer occur only after separate approval; no interested publisher currently exists in the evidence set. A publisher is the preferred scaling route, not a substitute for validating the customer problem or understanding unit economics. If the MVP does not justify outreach or suitable terms are unavailable, the final decision must explicitly choose further validation, reduced-scope self-publishing, other financing or stopping rather than assume launch.
+
+Responsibility changes by stage: Stefan owns user research, playtest validation and business-model evidence during the funded project. If a publisher agreement is later secured, that partner is expected to lead or co-lead subsequent commercial validation, market strategy, user acquisition, distribution and launch planning according to negotiated responsibilities. The application does not promise that transfer or treat it as permission to defer grant-stage evidence.
+
+## Provisional working budget — complete with quotations
+
+The applicant-approved planning basis uses role-specific Human Resources envelopes: Stefan at RSD 240,000 monthly for the declared 0.75 FTE-equivalent project contribution and Veljko at RSD 270,000 monthly employer total (`bruto 2`) for 1.0 FTE across nine months. Veljko's preferred route is fixed-term full-time employment in the new DOO. Stefan remains full-time at Pmax and cannot place 30 weekly hours under ordinary `dopunski rad`, whose statutory maximum is one third of full time. His preferred provisional route is founder/legal representative and director without employment, with an article-48 director agreement and the separate founder PIO obligation; Fund eligibility of the complete technical/project compensation envelope and the exact tax treatment remain confirmation gates. These are cost ceilings, not net-pay promises. Dated market scans support provisional excluding-VAT ceilings of RSD 85,000 for one new 15.6–16-inch QHD display drawing tablet, RSD 60,000 for nine months of project-only test hosting, RSD 225,000 for accounting/payroll/project-finance administration, RSD 175,000 for bounded legal/IP support and RSD 30,000 for a beneficiary-licensed stock-audio set. Replace every ceiling with an actual compliant quotation or checkout evidence. Hold the remaining RSD 835,000 as the internal contingency reserve for unforeseen necessary project costs. Candidate uses include a demonstrated non-duplicative specialist gap, another approved support need or, only after core needs, an optional computer. Do not submit the reserve as an unallocated generic line: assign any use to a concrete eligible category with evidence before submission. Hosting and the digital-audio license require eligible-category confirmation; accounting and legal work must be directly project-related and non-overlapping.
+
+Applicant-reported staffing: Stefan Petrovic and Veljko Petrovic are the proposed Serbian-resident founders, with a provisional 70/30 ownership split. Stefan is the planned company representative, rights/provenance coordinator and Fund-administration owner. He is an ETF graduate, remains employed at Pmax Automation and commits 30 hours per week to Megdan during the proposed nine-month project: 0.75 FTE-equivalent on a 40-hour basis, approximately 130 hours per average month (`30 × 52 ÷ 12`) and 1,170 hours total. Keep RSD 240,000 monthly and RSD 2,160,000 total as a provisional HR compensation envelope pending Fund acceptance of the director-agreement/project-role route and an accountant's tax calculation; do not describe it as an approved salary or net amount. Veljko currently freelances and has confirmed 40 hours per week across all nine months: 1.0 FTE, approximately 173.33 hours per average month (`40 × 52 ÷ 12`) and 1,560 hours total, budgeted provisionally at RSD 270,000 employer total (`bruto 2`) per month and RSD 2,430,000 total under fixed-term full-time employment. He has also confirmed ownership of the complete visual-production package. His supplied history covers illustration since 2014, a 2022 UI/UX internship, 2022–2025 graphic-design employment and freelance digital design since 2025, supported by reported graphic/UI/UX and Unreal Engine training. His reviewed evidence supports 2D illustration, graphic/UI/UX design, art direction and a completed stylized character with coherent modelling/texturing across all presented angles. Confirm named-reference permission, exact program wording/dates and the credible rigging/animation/VFX production method, evidence and schedule. The [ownership matrix](SMART_START_PRODUCTION_INVENTORY.md#production-ownership-matrix) assigns Stefan technical, design, validation/business and administrative work and Veljko visual production; any external visual support must be bounded, necessary and non-duplicative. Do not double-budget any deliverable as both payroll and external service.
+
+| Planning line | Provisional calculation | RSD |
+| --- | --- | ---: |
+| Stefan human resources | 9 × provisional RSD 240,000 HR compensation envelope at 0.75 FTE-equivalent; director-agreement eligibility and tax treatment must be confirmed | 2,160,000 |
+| Veljko human resources | 9 × RSD 270,000 employer total (`bruto 2`) at 1.0 FTE under planned fixed-term employment | 2,430,000 |
+| Veljko display drawing tablet | Provisional ceiling excluding VAT; replace with a compliant quotation for the defined 15.6–16-inch QHD class | 85,000 |
+| Project-only test hosting | Provisional excluding-VAT ceiling for one bounded nine-month VPS; compatible dedicated-host route and eligible category must be confirmed before inclusion | 60,000 |
+| Accounting and project-finance administration | 9 × provisional RSD 25,000 excluding VAT; bookkeeping, Veljko payroll, Stefan compensation/founder filings, tax/bank records and project-payment/report support; replace with itemized quote | 225,000 |
+| Legal and specialist IP support | Provisional excluding-VAT ceiling for bounded project-period agreements, assignments, clearance/provenance and financing advice; replace with itemized quote | 175,000 |
+| Licensed stock audio | Provisional excluding-VAT ceiling for the smallest coherent standard-license music/ambience, UI and gameplay-SFX set; no voice/custom production; category confirmation required | 30,000 |
+| Internal contingency reserve | Backup for unforeseen necessary project costs; before submission, assign only to concrete eligible, evidenced and non-duplicative categories; optional computer only after core needs | 835,000 |
+| Total project cost, excluding mentorship | Provisional maximum project budget | 6,000,000 |
+| Fund contribution | 90% of project cost | 5,400,000 |
+| Applicant cash contribution | 10% of project cost; Stefan-only member additional cash payment is the provisional preferred instrument | 600,000 |
+| Ring-fenced mentorship | Fund-supported fixed amount | 600,000 |
+| Total including mentorship | Project cost plus mentor | 6,600,000 |
+
+Stefan is the sole planned source of the provisional RSD 600,000 cash contribution; Veljko cannot contribute cash. Stefan also confirms capacity for a necessary operating buffer between conditional tranches. The provisional preferred instrument is a Stefan-only member additional cash payment set by the founding act/shareholders' decision. Serbian company law permits an exact amount different from the 70/30 ownership proportion, keeps ownership and registered capital unchanged and makes any later repayment subject to loss/creditor protection, company payment restrictions and the APR publication process. Deposit each required phase amount to the dedicated project account and preserve the decision and bank trail. Do not repay during the project or from grant proceeds. Confirm the instrument's Smart Start evidence treatment in the financing agreement/with the Fund and its bookkeeping with the accountant before commitment.
+
+S3 allows no more than RSD 450,000 `bruto 2` monthly compensation per key person. Both provisional envelopes are below that cap, but the cap alone does not confirm Stefan's director-agreement eligibility, tax base, 30-hour evidence or reasonableness. Ordinary supplementary work is not the route for his declared hours. Mentor funding is separate, gross, for at least ten working days and cannot be moved to other categories. Mentor agreement is required within three weeks after financing agreement/assignment.
+
+S3 expressly permits new small equipment needed for project development and project-related tool subscriptions; it excludes used/refurbished goods and taxes including VAT. For the tablet, procure a brand-neutral 15.6–16-inch fully laminated QHD-class pen display with approximately 99% sRGB coverage, tilt-capable battery-free pen, Windows compatibility, required cables, an adjustable stand or equivalent ergonomics, documented local warranty/service and a beneficiary invoice. The RSD 85,000 line is an excluding-VAT ceiling, approximately RSD 102,000 gross at 20% VAT; actual eligible cost and VAT treatment follow the accepted quotation and accountant/Fund review. Quote a new computer separately as optional and include it only if the final eligible envelope remains sufficient after core production, audio, hosting and support. The Fund FAQ expressly permits directly project-related accounting and legal support. Project-bounded multiplayer test-server hosting is required only if its dedicated-host route is demonstrated, but hosting is not named expressly in the reviewed examples: confirm whether the Fund accepts it under project-development subscriptions/business support or another eligible category before submission. Define its provider, resources, term, test purpose and shutdown/continuation treatment; do not present it as launch-service infrastructure.
+
+Eligible categories do not make every invoice eligible. Separate marketing, VAT/duties/fees, used/refurbished equipment, in-kind contribution, debt interest, cash payments, double-funded expenditure, land/building/renovation costs, penalties, hospitality, per diems, recruitment/relocation and other exclusions. Payroll taxes/contributions included in eligible compensation are distinct from generally excluded taxes. Do not rebadge advertising or community promotion as external R&D. Budget outside-project cash for excluded costs and approval/payment delays. Historical work is evidence, not automatically a reimbursable project cost.
+
+## Cash flow and reporting
+
+At the maximum illustrative award, S3's five grant tranches are RSD 1,620,000; 1,620,000; 1,080,000; 540,000; 540,000. Mentor portions are zero; 180,000; 180,000; 120,000; 120,000. These are conditional milestone disbursements, not monthly payments or guaranteed dates.
+
+Each stage requires the applicable own-contribution evidence. The first requires the mentor agreement and approved milestone plan; later stages require approved validation, MVP, business-model and final deliverables respectively. The final tranche also requires the final settlement agreement. Do not assume the full grant is available upfront. S7 says the own contribution need not already be held at application, but must be deposited during implementation as required. Stefan's capacity is confirmed; confirm the member-additional-payment evidence route, quantify the liquidity buffer and map both against the milestone schedule before committing.
+
+The public reporting templates ask for assumptions, minimum success criteria, results and next actions, not just activity lists. The business report requires the separate financial forecast, and the final report asks for revenue, employment, IP actions and additional funding. Record zero or no activity when true. Public-facing summaries must exclude confidential details. Old template filenames and copied mentor-attestation labels should be clarified with the Fund, not edited unilaterally.
+
+## Application preparation gates
+
+1. Confirm team eligibility, current-stage disclosure and rights readiness before investing in a polished pitch.
+2. Approve the problem statement, original scope, actual nine-month workload and applicant cash capacity.
+3. Audit logs and complete dated competitor/market research; fill every factual gap in the English draft.
+4. Approve budget and biographies; create the all-member video and complete the current official templates without unlocking them.
+5. Review the exported PDFs, word limits, arithmetic, signatures, link accessibility and consistency with the declaration. Recheck official changes and deadlines.
+6. Only after explicit user approval: register/upload/submit and retain confirmation. No such external action is authorized by this plan.
+
+
+===== SMART_START_PRODUCTION_INVENTORY.md =====
+# Megdan funded-MVP production inventory
+
+**Draft reconciliation pending:** the [30 October applicant facts](SMART_START_FUND_QUESTION.md#current-applicant-facts-and-limits) supersede older staffing assumptions and any pre-application 3D prerequisite below. Stefan commits full-time to Megdan, fitting freelance work around it; his contribution is personal savings. Older hours/contract assumptions are not current facts. Budget amounts have not been recalculated. See the [shared backlog](../Roadmap/BACKLOG.md).
+
+Return to the [Smart Start preparation owner](SMART_START.md). This document converts the approved six-hero 3v3 MVP outcome into quotation units. It is not a finished-commercial-product specification, budget, purchase order, art brief or implementation authorization. Prices, people and delivery dates remain open until written offers and team capacity are confirmed.
+
+## Inventory boundary
+
+The funded result is one installable, stable, original and rights-cleared **3v3 MVP** on one coherent original map. It contains six complete playable heroes, the presentation needed to understand and evaluate their ordinary three-player-team decks, a coherent hybrid 3D-world/2D-overlay interface, bounded animation/VFX and functional audio, and the technical, player and rights evidence defined in the [delivery plan](SMART_START_PLAN.md). Premium polish, broader content and launch infrastructure are later commercial-production work.
+
+This inventory counts production deliverables, not every runtime instance. For example, the board can display twelve minions while production may use three minion model families with team variants. Conversely, 108 different playable card faces require 108 complete layouts and 108 distinct original MVP-quality compositions, even when their production deliberately reuses original models, environments, materials, effects or other source elements. The costing sheet must preserve that distinction without treating them as 108 premium paintings.
+
+## Six-hero content baseline
+
+The public identities are Svarog, Stribog, Morana, Mokoš, Veles and Perun. Their internal source kits are [Brogan](../Rules/HERO_BROGAN.md), [Swift](../Rules/HERO_SWIFT.md), [Misa](../Rules/HERO_MISA.md), [Tali](../Rules/HERO_TALI.md), [Tigerclaw](../Rules/HERO_TIGERCLAW.md) and [Wasp](../Rules/HERO_WASP.md) respectively. The source records for every selected kit contain nineteen printed faces: an ordinary eighteen-card deck plus one Handicap face returned to the box in ordinary setup.
+
+| Deliverable | Required slice quantity | Optional / quotation alternative | Costing note |
+| --- | ---: | ---: | --- |
+| Playable action-card face layouts | 108 (6 × 18) | — | Fixed for an ordinary 3v3 match. Gameplay values stay unchanged; names, copy presentation, identity and visual design become original. |
+| Handicap face layouts | 0 | 6 (1 per hero) | Not used in the bounded 3v3 slice. Quote separately if a complete nineteen-face hero set is desired. Including them makes 114 faces. |
+| Distinct original MVP-quality card compositions | 108 (1 per playable face) | 6 more if Handicaps enter scope | Every playable card receives its own readable composition. Production may reuse rights-cleared original 3D models, poses/rigs, environments, materials, VFX elements and graphic motifs; reuse cannot result in duplicate card art. Premium standalone illustration is not required for each face. |
+| Hero deck backs/emblems | 6 | — | One coherent identity per hero; repeated across that hero's deck. |
+| Hero dashboard fronts | 6 | — | Coherent MVP 2D overlay presentation. A common reverse/neutral state may be shared if the interface needs it. |
+| Hero selection/profile fronts | 6 | — | Coherent MVP roster-selection presentation. A common branded back may be shared. |
+| Hero concepts/model sheets | 6 | — | One approved original visual identity per hero, suitable for both 2D and 3D production. |
+
+The fixed baseline is therefore **108 face layouts plus 108 distinct original MVP-quality compositions**. This does not require 108 unrelated paintings made from zero. A costable card system may pose/render the six original hero models, reuse original environment and VFX libraries, composite those sources and apply Veljko's art direction/paintover so that each card still has a unique, readable image. The chosen method must record source files, human contribution, tool terms and secured rights. The six optional Handicap faces/artworks are outside the strict MVP and must not enter the grant promise unless scope and budget explicitly include them.
+
+## Rules components and board pieces
+
+Five selected kits add no hero-owned board token supply. Mokoš/Tali and Veles/Tigerclaw are the two component-bearing cases:
+
+- **Mokoš/Tali:** the [verified component definition](../../../Assets/GuardsDigital/Core/Cards/Verified/TaliComponentContent.cs) declares one shared supply of three physical tokens serving Ice, Ancestral Totem and Venerated Totem. The slice therefore needs **three simultaneous 3D token instances** and three unmistakable semantic states. Quote either one reusable model family with three state treatments or distinct meshes where readability/art direction requires them; do not cost nine pieces.
+- **Veles/Tigerclaw:** the [verified component definition](../../../Assets/GuardsDigital/Core/Cards/Verified/TigerclawComponentContent.cs) declares one shared supply of **six Poison markers** supporting two rule strengths (-1 and -2). These markers attach to hero state rather than occupy map spaces. They require two clearly readable final UI states and six possible simultaneous instances. They are not automatically six unique 3D models; quote a 2D dashboard/state treatment unless the approved presentation deliberately materializes them in the world.
+
+The selected ordinary single-lane rules use three minion archetypes: **Melee, Ranged and Heavy**. The current 3v3 setup places four Melee, one Ranged and one Heavy per team, or twelve starting instances across both teams. Production baseline is therefore:
+
+- three final minion model/rig families;
+- Red/Blue or equivalent original team-readable material/state variants for each family;
+- enough runtime instances for the final map's reviewed placement and lane-push supply.
+
+The original map has not yet been designed, so its final minion spawn count and reserve demand cannot be copied from a legacy map or priced as a settled quantity. Map review must close the exact instance maximum while preserving the three archetypes.
+
+## 3D world and camera
+
+### Fixed production units
+
+- six distinct MVP-ready hero models with textures/materials and game-ready rigs;
+- three game-ready minion model/rig families with team-readable variants;
+- one coherent original MVP map/environment kit;
+- three simultaneous Mokoš token pieces with three readable states;
+- world-space selection, legal/illegal target, path/movement, attack, damage/block, defeat/respawn, lane/minion-battle, progression/ultimate and victory feedback;
+- collision, selection and readability setup for every interactive world object;
+- LOD/performance treatment appropriate to the agreed target PC configuration.
+
+### Map quantities that require an approved design
+
+The quotation cannot responsibly fix the number of hex/space meshes, zone treatments, spawn points, structures, terrain sets, environmental props or set-dressing pieces until the original 3v3 topology and art direction are approved. The map brief must provide:
+
+1. reviewed topology and exact playable-space/zone/spawn inventory;
+2. modular-versus-unique environment strategy;
+3. prop list and reuse counts;
+4. navigation/collision/occlusion requirements for the free camera;
+5. performance target and representative target hardware.
+
+The final map may reuse modular pieces, but it cannot reuse protected expression from the private reference map. “One map” is the fixed deliverable; its asset count is the quotation blocker.
+
+### Camera acceptance baseline
+
+The free camera needs mouse/keyboard movement, rotation/orbit and zoom; bounded traversal that cannot lose the playable board; focus on the selected/acting unit and relevant action; unobstructed return/home framing; readable transitions during attacks, movement, lane resolution and victory; and settings/usability checks for speed, inversion or equivalent accessibility needs where supported. Cinematic replay, spectator production tools and controller/mobile controls are outside scope unless separately approved.
+
+## Animation and VFX quotation units
+
+Each hero requires a reusable locomotion/combat set sufficient for idle, movement, basic attack/action, receiving a hit, defeat and return/respawn, plus bounded signature ability presentations. Each minion family requires idle, movement, attack, hit and defeat, with any genuinely distinct Heavy/Ranged behavior itemized. The environment requires only interactions visible in the final match.
+
+The number of hero-specific signature clips is not derivable from the 108 card faces: several cards can share motion language, while one complex ability may require several clips. Before requesting offers, create an action-presentation matrix that maps all 108 playable faces to:
+
+- shared base animation only;
+- shared animation plus unique VFX/state treatment;
+- one or more hero-specific signature clips;
+- no additional world animation because the effect is entirely UI/rules state.
+
+Quote the resulting unique clips and VFX packages, not “one animation per card.” Reusable VFX families should cover selection/targeting, melee impact, ranged projectile, movement/path, damage/defense, defeat/respawn, token/totem state, poison state, lane/minion battle, level-up/ultimate and match victory. Exact variants follow the matrix and approved visual language.
+
+## 2D overlay and UX
+
+Beyond the six hero sets, quote one coherent MVP UI system covering title/loading, host/join and six-seat lobby state, hero selection, in-match hand and hero panels, turn/initiative/current-card presentation, card inspection, choices and targeting prompts, scoreboard/team/victory state, settings, reconnect/error feedback and necessary tooltips. Include typography, iconography, buttons, panels, cursors and responsive states required by the supported target resolution.
+
+This is a screen/state inventory, not permission to redesign rules. The current prototype proves interactions; the final UI must preserve comprehension, seat ownership, hidden information and reconnect/resynchronization state. Localization production beyond the submission/demo language is outside the slice, but layouts should avoid needless lock-in.
+
+## Audio work package
+
+The prototype has no game audio. Build the functional MVP layer from the smallest coherent beneficiary-licensed stock set and a recorded event map:
+
+- functional MVP music for menu/lobby and match flow, with transition/loop requirements;
+- one map ambience system;
+- UI feedback for navigation, confirmation, invalid action, card/choice/turn, timer/reconnect and match result;
+- gameplay SFX for movement, melee/ranged actions, impacts, defense/damage, defeat/respawn, minions/lane resolution, hero/token/marker states, progression/ultimate and victory;
+- Stefan-owned selection, trimming/layering where licensed, integration, loudness/basic mix, looping, ducking and in-build review.
+
+An audio event map must turn those families into exact clip/variation counts before purchase. The provisional asset-license ceiling is RSD 30,000 excluding VAT. Select standard-license, non-restricted assets in the beneficiary's name; preserve listing, publisher, invoice, EULA/license version, entity, asset version/hash and exact used-clip records. Do not redistribute source files to a publisher or contractor unless their license permits it. **Voice/barks, custom recording, custom composition and a separate audio contractor are excluded from the funded MVP.** No audio work is expected before award.
+
+## Project equipment and test infrastructure
+
+Budget one **new display drawing tablet for Veljko** as the priority small-equipment item for nine months of illustration, card composition, UI and paintover work. Procurement specification: brand-neutral 15.6–16-inch fully laminated QHD-class display; approximately 99% sRGB coverage; tilt-capable battery-free pen; Windows compatibility; necessary cables; adjustable stand or equivalent ergonomics; documented local warranty/service; beneficiary invoice. The dated Serbian-market scan supports an **RSD 85,000 eligible-cost ceiling excluding VAT** (approximately RSD 102,000 gross at 20% VAT). Replace the ceiling with the accepted compliant quotation and record ownership/acceptance. Quote a **new computer** separately as optional: include it only if quotation-backed eligible capacity remains after core external production, audio, hosting and support. Do not infer residual capacity, specify premium equipment without workload evidence or buy used/refurbished goods.
+
+Budget **time-bounded multiplayer test-server hosting** only for development and structured validation: one nine-month VPS with a minimum 2 vCPU/4 GB RAM/40 GB storage class and headroom up to 4 vCPU/8 GB/80 GB, one public IP, compatible Linux or Windows environment, bounded backup/snapshot/monitoring and retained diagnostics. It supports repeatable six-player sessions and reconnect/resynchronization checks, not public matchmaking, commercial live-service capacity or post-project hosting. The provisional ceiling is RSD 60,000 excluding VAT. Activate it only after Stefan demonstrates a compatible dedicated test-host route and the Fund/accountant confirms the eligible category; the current ordinary playing-host topology alone does not justify a VPS invoice. Replace the ceiling with a provider, region, exact resources, term, retention and shutdown quotation.
+
+## Engineering, evidence and delivery
+
+The production quote and schedule must retain non-art completion work:
+
+- integrate approved MVP 2D/3D/audio assets without moving rules authority into presentation;
+- support install, host/join, one complete six-player 3v3 match and terminal victory on the defined Windows target;
+- verify affected reconnect/resynchronization, deterministic state, snapshot and replay/Undo behavior;
+- profile the MVP map, camera, animation/VFX and UI against agreed performance and readability targets;
+- run structured usability and target-player sessions with recorded denominators and limitations;
+- produce the installable build, reproducible technical/player evidence summary, known-issues disposition and publisher demonstration;
+- maintain a rights manifest for original work, contractors, dependencies, fonts, audio, AI-assisted placeholders and final replacement status.
+
+Public matchmaking/service infrastructure, ranked play, additional maps/modes, the approximately twenty later heroes, full localization, console/mobile ports and launch marketing remain outside this inventory.
+
+## Production ownership matrix
+
+“Owner” means accountable for the deliverable and its acceptance evidence; it does not imply that one person performs every task. Provisional rows need evidence or a named provider before the budget is approved.
+
+| Work package | Planning owner | Status and budget treatment |
+| --- | --- | --- |
+| Technical architecture, gameplay/network implementation, tools, asset integration, builds and technical QA | Stefan | Confirmed from the self-funded prototype and repository history. Budget against his declared 30 hours/week during nine months: 0.75 FTE-equivalent on a 40-hour basis, approximately 130 hours/month and 1,170 hours total; retain RSD 240,000/month and RSD 2,160,000 total only as a provisional HR compensation envelope. He remains full-time at Pmax, so 30 hours cannot use ordinary `dopunski rad`; the current route is founder/legal representative and director without employment under an article-48 agreement, subject to Fund acceptance of the complete project-role cost and accountant calculation. |
+| Hero concepts, 2D art direction, 108 distinct original MVP-quality card compositions, card layouts, deck identities, dashboards/profiles and coherent MVP 2D UI assets | Veljko | Confirmed ownership at 40 hours/week across nine months: 1.0 FTE, approximately 173.33 hours/month and 1,560 hours total; preferred route is nine-month fixed-term full-time employment at provisional RSD 270,000 employer total (`bruto 2`)/month and RSD 2,430,000 total. His reviewed portfolio and follow-ups support illustration, graphic/UI/UX design, promotional composition and art-direction relevance, including reported complete-concept ownership of the Wacky Sheep illustration and Serbian Games Week poster. Production method and acceptance batches remain required; the same deliverables must not also be bought from a contractor. |
+| Character/minion/environment 3D modelling and texturing; rigging and bounded animation | Veljko; Stefan owns technical integration | Confirmed planning ownership within Veljko's full-time visual package. The reviewed 10-second turntable shows a completed stylized character with coherent form, costume/accessory construction and material/colour treatment from all angles, supporting a bounded modelling/texturing capability. It does not expose topology/process, rigging, deformation, animation, VFX or production throughput. His map → six portraits → minions → 108 cards sequence also omits those acceptance details. The monthly plan therefore adds a Month 1 representative pipeline gate and interleaved complete hero packages. External help is a bounded contingency only where a demonstrated specialist or schedule-critical gap does not duplicate payroll work. |
+| Production VFX | Veljko | Confirmed planning ownership within the complete visual package. Define and count the bounded MVP effects before acceptance; use specialist contingency only for a demonstrated gap and record a non-overlapping deliverable. |
+| Licensed music/ambience and UI/gameplay SFX; integration/basic mix | Stefan; marketplace licensor supplies source assets | Provisional RSD 30,000 excluding-VAT asset ceiling. Stefan owns event mapping, selection, permitted edit/layer work, integration and in-build acceptance. No voice, custom composition/recording or audio contractor. Confirm eligible category and preserve the complete license/provenance record. |
+| Original game/rules design and map topology | Stefan; Veljko owns visual realization | Confirmed founder ownership. Stefan approves gameplay, topology and rules readability; Veljko owns the map's visual direction, environment modelling and presentation within the complete visual package. |
+| Target-user research, playtest validation, business model and publisher-readiness narrative | Stefan during the funded project; Veljko supports presentation/testing as needed; mentor-supported | Confirmed project-stage ownership. Mentorship challenges and guides but does not replace consented external participants, reproducible data or Stefan's responsibility for understanding and acting on the evidence. After the grant, a contracted publisher is expected to lead or co-lead further commercial validation, market strategy, acquisition, distribution and launch planning under the eventual agreement; no publisher is assumed today. |
+| Playtest operations and product QA | Stefan for technical evidence; broader owner/provider still to assign | Separate deterministic/technical checks from recruited-player usability, device coverage and any paid specialist QA. |
+| Veljko display drawing tablet, optional computer and multiplayer test hosting | Stefan procures/administers; Veljko approves equipment fitness | One new display tablet has a defined neutral 15.6–16-inch QHD class and provisional RSD 85,000 excluding-VAT ceiling. Test hosting has a separate RSD 60,000 excluding-VAT ceiling and is included only after dedicated-host and eligibility gates. Replace both with compliant quotations. A new computer is optional only from residual eligible capacity. Exclude used/refurbished equipment and launch-service infrastructure. |
+| Rights/provenance manifest and contractor acceptance records | Stefan coordinates; every creator supplies evidence | Confirmed founder ownership. Stefan maintains the complete register, contracts/acceptance links and final replacement status; contributors remain responsible for truthful source and rights evidence. Specialist IP/legal review supports rather than replaces this duty. |
+| Fund administration, reporting, cash-flow control and company representation | Stefan | Confirmed planned representative and accountable founder. Accounting/legal services may support eligible work but do not replace beneficiary responsibility. Formal company/portal records must match before submission. |
+| Accounting and project-finance administration | External registered provider; Stefan owns inputs and acceptance | Provisional RSD 225,000 excluding-VAT ceiling across nine months for bookkeeping, Veljko payroll, Stefan compensation/founder filings, tax/bank records and Fund-payment/report support. The Fund FAQ expressly permits directly project-related accounting. Replace with an itemized quote; Stefan remains accountable for project administration. |
+| Legal and specialist IP review | External professional provider; Stefan coordinates | Provisional RSD 175,000 excluding-VAT ceiling for bounded project-period contributor/contractor/IP-assignment documents, name/trademark and reusable-code/asset review, AI-tool/provenance terms and financing/agreement advice. Exclude pre-contract incorporation costs, public fees and taxes. Replace with an itemized quote; do not treat any opinion or clearance as completed. |
+
+This matrix is the bridge to the budget. Each priced line must name one accountable owner, the maker/provider, quantity, acceptance evidence, timing and whether the cost is payroll or external service. The same deliverable cannot appear under both Veljko's compensation and an external invoice.
+
+## Decisions required before a priced budget
+
+1. Approve the original map topology/art-direction brief and its exact space, zone, spawn and prop inventory.
+2. Approve and quote the 108-composition production method: fully painted, 3D render/composite/paintover, another rights-cleared method, or a controlled mixture. Define what makes each MVP composition distinct and readable and preserve provenance; do not require premium standalone paintings for every face.
+3. Complete the 108-face action-presentation matrix and count unique animation/VFX units.
+4. Confirm whether the six Handicap faces are included or remain post-slice.
+5. Use the approved [monthly founder delivery and acceptance plan](SMART_START_PLAN.md#monthly-founder-delivery-and-acceptance-plan): Month 1 must prove the representative source-to-build pipeline, Months 2–7 each close one complete hero package, Month 8 closes shared production and optimization, and Month 9 permits acceptance fixes rather than new scope. Add supporting task evidence for the parts not directly demonstrated by the reviewed portfolio. Identify external visual help only as a limited, non-duplicative contingency if the Month 1 gate or a later evidenced specialist/schedule-critical gap requires it.
+6. Complete the audio event map, select the smallest coherent standard-license stock set within the RSD 30,000 excluding-VAT ceiling and confirm its eligible category. Voice/barks and bespoke audio remain outside the MVP.
+7. Fix target PC/resolution, performance criteria and the precise camera acceptance test.
+8. Obtain a compliant quotation within the provisional RSD 85,000 excluding-VAT ceiling for the defined 15.6–16-inch QHD display-tablet class; quote a new computer separately as optional and include it only from demonstrated residual eligible capacity. Exclude used/refurbished goods.
+9. Demonstrate the dedicated test-host route, obtain a quotation within the RSD 60,000 excluding-VAT hosting ceiling and confirm its eligible budget category before submission; otherwise remove the line.
+10. Obtain itemized accounting and legal/IP offers within the provisional RSD 225,000 and RSD 175,000 excluding-VAT ceilings, with project-period, non-overlapping deliverables and excluded fees/taxes separated.
+11. Obtain comparable written offers, map each cost to an eligible Smart Start category and exclude all self-funded/pre-contract work.
+
+After these first allocations, hold RSD 835,000 as the internal contingency reserve for unforeseen necessary project costs. It is not an automatically eligible generic application line. Before submission, assign any proposed use to a concrete eligible category only after its scope, non-duplication, specification, evidence/quotation and eligibility review are complete; otherwise reduce the requested project budget rather than inventing a cost.
+
+
+===== SMART_START_REQUIREMENTS.md =====
+# Smart Start — sources and requirements
+
+Return to [preparation owner](SMART_START.md). Source review snapshot: 23 October 2026. Requirements below are preparation notes; the current official documents govern. Unknown applicant facts remain unknown.
+
+## Targeted inquiry refresh — 30 October 2026
+
+Current call, September documentation page, manual 6.0 eligibility/cost/payment provisions and FAQ were rechecked for the Fund inquiry. The [question owner](SMART_START_FUND_QUESTION.md) records the exact sources and answered/unresolved distinctions. This is a targeted refresh, not a new full audit of every source below.
+
+## Source register and reading coverage
+
+| ID | Official source | Use and coverage |
+| --- | --- | --- |
+| S1 | [Program](https://www.inovacionifond.rs/cir/program/smart-start) and [current public call](https://www.inovacionifond.rs/cir/program/smart-start/javni-poziv-za-program-pametni-pocetak) | Program purpose, current deadlines, application route and priority domains |
+| S2 | [September 2026 documents](https://www.inovacionifond.rs/cir/program/smart-start/dokumentacija-septembar-2026) | Current downloads, rather than archived calls |
+| S3 | [Serbian manual 6.0](https://www.inovacionifond.rs/cms/files//pametni-pocetak/Pametni_pocetak_Programski_prirucnik_verzija%206.0.pdf) / [English manual 6.0](https://www.inovacionifond.rs/cms/files//pametni-pocetak/Smart_Start%20_Program_manual_6.0.pdf) | English manual read throughout; Serbian source cross-check. Sections 2–5 govern eligibility, budget, assessment and delivery; tranche table visually checked |
+| S4 | [Application form 6.0](https://www.inovacionifond.rs/cms/files//pametni-pocetak/Smart_Start_Application_Form_6.0_locked.docx) | Complete text inspected, including every prompt, limit, budget and video field; official link and SHA-256 reverified 28 October 2026 |
+| S5 | [Applicant declaration 6.0](https://www.inovacionifond.rs/cms/files//pametni-pocetak/Smart_Start_Izjava_podnosioca_prijave_6.0_locked.docx) | Complete text inspected; all-member signatures, truthfulness, rights and obligations |
+| S6 | [Smart Specialization Strategy 2020–2027](https://pametnaspecijalizacija.mpn.gov.rs/wp-content/uploads/2021/06/Strategija-pametne-specijalizacije_SR_WEB.pdf) | Targeted thematic reading, not a claim of line-by-line review of all 146 pages: creative industries, video games, cross-sector links and goals; printed pp. 90–107, especially 92–93, 101, 106–107. Table 9 visually checked |
+| S7 | [FAQ](https://www.inovacionifond.rs/cir/program/smart-start/faq) | Eligibility, entrepreneur distinction, co-financing timing, forms and evaluation guidance |
+| S8 | [Reporting documents](https://www.inovacionifond.rs/cir/program/smart-start/izvestavanje) | All five linked DOCX report texts inspected: milestone, validation, MVP, business model and final. Financial forecast XLS identified, not yet analyzed; complete it when actual financial assumptions are approved |
+| S9 | [Fund state-aid rulebook, 2025](https://www.inovacionifond.rs/cms/files/o-nama-akti/Pravilnik_drzavna_pomoc_2025.pdf) | All seven scanned pages visually read; articles 4 and 7 directly relevant, article 12 gives applicable law precedence |
+| S10 | [Environmental and Social Management Framework](https://www.inovacionifond.rs/cms/files/prr-dokumentacija/Environmental_&_Social_Management_Framework_ESMF_update_december.pdf) | Exclusions and screening, pp. 3–6; Smart Start-specific exception to routine ESQ, with assessment possible if concerns arise |
+| S11 | [Serbian Labor Law](https://pravno-informacioni-sistem.rs/eli/rep/sgrs/skupstina/zakon/2005/61/34) | Current consolidated official text reviewed for director agreements (article 48), full/part-time employment (articles 41 and 51) and supplementary work (article 202) |
+| S12 | [Tax Administration — Obligations of founders of legal entities, February 2026](https://www.purs.gov.rs/upload/media/2026/2/2/760612/%D0%9E%D0%B1%D0%B0%D0%B2%D0%B5%D0%B7%D0%B5_%D0%BE%D1%81%D0%BD%D0%B8%D0%B2%D0%B0%D1%87%D0%B0_%D0%BF%D1%80%D0%B0%D0%B2%D0%BD%D0%B8%D1%85_%D0%BB%D0%B8%D1%86%D0%B0.pdf) | Founder/representative insurance basis, concurrent other employment, PP OD-O and PIO-only obligation; pp. 4–5 and 12–13 |
+| S13 | [Serbian Company Law](https://pravno-informacioni-sistem.rs/eli/rep/sgrs/skupstina/zakon/2011/36/1/reg) / [APR repayment guidance](https://www.apr.gov.rs/registri/privredna-drustva/uputstva/promene-.2031.html) | Member additional cash payments, non-proportional exact amounts, no capital increase, repayment/creditor restrictions and APR publication process; articles 178–180 and 182 |
+| S14 | [Tax Administration VAT registration service](https://www.purs.gov.rs/katalog-usluga.html?position=1) | Current RSD 8,000,000 mandatory-registration threshold, voluntary registration route and electronic filing; used only to route VAT-status planning, not to claim recoverability |
+
+AI strategy is referenced by S1/S3, but this application does not claim an AI-technology priority. Full legal review, the conflict-of-interest rulebook, actual grant/mentor contracts and the financial forecast remain pre-signature/preparation dependencies, not completed checks. The Fund's general acts page returned a verification barrier during retrieval; no content was inferred from it.
+
+S3 section 2.3 lists project-development tool subscriptions under office/business-support costs and new small equipment/supplies needed for development as eligible examples; used/refurbished equipment is excluded. This supports properly specified new production equipment such as the planned display drawing tablet and, only if the final budget retains capacity, an optional new computer. Test-server hosting is not named expressly in the reviewed list, so necessity may be documented but its final eligible category must be confirmed before submission rather than inferred.
+
+Display-tablet market snapshot, 23 October 2026; public retail prices include VAT and are planning evidence rather than quotations:
+
+| Reference | Observed public price/status | Planning use |
+| --- | --- | --- |
+| [XP-Pen Artist Pro 16 Gen 2, Zicer](https://zicer.rs/prodavnica/graficke-table-za-crtanje/xp-pen/artist-modeli/xp-pen-artist-pro-16-2-generacije/) / [official specification](https://www.xp-pen.com/product/artist-pro-16-gen-2.html) | RSD 73,999, out of stock; 16-inch 2560×1600, laminated, 99% sRGB/97% Adobe RGB coverage, tilt and 16,384 pressure levels | Strong functional reference, not an approved supplier/model |
+| [Huion Serbian price comparison](https://cenoteka.rs/b/huion/) / [official 16-inch comparison](https://support.huion.com/en/support/solutions/articles/44002576237-what-are-the-differences-between-the-kamvas-16-gen-3-kamvas-pro-16-2-5k-and-kamvas-16-2021-) | Kamvas 16 listings begin around RSD 62,999; exact generation/specification and stock require quotation | Lower market bound; do not substitute an FHD/older model for the QHD class silently |
+| [Wacom One 13 Touch, Duocom](https://www.duocom.rs/artikal/wacom-one-13-touch-pen-display) | RSD 95,000; 13.3-inch Full HD, 100% sRGB and touch | Upper nearby retail reference but smaller/lower-resolution than the selected class |
+
+These references support a brand-neutral RSD 85,000 ceiling excluding VAT, equivalent to approximately RSD 102,000 gross at Serbia's current 20% general VAT rate ([Tax Administration](https://www.purs.gov.rs/fizicka-lica/pdv/opste-o-pdvu.html)). The selected class is 15.6–16 inches, fully laminated QHD, approximately 99% sRGB, tilt-capable battery-free pen, Windows support, required cables, adjustable stand/equivalent ergonomics and documented local warranty/service. Availability and prices are volatile; obtain a beneficiary-addressed quotation and use its eligible excluding-VAT amount before submission.
+
+Hosting and administrative-support market snapshot, 23 October 2026. The Fund's [current FAQ, questions 10–12](https://www.inovacionifond.rs/cir/program/smart-start/faq) expressly permits project-related accounting and legal support and excludes VAT, but does not name VPS/test-server hosting. Treat the latter as a clarification item rather than inferring eligibility. Serbian VPS references bracket a suitable test tier: [BeoHosting](https://beohosting.com/vps-hosting) lists 2 vCPU/4 GB/40 GB at RSD 1,790 per month and 4 vCPU/8 GB/80 GB at RSD 3,390 per month, while [SkyHosting](https://www.skyhosting.rs/vps-serveri) lists 2 CPU/4 GB at RSD 3,400 excluding VAT per month plus RSD 900 setup. A provisional **RSD 60,000 excluding-VAT ceiling** covers one nine-month project-only VPS, public IP, backup/snapshot/monitoring headroom and bounded scaling; replace it with a compliant quote and spend it only after a compatible dedicated test-host route and the eligible category are confirmed.
+
+Accounting references place a small Serbian D.O.O. above bare-minimum bookkeeping when recurring personnel calculations and grant records are included: [RNT](https://rnt.co.rs/cene/) starts D.O.O. service at EUR 100 monthly, [EXT's 2026 overview](https://exttechnologies.com/sr/blog/cena-racunovodje-srbija-2026) places a small D.O.O. at EUR 80–200 monthly, and [Solvi's 2026 overview](https://solvi.rs/blog/koliko-kosta-racunovodja) places a D.O.O. with 3–10 employees at RSD 18,000–30,000 monthly. Use a provisional **RSD 225,000 excluding-VAT ceiling** (`9 × RSD 25,000`) for bookkeeping, Veljko payroll, Stefan compensation/founder-contribution filings, tax/bank records and project-payment/report support. Legal/IP support is separate: the current [Serbian attorney tariff table](https://www.paragraf.rs/propisi/advokatska_tarifa_tabelarni_prikaz_nagrada_sa_zapocetim_satom-2020.html) shows RSD 27,500 minimum for contracts, RSD 5,000 per commenced consultation hour and higher amounts for foundational/general acts. Use a provisional **RSD 175,000 excluding-VAT ceiling** for bounded project-period contributor/contractor and IP-assignment documents, name/trademark and reusable-code/asset review, AI-tool/provenance terms and financing/agreement advice. Pre-contract incorporation charges, government fees and excluded taxes are not included. Both ceilings require itemized offers and non-overlapping deliverables.
+
+MVP audio market/license snapshot, 23 October 2026. Use licensed stock assets rather than custom composition, sound design or voice production. Current Unity Asset Store examples range from a [USD 44.95 general fantasy/game SFX bundle](https://assetstore.unity.com/packages/audio/sound-fx/ultimate-sound-bundle-389864) and [USD 79 fantasy UI pack](https://assetstore.unity.com/packages/audio/sound-fx/fantasy-ui-sound-effects-pack-aaa-378670) to a [USD 25 loopable fantasy ambience pack](https://assetstore.unity.com/packages/audio/music/orchestral/fantasy-rpg-ambient-music-pack-262467) and [USD 100 broad fantasy music bundle](https://assetstore.unity.com/packages/audio/music/ultimate-fantasy-music-bundle-358878); VAT is calculated at checkout. The [Unity Asset Store EULA FAQ](https://assetstore.unity.com/browse/eula-faq) permits commercial use when standard-license assets are embedded in a game, but the beneficiary must hold the appropriate license and source assets cannot be redistributed separately. Use a provisional **RSD 30,000 excluding-VAT ceiling** for the smallest coherent single-entity stock set covering music/ambience, UI and core gameplay SFX. Stefan selects, trims/layers where permitted, maps, integrates and mixes it. Record listing, publisher, invoice, license/EULA version, entity, asset version/hash and exact used clips. Exclude voice/barks, custom recording/composition, restricted/non-standard assets and any source handoff a later publisher is not licensed to receive. Confirm the eligible budget category; if refused, use eligible zero-cost assets or fund the small license cost outside the grant rather than misclassify it.
+
+Private downloaded originals are retained under `tmp/smart-start-sources/`, excluded from publication. Retrieval fingerprints (SHA-256):
+
+| Local original | SHA-256 |
+| --- | --- |
+| manual-en.pdf | `55F1A867FE1C0588D33837726E24E6CCF874687E7D8FB4E9B7C5066B9A7AF82B` |
+| manual-sr.pdf | `5FC7F9D4A95686623780226F163D8300A4C1F8CE6D6C1E93BB453D1DFDDF15F3` |
+| Smart_Start_Application_Form_6.0_locked.docx | `B66335A2083CA329388371F36B77757D224E1B90B27B5B50EB12F59857AA512E` |
+| declaration.docx | `4B466CE6B62168F2C6323CE347ED338F422C2641EE2E14754AB539341F120DC2` |
+| strategy.pdf | `45ECF2580ADA7EFF24B4FF028FAD8C8717A85CFE15DD9F17527D508B3D925721` |
+| state-aid.pdf | `26E4921C8F016D9ADA943C6D2138B3A69070286821A060ED0641CA5B576388EC` |
+| esmf.pdf | `69D7515AC57393909358F4959FE070DDBB833D7F12F2DA4AB950ECA6E943F0C1` |
+
+Applicant-supplied private evidence is retained in the same ignored directory but is not an official program source:
+
+| Local evidence | SHA-256 | Bounded use |
+| --- | --- | --- |
+| veljko-portfolio.pdf | `4EA2556C99309FE8C6BA11FFA6206069A8F45385E32A818574654A192F0C0F7E` | Visually reviewed for team-capability evidence only; it supports 2D illustration, graphic/UI/UX design and art-direction relevance, not education, employment/credit authorization or game-ready 3D character, rigging, animation or VFX capability. |
+| veljko-biography-followup-2026-10-23.png | `1A68B8AF66EC761050A0951AD159AF9A3203809D163593CF9AE82630F386875B` | Applicant-supplied screenshot recording education/training, dated work history, full-concept contribution to the 2022 Wacky Sheep illustration and a 2026 cat modelling/texturing example. The referenced video is separately preserved and reviewed below; rigging, animation, VFX, production scale and named-credit publication permission remain unproven. |
+| veljko-serbian-games-week-followup-2026-10-23.png | `DDBB0188A328F7905E0C1CB8313F5D55DAABD6BF4A343E32A5EB9E6663DE02DD` | Applicant-supplied screenshot of a Serbian Games Week 2025 poster, described as Veljko's complete concept and digital-use adaptation. It supports promotional composition and art-direction relevance; final application use still requires accurate event/credit wording and permission to publish the named credit. |
+| veljko-production-sequence-followup-2026-10-23.png | `4E9F30001FB54E8968A05CE5FC3BB5D55AD09D30C542901C128EE2C2DE578BAF` | Applicant-supplied initial production sequence: divide work into smaller segments, then map, six hero portraits, minions and 108 cards. It supports an incremental-work preference but is not a complete schedule for models, rigs, animation, VFX, UI, iteration or acceptance; the delivery plan adds an early representative pipeline gate and interleaved hero-package acceptance to control late risk. |
+| veljko-cat-modelling-texturing-2026.mp4 | `E9BEDE84E675BC79D2A80D4B5518CF53CC46C7F9EFB430272F1A53002E4D47A1` | Applicant-supplied 10-second, 1080×1920, 24 fps/240-frame turntable video of a completed stylized cat character, described as Veljko's modelling and texturing work. Full-angle review supports coherent character modelling, silhouette, costume/accessory construction, colour/material treatment and presentation. It does not show topology/process, rigging, deformation, character animation, VFX or production throughput. |
+
+## Administrative gates
+
+S1/S3/S4: submission deadline **16 November 2026 at noon**; portal registration deadline **13 November 2026**. Plan earlier: registration processing may take three business days. Application is in English, except the explicitly supplied Serbian declaration. Use current protected templates, fill all substantive fields, preserve structure, export the application directly to PDF and upload both required PDFs. Do not unlock/rewrite template labels or formulas. Upload alone is not submission: the portal's Submit action is required, with explicit user authorization.
+
+S7 questions 15–16 and 29: the applicant supplies at least 10% in cash, independently of the Fund and phase by phase. Permitted source families expressly include existing/potential own, other private or venture capital, private-sector debt financing and other private cash contributions. Before each Fund payment, the beneficiary provides a bank statement showing the applicable contribution deposited to the dedicated project account. Applicant fact: Stefan is the sole planned source of the RSD 600,000 contribution; Veljko is not a cash source.
+
+The best-supported provisional company-law vehicle is a **member's additional cash payment** (`dodatna uplata člana`) rather than a grant-funded repayment or interest-bearing project cost. [Company Law articles 178–180 and 182](https://pravno-informacioni-sistem.rs/eli/rep/sgrs/skupstina/zakon/2011/36/1/reg), reviewed 23 October 2026, allow the founding act or a shareholders' decision to set a different proportion or exact amount, so Stefan alone can pay RSD 600,000 without changing the 70/30 ownership or registered capital. The payment must be cash. Repayment is not automatic: it is subordinate to loss/creditor protection and company-law payment limits; [APR guidance](https://www.apr.gov.rs/registri/privredna-drustva/uputstva/promene-.2031.html) requires publication of the repayment decision and a three-month creditor-protection period. Put the exact Stefan-only obligation and any repayment timing in the founding act/decision, deposit the phase amount to the dedicated project account, retain the decision and bank trail, and do not repay it during the project or from Fund proceeds. The FAQ does not expressly name this instrument, so the final financing agreement/Fund and accountant must confirm its Smart Start evidence treatment. A founder loan remains legally possible but is not the preferred dossier route; interest and debt-service costs are ineligible.
+
+### DOO engagement and compensation route — official-source review, 23 October 2026
+
+S3 section 2.3 and S7 question 10 make salaries/compensation for project personnel eligible, including personal-income tax and social contributions, subject to the RSD 450,000 monthly `bruto 2` cap per key person. That program wording permits more than a conventional employment salary, but it does not identify every accepted Serbian contract/payroll code.
+
+[Labor Law article 202](https://pravno-informacioni-sistem.rs/eli/rep/sgrs/skupstina/zakon/2005/61/34) limits supplementary work by a person already employed full-time to one third of full time. Article 51 defines full time as 40 hours weekly unless an applicable act uses 36–40, so ordinary `dopunski rad` supports at most approximately 13.33 hours weekly on the 40-hour basis. It cannot truthfully support Stefan's declared 30 project hours weekly while he remains full-time at Pmax. Article 48 separately allows a director/legal representative who is not employed by the company to have a written director-rights-and-obligations agreement and receive compensation. That is the currently preferred legal route for Stefan's company-representation role; it is not treated as a way to relabel a 30-hour engineering employment relationship without program/accounting confirmation.
+
+The Tax Administration's February 2026 [Obligations of founders of legal entities](https://www.purs.gov.rs/upload/media/2026/2/2/760612/%D0%9E%D0%B1%D0%B0%D0%B2%D0%B5%D0%B7%D0%B5_%D0%BE%D1%81%D0%BD%D0%B8%D0%B2%D0%B0%D1%87%D0%B0_%D0%BF%D1%80%D0%B0%D0%B2%D0%BD%D0%B8%D1%85_%D0%BB%D0%B8%D1%86%D0%B0.pdf) guide treats a registered founder-representative as working in the company even without employment. When that founder is simultaneously employed by another employer, the other employment is the priority insurance basis and the new DOO calculates only the additional 24% PIO contribution, reporting it on PP OD-O; the contribution base is at least the applicable minimum monthly base. Recalculate against the implementation year's published base rather than hard-coding 2026 values.
+
+Accordingly, the provisional dossier route is:
+
+- **Veljko:** fixed-term full-time employment in the new DOO for the nine project months, with RSD 270,000 monthly employer total (`bruto 2`) as the planning ceiling. This cleanly matches his 40-hour commitment and the manual's eligible salary/contribution line. Execute only after award/company formation and reprice payroll using the actual implementation-year parameters.
+- **Stefan:** founder, registered legal representative/director without employment in the new DOO while remaining employed at Pmax; written article-48 director agreement; mandatory additional founder PIO handled by the DOO. Keep RSD 240,000 monthly / RSD 2,160,000 total as a **provisional HR compensation envelope**, not a confirmed `bruto 2` salary or net-pay promise. Before final submission, obtain written Fund confirmation that this agreement and cost can be booked under Human Resources for Stefan's stated project role and evidence, and obtain an accountant's exact tax/contribution/payroll calculation. If that route is refused, either reduce the funded hours/amount to a compliant supplementary-work route or formally change Stefan's Pmax/new-DOO employment allocation; do not submit 30 hours as `dopunski rad`.
+
+[Tax Administration VAT registration guidance](https://www.purs.gov.rs/katalog-usluga.html?position=1), reviewed 23 October 2026, requires VAT registration above RSD 8,000,000 turnover in the preceding/expected twelve months and permits voluntary registration below that threshold. Smart Start excludes VAT from eligible cost regardless. The new DOO therefore pays invoices under its actual VAT status, records only the Fund-accepted excluding-VAT amount in the grant budget and funds non-recoverable VAT outside eligible project cost. Do not assume voluntary registration or input-VAT recovery before an accountant models the company's expected taxable turnover, purchases and administrative burden.
+
+The English manual's section 3.2 contains a residual “version 5” reference despite its 6.0 title and current 6.0 downloads. Record and clarify, do not switch to an old form. The public call's “original format” wording concerns preserving the official template; manual and application instructions explicitly require PDF delivery.
+
+The English video is at most three minutes, includes the problem, idea, target fit and every team member's role/contribution, with all members present and visible. A slide-only synthetic-voice video is not acceptable. Keep the link accessible throughout evaluation; post-deadline video replacements are not considered. This is distinct from the approximately 15-minute final implementation presentation.
+
+Limited basic administrative corrections may be requested within 72 hours; incomplete substantive answers, biographies or eligibility cannot be repaired on that basis. Do not plan around this exception.
+
+## Applicant eligibility — unverified until supplied
+
+S3 section 2.2 and S5: 2–5 people; at least 51% Serbian residents and at least 51% without shares in another Serbian company. Each person can participate in only one current-call application across Fund programs; active Fund projects, including external collaboration, require checking. Prior substantially similar evaluated applications must be disclosed; the limit is three submissions across programs.
+
+If awarded, establish the required Serbian LLC before contracting. At least 51% of proposed team members must together own 100%: both members for a two-person team, at least two of three, or at least three of four/five. Founders must meet residency, other-company-share and other-company-representative restrictions; the new company's representative must be a founder. Relevant restrictions extend through evaluation and implementation. S7 distinguishes an entrepreneur from holding company shares: do not automatically reject a team member merely for having an entrepreneurial business.
+
+Before contracting, S3 lists APR company/founder registration, Register of Bidders, National Innovation System register, dedicated bank account, de minimis declaration and mentor selection, plus any requested documents. Do not create a company or register anything on the user's behalf without authorization.
+
+S9 article 7 describes cumulative de minimis aid up to EUR 300,000 equivalent over the current and preceding two fiscal years; article 12 makes current applicable law controlling. Have an accountant/Fund verify the actual beneficiary, related-entity treatment, prior aid and applicable calculation before signing. Do not infer eligibility from a new company's age alone.
+
+## Evaluation and honest fit
+
+| Criterion | Maximum | Application argument | Missing proof |
+| --- | ---: | --- | --- |
+| Usefulness and competitive advantage | 30 | Deliberate individual-hero team tactics for players who value MOBA coordination without continuous reflex execution | Direct comparison and target-user preference; a reskin alone is explicitly weak under S3 |
+| Market potential | 30 | Globally distributable original PC game with a narrow initial audience and testable commercial route | Reachable market size, price acceptance, group recruitment and sustainable support costs |
+| Team competence | 40 | Existing implementation and playtest history can substantiate execution | Actual complementary members, roles, achievements, availability and commercial capability |
+
+S3 section 4: 75 points qualifies for the final evaluation round, not a guaranteed award. Final selection considers the same criteria and available funds; the Fund can adjust budgets/conditions. No self-awarded score is evidence of competitiveness. An existing prototype is not, by itself, an explicit exclusion in the reviewed eligibility list; disclose the actual stage and clarify uncertainty instead of pretending the work has not happened.
+
+S6 explicitly identifies video games and interactive media among creative-industry priorities (printed p. 92). It discusses small studios and engineering/art capabilities (p. 93), ICT infrastructure/custom software links (table 9, p. 101), IP-oriented creative-industry development (p. 106), and close creative-industry/software connections (p. 107). Our interpretation: an original game developed in Serbia for an international audience is a credible thematic fit. This does not prove applicant eligibility or market demand. Historical statistics in this strategy must not be presented as current market sizing.
+
+## Initial competitor evidence
+
+These checks are a starting comparison, not exhaustive market research. Official publisher/store sources were checked on 21 October 2026. Store features and prices can change and must be refreshed before submission.
+
+| Reference | Verified source fact | Implication, not proof |
+| --- | --- | --- |
+| [Dota 2 official Steam listing](https://store.steampowered.com/app/570/Dota_2/) | Free-to-play competitive hero game with more than one hundred heroes, parties, matchmaking and all heroes available without purchase | Direct substitute for one-hero-per-player teamwork and role mastery, but with continuous real-time execution. Megdan must test whether deliberate turn/card play is valuable enough to change product and group-purchase behavior |
+| [Atlas Reactor official launch notice](https://www.trionworlds.com/en/news/2016/10/2204/) and [official guide](https://webcdn.triongames.com/atlasreactor/AtlasReactor_Guide.pdf) | Competitive team tactics with 4v4 play, one Freelancer focus, coordinated 20-second simultaneous turns and team ability combinations | Closest identified historical structural precedent. It disproves “no such game has existed”; Megdan's proposed distinction is card-driven initiative, lane/minion objectives, 3v3 format and a less time-pressured decision cadence, all still requiring user evidence |
+| [Atlas Reactor publisher shutdown notice](https://www.trionworlds.com/en/news/2019/04/atlas-reactor-servers-shut-down/) | The publisher stopped purchases and announced server closure in 2019 because the game could no longer sustain itself | Demonstrates category and service-sustainability risk. It does not establish the cause of failure or predict Megdan's outcome |
+| [Skygard Arena official Steam listing](https://store.steampowered.com/app/2148970/Skygard_Arena/) | Turn-based tactical game; player selects a squad of three Champions; campaign and online PvP; publisher describes 15–20-minute PvP matches | Relevant substitute for tactical hero combat. Our proposed individual-player-per-hero coordination must demonstrate value against squad control; session-length advantage cannot be assumed |
+| [Gloomhaven official Steam listing](https://store.steampowered.com/app/780290/Gloomhaven/) | Tactical turn-based card combat for one player or online co-op up to four, with two-to-four mercenaries | Strong substitute for deliberate card-based hero cooperation, but it is campaign co-op rather than competitive team arena play |
+| [Blood Bowl 3 official Steam listing](https://store.steampowered.com/app/1016950/Blood_Bowl_3/) | Turn-based online PvP with positioning, team development, ladders and leagues; each competitor controls a complete team | Substitute for competitive turn-based positioning. It avoids Megdan's need to coordinate three independently controlled heroes, which is both the proposed value and an adoption risk |
+
+Platform context is not the same as product demand. Valve's [Steam Year in Review 2025](https://steamcommunity.com/groups/steamworks/announcements/detail/528746884222682053) reports 42 million peak concurrent platform users in 2025. This supports global PC distribution as technically plausible, but it is not Megdan's TAM, reachable audience or sales forecast. Steam's [official Direct Fee documentation](https://partner.steamgames.com/doc/gettingstarted/appfee) records a USD 100 per-product fee, recoupable only after USD 1,000 adjusted gross revenue; actual platform deductions, taxes, refunds, regional pricing and operating costs still require a project-specific financial model.
+
+Initial applicant pricing hypothesis: USD 19.99 for one license and USD 44.99 total for three players. The latter is USD 15.00 per player and approximately 25% below three individual copies (USD 59.97). It is a value/coordination test, not an approved SKU or demand result. Steam's [official package documentation](https://partner.steamgames.com/doc/store/application/packages) says new packages cannot grant multiple copies of one application; legacy four-packs are not a current option. Steam [bundles](https://partner.steamgames.com/doc/store/application/bundles) combine different products/packages and do not solve three copies of the same game. Therefore the team must confirm a compliant external-key/direct-sales route or replace the three-player offer with a platform-supported promotion before promising it. Valve's [pricing guidance](https://partner.steamgames.com/doc/store/pricing) also recommends considering replayability, multiplayer and comparable products and testing market value rather than merely undercutting alternatives.
+
+Do not claim “no game like this has ever existed,” an empty market or proven commercial demand. Broader real-time MOBA, tactical and tabletop substitutes remain to be compared with dated primary sources.
+
+## Rights and delivery obligations
+
+S5 requires truthful declarations about rights in the technology and final product, third-party claims, criminal/conflict conditions and other Fund engagements. A future intention to replace borrowed content does not justify signing a false present-tense rights statement. Prepare a provenance register covering code, dependencies, card text, maps, artwork, audio, fonts, branding and contributor assignments. AI tool permission is not by itself an assurance of exclusive copyright or non-infringement; record terms, references and human work and obtain appropriate review.
+
+S3 requires newly created IP/know-how to belong to the beneficiary, secured in third-party contracts. Reports require mentor approval and Fund approval for payments. Keep digital and physical project records for at least five years; allow audit/monitoring, acknowledge Fund support, report changes, avoid double funding and comply with approved costs. Breach can require repayment. S10 says routine ESQ is not required for Smart Start but the Fund may request assessment when concerns arise.
+
+
+===== SMART_START.md =====
+# Smart Start preparation
+
+Canonical preparation owner. Return to [project context](../PROJECT_CONTEXT.md). This dossier is a working draft, not a submitted application, eligibility opinion or funding promise.
+
+## Scope and status
+
+The user approved preparation on the separate local branch `codex/smart-start-preparation`. The existing private game remains unchanged. Stefan reports that he developed the functional prototype on his own initiative, with his own work and funds; it is already played and tested. Credit this achievement rather than portraying the project as an undeveloped idea.
+
+Requested future support is now scoped as a 3v3 grant MVP built on six selected, mechanically proven hero kits. Their gameplay stays unchanged while names, visual identities, illustrations and card/UI design are replaced. The production scope adds a coherent 3D world for every board-bound element: map geometry, spaces/zones, six heroes, minions, tokens/markers, props, and selection, target, movement and attack feedback. A freely movable camera, animation/VFX and the game's currently absent audio layer complete the production scope. The visual identity is inspired by Slavic mythology.
+
+The approved working project title is **Megdan**, pending ordinary name/trademark clearance before submission or publication. The six presentation identities and their internal mechanically unchanged source kits are: Svarog (Brogan), Stribog (Swift), Morana (Misa), Mokoš (Tali), Veles (Tigerclaw) and Perun (Wasp). Source-kit names are internal development references only. This mapping does not authorize visual design, card rewriting or implementation; those remain later, separately scoped work.
+
+The applicant-confirmed team name is **Braća**; the future DOO/company name remains a separate undecided matter. The proposed team is Stefan Petrovic and Veljko Petrovic, both Serbian residents. Applicant-reported eligibility facts: neither holds an ownership share or representative role in another Serbian company, neither participates in another current Fund project/application, and neither has previously submitted the same or a substantially similar project to the Fund. Proposed ownership of the new company is Stefan 70% and Veljko 30%, with Stefan as planned representative, rights/provenance coordinator and Fund-administration owner. Stefan now describes his work as freelance and confirms Megdan as his primary full-time commitment for nine months, with other work fitted around it. This supersedes the earlier 30-hour and 20-hour proposals and the assumed continuing full-time employment elsewhere. The RSD 240,000 monthly / RSD 2,160,000 total remains an unrecalculated planning envelope; no engagement contract or tax treatment is selected. His RSD 600,000 contribution is confirmed as available personal savings. See the [current unsent inquiry](SMART_START_FUND_QUESTION.md) for the bounded program questions. Veljko currently freelances and has confirmed planned full-time commitment across all nine months: 1.0 FTE, approximately 173.33 hours per average month and 1,560 project hours, with planned fixed-term full-time employment provisionally costed at RSD 270,000 monthly employer total (`bruto 2`) and RSD 2,430,000 across nine months. These are planning ceilings, not net-pay promises. Veljko has confirmed ownership of the complete visual-production scope. His reviewed portfolio and follow-up support 2D illustration, graphic/UI/UX design, art direction and completed stylized-character modelling/texturing from all presentation angles; the application must still substantiate the production method, schedule and supporting evidence for rigging, animation, VFX and full game-ready throughput.
+
+The broader post-grant ambition remains approximately twenty additional heroes, but that is not the grant promise. The grant scope is six. Existing work is the self-funded baseline, not a request for retrospective reimbursement. See the [agreed short inquiry](SMART_START_FUND_QUESTION.md). No implementation, publication or sending is authorized.
+
+The approved commercialization route is publisher-led after the grant: use Fund support to create and validate a rights-cleared six-hero MVP suitable for publisher due diligence, then seek a partner for commercial-production financing, further validation, market strategy, user acquisition, marketing, distribution and launch scaling. Stefan owns the validation and business-model evidence during the grant; a later contracted publisher is expected to lead or co-lead the next commercial stage under negotiated responsibilities. The two-person team does not claim it can independently acquire and serve a global audience. Publisher interest or transfer of responsibility is not assumed or a grant deliverable; the funded project must produce the evidence, coherent build, remaining-scope/cost model and rights package needed for credible post-project conversations. Consumer pricing and sales cases remain hypotheses, not a self-publishing commitment.
+
+The application presentation uses the existing playable prototype plus original visual concepts. A 3D slice is not an application prerequisite; 3D production belongs to later funded work. Disclose AI use and label temporary assets. This supersedes the earlier pre-application 3D proof-of-direction target.
+
+The [production inventory and ownership matrix](SMART_START_PRODUCTION_INVENTORY.md) fix the source-backed quotation baseline: 108 required playable card-face layouts and 108 distinct original MVP-quality compositions; six deck identities, dashboards, profiles and hero concepts; six hero and three minion model/rig families; Mokoš's shared three-piece token supply; Veles's six-instance/two-strength Poison UI state; one original map; and the hybrid overlay, camera, animation/VFX, audio, integration and evidence packages. This does not require 108 premium standalone paintings: a rights-cleared, human-directed system may reuse the project's original models, renders, environments and effects while giving every card its own readable composition. Stefan owns technical work, original game/rules and map-topology design, validation/business-model work, rights coordination and Fund administration; Veljko owns the complete visual-production package. Provisional excluding-VAT ceilings are RSD 85,000 for a display tablet, RSD 60,000 for gated test hosting, RSD 225,000 for accounting/project administration, RSD 175,000 for legal/IP support and RSD 30,000 for a beneficiary-licensed stock-audio set. The remaining RSD 835,000 is the internal contingency reserve for unforeseen necessary project costs. It is not an automatically eligible generic application line: before submission, any use must be assigned to a concrete eligible category with evidence and no duplicated scope. Audio is limited to music/ambience, UI and core gameplay SFX selected and integrated by Stefan; voice/barks and custom audio production are excluded. Replace ceilings with compliant evidence and confirm hosting/digital-license categories. A computer is optional only after core needs. External visual support is a bounded non-duplicative contingency. The production method, six optional Handicap artworks and exact audio clip counts remain pre-budget choices. No audio acquisition is expected now.
+
+The funded outcome is an **original, rights-cleared and validated six-hero 3v3 MVP**, not a finished commercial product. It must install, host/join and complete a stable end-to-end match on one coherent original 3D map; provide six original heroes with complete playable card sets and distinct readable card compositions; include game-ready board elements, a free camera, the shared and signature animation/VFX needed to understand play, functional selection/target/movement/attack/state feedback and a bounded music/ambience/UI/gameplay-audio layer; and close with performance/usability evidence, player-validation results and a rights manifest. Reuse of rigs, motions, modular environment pieces and visual/audio families is expected where it preserves clarity and identity. Premium asset polish, a large signature-animation library, voice/barks, approximately twenty later heroes, additional maps/modes, public matchmaking/service infrastructure, full localization and launch marketing belong to the later publisher-financed commercial phase.
+
+Generic engine, networking, Undo and replay are candidates for reuse, subject to provenance and license review. Existing tabletop-derived content, branding and assets must not silently become commercial content. A branch preserves history; it does not itself establish IP separation or rights clearance. The private 32-hero game and its evidence remain preserved.
+
+## Dossier
+
+- [Sources, requirements and strategy fit](SMART_START_REQUIREMENTS.md)
+- [English application working draft](SMART_START_APPLICATION.md)
+- [Application readiness audit and closing matrix](SMART_START_APPLICATION_READINESS.md)
+- [Proposed delivery, budget and validation plan](SMART_START_PLAN.md)
+- [Funded-MVP production inventory](SMART_START_PRODUCTION_INVENTORY.md)
+- [Agreed short inquiry to the Fund — saved, not sent](SMART_START_FUND_QUESTION.md)
+- [Implemented prototype and audited match evidence](SMART_START_PROTOTYPE_EVIDENCE.md)
+
+## Positioning decision
+
+Primary fit: creative industries, specifically video games and interactive media. Proposed customer value: MOBA-style team coordination and individual hero responsibility through deliberate tactical decisions rather than continuous reflex execution. Target hypothesis: adult current/former MOBA players seeking this experience with friends. Age alone does not establish a need or willingness to pay.
+
+The user confirms AI-assisted development. Describe AI as a production tool, including code assistance and intended synthetic artwork, not as a novel AI technology inside the product. Any claim of faster or cheaper production needs measured task-level comparisons. Do not invent AI features to qualify for another priority domain.
+
+Original mythology-inspired expression supports product identity; changing names/art alone does not establish competitive innovation. The application must explain the distinct player experience and why a reachable audience values it.
+
+## Evidence boundaries
+
+Existing playable builds and match histories are valuable evidence of technical execution and sustained use of the private prototype. They are not evidence that the new original content has already been tested.
+
+The [reproducible local audit](SMART_START_PROTOTYPE_EVIDENCE.md) now owns the capability summary, timed session table, inventory of both gameplay and online metadata formats, duplicate/test boundaries and coverage limitations. The application draft uses its conservative timed cohort; newer completion metadata is reported separately rather than added to the same matches twice.
+
+Six claimed seats do not prove six distinct humans. Logs alone do not identify age, MOBA background, voluntary return, friend referrals, purchase intention or population retention. Elapsed match time may include pauses. Do not multiply match-hours by six and report verified human player-hours. `SessionComplete` is not a match-end event. Seven wins per side in a small selected subset would not prove balance.
+
+Do not discard existing evidence or restart validation from zero. Applicant-reported context estimates approximately 20 unique prototype players, practically all with some current or past MOBA experience to varying degrees; Stefan reports that repeated requests to play again and for additional places triggered the game-development effort. Logs do not independently verify those identities, backgrounds or a quantified return/referral rate. Obtain participant context with consent, then add the target-group survey required by the program and tests of the original MVP. Existing long sessions also mean that “short matches for busy adults” is not currently a supported promise.
+
+## Decisions required before a submission-ready version
+
+| Decision/evidence | Owner | Closing condition |
+| --- | --- | --- |
+| Team eligibility and founder structure | Applicant | Stefan and Veljko confirm the recorded residency/company/Fund facts in the official form; 70/30 ownership retained or revised; Stefan's representative role matches company/portal records |
+| Project title, team title and portal ID | Applicant | **Megdan** cleared or replaced before submission; team title approved; actual portal ID assigned |
+| Applicant experience, achievements and availability | Each member | Stefan biography reviewed; Veljko's supplied education/history, full-concept 2D contributions and reviewed full-angle character modelling/texturing example recorded; confirm exact named references/permission, then document rigging/animation/VFX method and full-pipeline evidence; workloads remain reconciled with budget |
+| IP provenance and rights in reusable technology/content | Applicant with qualified adviser | Declaration can truthfully be signed; evidence and third-party contracts retained |
+| Existing prototype versus proposed first original MVP | Applicant; Fund clarification if needed | Transparent current-stage description; any unresolved program-stage question answered |
+| Commercial route, price tests and scope | Applicant | Publisher due-diligence package defined; target-partner criteria, unit economics, remaining commercial-production cost model and validation thresholds approved; no publisher interest assumed |
+| Compensation route | Stefan/Fund/accountant | Full-time Megdan commitment with freelance work fitted around it; choose the actual contract and obtain a cost calculation. Earlier 30-hour/non-employed-director assumptions are superseded; see the current inquiry. |
+| Financing and cash flow | Stefan/accountant | Stefan is the sole planned source of the provisional RSD 600,000 applicant contribution; Veljko is not a cash source. Use a Stefan-only member additional cash payment as the provisional preferred instrument, confirm its Smart Start evidence treatment, quantify the tranche-delay buffer, schedule deposits and retain the decision/bank proof |
+| Project equipment and test infrastructure | Stefan with Veljko input | Obtain a compliant quotation within the provisional RSD 85,000 excluding-VAT ceiling for the defined 15.6–16-inch QHD display-tablet class; quote a new computer only as an optional residual-budget item; define test-server purpose, resources, provider and project-bounded term; confirm hosting's eligible category with the Fund/accountant before submission |
+| Market evidence and log audit | Applicant/research lead | Reproducible counts, competitor comparison and target-group data |
+| Video, signatures and submission | All members | Final approved forms, visible English video, all signatures and explicit submission authorization |
+
+## Prepared questions for the Fund — not sent
+
+The [revised Serbian inquiry](SMART_START_FUND_QUESTION.md) owns the 30 October official-source review, four remaining questions, dispositions and preserved prior drafts. No sending is authorized. Existing application/budget drafts still require the bounded reconciliation recorded in the [shared backlog](../Roadmap/BACKLOG.md); this inquiry refresh does not approve revised costs or implement the broader interview decisions.
+
+
+===== SMART_START_PROTOTYPE_EVIDENCE.md =====
+# Smart Start — prototype evidence
+
+Return to [preparation owner](SMART_START.md). Audit date: 2026-10-21. This is the application-facing evidence snapshot, not a new implementation authority. Source baseline: `1966d1b38bee65b49f7213475c20de64a7848c9c`; preparation baseline: `691a8d2c`. No game changes, external contact or publication.
+
+## What already works
+
+The self-funded prototype is a playable game, not just a concept or visual mock-up. The following summarizes the implementation owners rather than promising new grant deliverables.
+
+| Capability | Existing behavior and evidence boundary |
+| --- | --- |
+| Team play and setup | Private Host/Join, individual hero seats, 2v2 through 5v5, 32 configured heroes, four maps, host-selected Waves/Lives. The proposed commercial focus remains 3v3. See [current implementation](CURRENT_IMPLEMENTATION.md). |
+| Complete tactical match | Card commitments/reveal, initiative and turns, movement and positional choices, attack/defense and abilities, minions and lane push, defeat/respawn, coins and level-up, victory and per-hero scoreboard. See [implementation](CURRENT_IMPLEMENTATION.md), [progression](HERO_PROGRESSION.md), [combat](COMBAT_AND_CONSEQUENCES.md). |
+| Large-map play | Two 4v4/5v5 boards, two independent lane battles/pushes with a shared turn order; either Throne capture ends the match. See [maps](../Maps/README.md). |
+| Player interface | Board interaction, hero/card trays, card inspection, legal action/choice presentation, runtime tooltips, turn/phase feedback and optional experimental timers/overlays. See [HUD](MATCH_HUD.md) and [presentation](CONFIGURED_PRESENTATION.md). |
+| Multiplayer continuity | Direct keyed TCP sessions, seat ownership and reconnect/resynchronization; compatible build/data required. Not public matchmaking, a hosted scalable service or blanket proof of internet reachability. See [implementation](CURRENT_IMPLEMENTATION.md). |
+| Technical foundation | Rules independent of Unity presentation; typed commands/events, deterministic replay, versioned snapshots and bounded player Undo, plus Director diagnostics. These are implemented technical capabilities, not all end-user product features. See [architecture](ARCHITECTURE.md). |
+| Experimental cooperative mode | One to three players share three Blue hero seats against Melee/Ranged/Heavy enemy behavior, with shared lobby and host authority. Separate from the grant's core competitive proposition; see [PvE implementation](PVE_IMPLEMENTATION.md). |
+
+The latest Windows W079 package includes the large-map fixes; later W080–W082 changes are source-only. Mac W075 is older and native launch/cross-platform networking are not verified. Exact artifact identities and coverage belong to [build records](BUILDS.md). The current prototype has no audio. New identities/card presentation for six selected kits, a complete 3D world for every board-bound piece and interaction cue, one production-ready map/free camera, animation/VFX and audio remain next-phase scope. Screen-space cards/HUD remain 2D. A later AI-assisted slice would be additional self-funded baseline evidence, not retroactively funded work.
+
+## Reproducible local match audit
+
+Run `./Tools/Get-SmartStartMatchEvidence.ps1` from the repository root. The read-only [audit script](../../../Tools/Get-SmartStartMatchEvidence.ps1) emits JSON with relative source paths, file hashes, event timestamps, claimed-seat counts and online run identities. Raw build logs remain private and unmodified.
+
+Scope: all 404 loose `*.log` files under `Builds`, not only filenames beginning with `match-`. Text/JSON searches found no further gameplay event records. ZIP interiors, external player machines, AppData/persistent-data fallback and absent/deleted logs are outside this inventory; it is not a lifetime total of play. Online metadata is explicitly included, including the newer W050/W059/W079 builds.
+
+| Observed inventory | Count / interpretation |
+| --- | --- |
+| Timestamped gameplay logs | 67; 67 distinct SHA-256 values, no exact file duplicates |
+| Logs with explicit MatchStarted | 42; all distinct start timestamps |
+| Started logs with GameEnded | 16; 14 long six-seat sessions and two short four-seat sessions with local seat claims |
+| Started logs without recorded GameEnded | 26; not automatically abandoned games |
+| Terminal log without MatchStarted | 1; same launch and final `v520 r4 t4 #1877` outcome as the September 26 match, excluded as repeat observation |
+| Long six-seat logs without recorded end | 4; three have no negative/local claims, one has five local claims; not counted as completed |
+| Online metadata files / distinct run IDs | 257 / 125; BEGIN means capture creation, not proof a match started |
+| Online completed run IDs | 21 after grouping host/client records by run ID; two are in Win64Smoke, leaving 19 outside that explicitly named smoke directory |
+
+The 19 non-smoke completion IDs are **not 19 additional matches**. They overlap the timestamped records and include resumed/repeated final-state evidence: two separate September 26 run IDs end at version 520 with the same winner/cause. Excluding a smoke directory does not prove all remaining runs are human playtests. Newer host completion records include W050 (`custom-6p-w3-l3`, final version 657) and W079 (`custom-10p-w5-l5`, version 1291, ThroneCaptured). Their metadata has no start/end timestamps, so no duration or exact play date is inferred from filesystem modification time. Source semantics: [PrivateOnlineEvidenceFile](../../../Assets/GuardsDigital/Network/PrivateOnlineEvidenceFile.cs).
+
+### Timed completed 3v3 cohort
+
+Explicit descriptive filter: MatchStarted plus GameEnded, six distinct SeatClaimed IDs, at least 30 elapsed minutes. All 14 selected logs also have zero negative/local seat claims. The duration threshold separates this descriptive cohort from short technical runs; it does not prove independent human participation. Duration is first GameEnded minus MatchStarted, including any pauses. Distinct starts, chronology and separate terminal records support counting these as distinct sessions, not host/client copies.
+
+| Start date/time (UTC) | Elapsed minutes |
+| --- | ---: |
+| 2026-09-17 19:37:37 | 104.12 |
+| 2026-09-18 19:07:55 | 90.86 |
+| 2026-09-22 19:12:46 | 95.80 |
+| 2026-09-26 19:38:31 | 72.02 |
+| 2026-09-26 20:58:59 | 75.88 |
+| 2026-09-29 19:28:35 | 98.51 |
+| 2026-09-30 21:30:57 | 90.26 |
+| 2026-10-01 19:12:59 | 77.10 |
+| 2026-10-01 20:44:31 | 108.74 |
+| 2026-10-02 19:35:03 | 128.72 |
+| 2026-10-06 19:13:00 | 71.24 |
+| 2026-10-06 20:34:15 | 83.14 |
+| 2026-10-08 19:10:24 | 94.58 |
+| 2026-10-08 21:07:06 | 77.61 |
+
+Totals calculated before rounding: **14 completed sessions, 21.1432 elapsed match-hours**, mean **90.61 minutes**, median **90.56**, range **71.24–128.72**. Starts cover 10 distinct UTC dates across a 22-calendar-day inclusive window (September 17–October 8). The last completion is October 9 in Serbia local time. This establishes repeated, sustained use of the working prototype over several weeks, not merely one demo run.
+
+Applicant-reported participant context, recorded 28 October 2026: Stefan estimates that approximately 20 unique people have played the private prototype and that practically all have some current or past MOBA experience, to varying degrees. He reports that the game-development effort itself began because participants repeatedly asked to play again and requested additional places. This is founder recollection, not an identity-level result independently recoverable from the logs. No participant quotation, demographic breakdown, consent record, quantified return/referral rate or purchase-intent result is inferred from it.
+
+These logs do not establish unique people, age/MOBA background, voluntary retention, referrals or willingness to pay. Seat labels and online `human=` fields are software classifications, not verified identities. Do not multiply by six to claim verified person-hours. `SessionComplete` means filled seats, not victory. These are existing-prototype results, not testing of the future new content. The earlier provisional claim of 17 started-and-completed logs is corrected to 16; 17 terminal-bearing files include the repeated no-start observation.
+
+
+===== BACKLOG interview intake before W-137 =====
+## Proposed Smart Start interview reconciliation — not authorized for implementation
+
+Status: [ ] Proposed; owner Stefan with drafting support. Outcome: reconcile the application, readiness matrix, plan and production inventory with the 29–30 October interview, without losing prior evidence. Dependencies: user selects the next bounded documentation outcome; Fund/accountant answers before contractual or cost claims. W-136 updates only the inquiry and essential supersession notices.
+
+Confirmed direction to carry forward: existing prototype plus original concepts suffice for application; no pre-application 3D gate; reuse rigs/motions and prioritize readability over polish. Stefan commits full-time with freelance work around Megdan and funds the RSD 600,000 from savings. Obtain existing-player structured feedback before submission; Veljko's exact formal education remains missing. Plan 12–18 new external testers as a conservative target, gradual quick-start onboarding, group-selected timers, and distinguish voluntary return from prompted attendance; local engagement is not international price validation. Rights review may require inherited-content redesign. Commercial-validation mentorship remains desired. Specialist rigging/animation is a candidate for a scoped quotation/pilot during funding, jointly briefed by both members; no spending or reserve allocation approved. Publisher outreach begins when pitchable, with bounded post-MVP reassessment; it is not an application gate.
+
+Closing checks: consistent facts and scoped deliverables across all affected drafts; recomputed staffing/budget only after actual arrangement is selected; education/feedback tasks visibly open until evidence arrives; official word limits, source links, T0 documentation validation and diff hygiene. Recording this item does not authorize implementation, spending, messaging or submission.

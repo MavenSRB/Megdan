@@ -53,3 +53,13 @@ Active definitions remain indexed from [ROADMAP.md](../ROADMAP.md).
 - [Resolved technical risks](RESOLVED_TECHNICAL_RISKS.md)
 - [Pre-cleanup README status narrative](README_STATUS_BEFORE_CLEANUP.md).
 - [Pre-cleanup offline harness contract](DOTNET_HARNESS_BEFORE_CLEANUP.md).
+
+## Smart Start branch preservation
+
+- [SMART_START_BEFORE_W137](SMART_START_BEFORE_W137.txt)
+- [SMART_START_BEFORE_W144](SMART_START_BEFORE_W144.txt)
+- [SMART_START_BEFORE_W146](SMART_START_BEFORE_W146.txt)
+- [SMART_START_BEFORE_W150](SMART_START_BEFORE_W150.txt)
+- [SMART_START_FUND_QUESTION_BEFORE_W136](SMART_START_FUND_QUESTION_BEFORE_W136.txt)
+
+Branch work log/index are preserved under Archives/SmartStartBranchHistory; inherited README under Archives/Guards_README.md.

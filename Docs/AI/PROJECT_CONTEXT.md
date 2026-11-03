@@ -4,6 +4,27 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 
 ## Canonical active shards
 
+- [SMART_START_VIDEO_SHOT_PLAN](Project/SMART_START_VIDEO_SHOT_PLAN.md)
+
+- [SMART_START_REQUIREMENTS](Project/SMART_START_REQUIREMENTS.md)
+
+- [SMART_START_PROTOTYPE_EVIDENCE](Project/SMART_START_PROTOTYPE_EVIDENCE.md)
+
+- [SMART_START_PRODUCTION_INVENTORY](Project/SMART_START_PRODUCTION_INVENTORY.md)
+
+- [SMART_START_PLAN](Project/SMART_START_PLAN.md)
+
+- [SMART_START_IP_CLEARANCE](Project/SMART_START_IP_CLEARANCE.md)
+
+- [SMART_START_FUND_QUESTION](Project/SMART_START_FUND_QUESTION.md)
+
+- [SMART_START_APPLICATION_READINESS](Project/SMART_START_APPLICATION_READINESS.md)
+
+- [SMART_START_APPLICATION](Project/SMART_START_APPLICATION.md)
+
+- [Megdan Smart Start preparation](Project/SMART_START.md)
+- [Megdan creative presentation](Project/MEGDAN_CREATIVE.md)
+
 - [PvE design and rule decisions](Project/PVE_DESIGN.md)
 - [PvE implementation and isolation](Project/PVE_IMPLEMENTATION.md)
 - [Private build records](Project/BUILDS.md)

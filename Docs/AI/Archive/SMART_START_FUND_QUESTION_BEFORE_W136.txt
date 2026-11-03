@@ -1,0 +1,37 @@
+# Pitanje Fondu — sačuvano, nije poslato
+
+Return to [preparation owner](SMART_START.md). Korisnik je odobrio sledeći tekst za čuvanje. Nije poslato niti je kreiran nacrt u email servisu. Slanje zahteva posebno odobrenje.
+
+## Dogovoreni tekst
+
+Poštovani, sopstvenim radom i sredstvima razvili smo funkcionalni prototip timske taktičke video-igre, koji već igramo i testiramo. Za narednu fazu potrebna nam je podrška za razvoj novih heroja i njihovih mehanika, izradu 2D/3D arta i animacija. Prototip trenutno koristi privremeni/sintetički art. Da li ovakva početna faza i planirani razvoj odgovaraju programu Pametni početak?
+
+## Interna napomena — nije deo poruke
+
+Ovo je pitanje prihvatljivosti naredne razvojne faze, ne zahtev za obećanje finansiranja. Nema dve varijante niti obaveze da se pre prijave završi šest heroja. Korisnik je izabrao kratak upit bez posebne IP diskusije i bez fraze o tržišnoj validaciji. Time se ne menjaju obavezni delovi eventualne prijave, izjava ili izveštavanja iz [registra zahteva](SMART_START_REQUIREMENTS.md).
+
+Pre eventualnog slanja potvrditi da opis prezentacionog builda odgovara stvarnom stanju njegovog arta; sačuvani tekst nije nezavisna revizija svih postojećih asseta. Ne prilagati buildove, CV, portfolio ili privatne logove bez posebnog odobrenja. Odgovor Fonda sačuvati kao izvor smernica, ne kao odluku o finansiranju.
+
+## Odvojeno pitanje o angažovanju Stefana — sačuvano, nije poslato
+
+Stefan bi ostao zaposlen sa punim radnim vremenom kod postojećeg poslodavca, a u novoosnovanom društvu bio bi osnivač, zakonski zastupnik i direktor bez zasnivanja radnog odnosa, angažovan ugovorom iz člana 48 Zakona o radu. Da li se njegova ugovorena naknada i pripadajući porezi/doprinosi mogu priznati u kategoriji ljudskih resursa za njegovu tehničku, projekt-menadžersku i direktorsku ulogu na projektu? Koji ugovor, obračun i evidenciju rada/deliverables Fond očekuje, naročito za planiranih 30 sati nedeljno?
+
+Ovo pitanje nije dodatak dogovorenom kratkom upitu bez nove odluke korisnika. Ne slati automatski niti spajati sa drugim sačuvanim pitanjima.
+
+## Odvojeno finansijsko pitanje — sačuvano, nije poslato
+
+Ako svih RSD 600.000 obezbeđuje Stefan, da li Fond prihvata dodatnu novčanu uplatu člana društva, određenu osnivačkim aktom ili odlukom skupštine u tačnom iznosu, kao izvor novčanog sufinansiranja? Koja odluka, bankarski dokaz i druga dokumentacija su potrebni po fazama? Da li ugovor o finansiranju nameće dodatna ograničenja povraćaja osim pravila zaštite gubitaka i poverilaca iz Zakona o privrednim društvima?
+
+Ovo pitanje nije dodatak dogovorenom kratkom upitu bez nove odluke korisnika. Ne slati automatski niti spajati sa drugim sačuvanim pitanjima.
+
+## Odvojeno pitanje o test-hostingu — sačuvano, nije poslato
+
+FAQ izričito navodi projektno vezane troškove interneta i poslovne podrške, ali ne pominje VPS/test-server hosting. Da li se vremenski ograničen VPS koji se koristi isključivo tokom projekta za hostovanje razvojnog 3v3 test-servera, strukturisane multiplayer provere, dijagnostiku i reconnect/resynchronization testove može priznati kao dozvoljen projektni trošak? Ako može, pod kojom budžetskom kategorijom i kakva specifikacija ili dokaz opravdanosti se očekuje?
+
+Ovo pitanje nije dodatak dogovorenom kratkom upitu bez nove odluke korisnika. Ne slati automatski niti spajati sa pitanjem o sufinansiranju.
+
+## Odvojeno pitanje o digitalnim audio licencama — sačuvano, nije poslato
+
+Da li se komercijalna licenca za gotov music/ambience i UI/gameplay-SFX paket, kupljena na ime korisnika i korišćena isključivo kao ugrađeni deo projektnog MVP-a, može priznati kao dozvoljen trošak? Ako može, pod kojom budžetskom kategorijom i koja dokumentacija je potrebna pored računa, licence/EULA i evidencije ugrađenih fajlova?
+
+Ovo pitanje nije dodatak dogovorenom kratkom upitu bez nove odluke korisnika. Ne slati automatski niti spajati sa drugim sačuvanim pitanjima.

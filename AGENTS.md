@@ -1,3 +1,7 @@
+# Megdan independent workspace
+
+Root: C:/Projects/Megdan. Grant owner: Docs/AI/Project/SMART_START.md. Creative owner: Docs/AI/Project/MEGDAN_CREATIVE.md. Do not route work back into Guards. Preserve runtime identifiers until an explicit rename is authorized. Mockups do not authorize game-rule changes. No remote publication authorized.
+
 # Guards Digital - Agent Entry Point
 
 ## Startup and targeted context loading

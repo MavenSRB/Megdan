@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-153 | Separated complete Megdan source, grant materials, creative assets and latest packages. | `work/W-153` |
 | W-152 | Produced the current private Windows package from exact W151 source with the corrected always-visible six-arrow direction overlay. Fresh player, built-board, PvP host/two-joiner, PvE one/two/three-player, shader-inclusion, manifest/archive and extracted launch checks pass. [Scope and acceptance](#x-w-152-package-the-direction-arrow-repair-for-windows). | `work/W-152` |
 | W-151 | Closed W148's depth gap: every shared direction arrow now uses a Resources-backed always-visible overlay below card pips and sits above ordinary piece planes, so Tali's southwest/8-o'clock answer remains visible over the rabbit token. [Scope and acceptance](#x-w-151-keep-every-direction-arrow-visible-over-occupied-spaces). | `work/W-151` |
 | W-148 | Kept every shared direction-choice arrow above heroes, minions, tokens and their ordinary board cues, so Tali's Blue-card arrows cannot disappear beneath an occupied neighbouring space. The shared affordance regression, exact Cold Snap journey and rendered inspection pass. [Scope and acceptance](#x-w-148-keep-direction-arrows-visible-above-board-pieces). | `work/W-148` |
@@ -740,3 +741,13 @@ The new private W152 Windows archive supersedes W133 for current playtesting and
 One fresh candidate passed scripted player interaction, the 1920x1080 built-board render gate, a playing PvP host with two real joiners, and PvE with one, two and three real player processes. Both the loose and extracted player data contain the Resources-backed always-visible arrow shader. The archive reproduces all 184 payload file sizes and hashes after extraction, and the extracted executable passed a fresh one-player PvE/render launch. Windows/private only; W075 Mac is admission-incompatible. No new internet/NAT, packaged reconnect, native Mac or full-suite claim.
 
 Historical evidence: completion commit addressed by immutable `work/W-152`; exact checks/results, package identity, review and limitations live in its body.
+
+### [x] W-153 Separate Megdan into an independent project
+
+Request: copy the complete project into C:/Projects/Megdan. User selected latest builds only; older binary archives remain at source due to disk capacity.
+
+Outcome: current main Unity source/assets, newer Smart Start draft/history, official references, all supplied artwork, creative scripts/previews, Windows W152/Mac W075 and small playtest evidence consolidated. Active scripts resolve within the new root. Original locations preserved. Runtime identities unchanged; no claim of commercial redesign or rights clearance. Latest visual/grant decisions recorded.
+
+Acceptance: copied-file hashes, package identities, independent Git repository, local creative renderer, T0 documentation and diff checks. No Unity execution, gameplay change, rebuild, remote or submission. Copy verification is not new runtime validation.
+
+Historical evidence: completion commit addressed by immutable `work/W-153`; exact checks and limitations live in its body. Copy manifest and source snapshots are under Archives.

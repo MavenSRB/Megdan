@@ -96,3 +96,11 @@ Desktop.ini
 # The probe project file is a tracked deliverable too, for the same reason: it is
 # the ONE shared copy, so a worker never resurrects a stale one out of tmp/
 !/Tools/PresentationProbe/PresentationProbe.csproj
+
+# Megdan private creative and preparation artifacts
+/Art/
+/Creative/
+/Preparation/
+/References/
+/Archives/
+/output/

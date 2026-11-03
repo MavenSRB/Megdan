@@ -1,10 +1,12 @@
-# Guards Digital - Session Brief
+# Megdan - Session Brief
 
-Last updated: 2026-10-28
+Last updated: 2026-11-03
 
 ## Purpose and authority
 
 Read once at startup. This brief alone owns current authorization and next routing. [Workflow](ROADMAP.md) owns execution; [governance](DOCUMENTATION_GOVERNANCE.md) owns subject routing and preservation.
+
+Independent root: `C:/Projects/Megdan`. [Smart Start](Project/SMART_START.md) and [creative presentation](Project/MEGDAN_CREATIVE.md) own grant and visual continuity. Biome variations are still missing; show stills before videos. No implementation authorized.
 
 ## Current implementation
 
@@ -16,9 +18,9 @@ Current private Windows package: **W152 Direction Arrows**, `Builds/Playtest-W15
 
 Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-152**.
+- Last completed work: **W-153**.
 - Active authorized work: **none**.
-- Next proposed work: **none**.
+- Next proposed work: **None**.
 
 W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared initiative order, gives each lane its own active Battle Zone and push progression, and ends the whole match when either lane reaches the opposing Throne. Green's snow, water and forest centers and lava's bridge center are separate playable off-lane Zones, never terrain or lane-push spaces. Hosts choose official per-lane or shared-total Waves. Five-player teams retain one full rail and four thin token/card/current-card rails. Source-only; no package or publication.
 
