@@ -49,7 +49,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(capsule.Raycast(new Ray(host.transform.position + new Vector3(0, 1f, -5f), Vector3.forward), out _, 10f), Is.True);
                 hero.EnsureVisual();
                 Assert.That(hero.Standee.IsStanding, Is.True, "Projection redraw must retain the representation.");
-                camera.transform.rotation = Quaternion.Euler(80.1f, 0, 0);
+                camera.transform.rotation = Quaternion.Euler(70.1f, 0, 0);
                 hero.Standee.Refresh(camera);
                 Assert.That(hero.Standee.IsStanding, Is.False);
                 Assert.That(host.GetComponent<MeshRenderer>().sharedMaterials[1], Is.Not.SameAs(materials[0]));
@@ -69,7 +69,7 @@ namespace GuardsDigital.Tests.EditMode
                 var hero = host.AddComponent<PrimitiveHeroView>();
                 SetIdentity(hero, "brogan", TeamSide.Red);
                 var camera = cameraHost.GetComponent<Camera>();
-                foreach (var item in new[] { (90f, false), (78f, true), (79.5f, true), (80.1f, false), (79.5f, false), (78f, true) })
+                foreach (var item in new[] { (90f, false), (68f, true), (69.5f, true), (70.1f, false), (69.5f, false), (68f, true) })
                 {
                     camera.transform.rotation = Quaternion.Euler(item.Item1, 0, 0);
                     hero.Standee.Refresh(camera);

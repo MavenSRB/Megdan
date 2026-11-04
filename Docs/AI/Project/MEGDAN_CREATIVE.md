@@ -4,6 +4,8 @@ Return to [project context](../PROJECT_CONTEXT.md). Private presentation studies
 
 ## Current decisions
 
+W-176 moves the hero/vegetation flat-view threshold to 70 degrees, returning to upright standees below 69 degrees. The one-degree hysteresis prevents flickering. W-175's camera-relative shields, flat token alignment and zoom response remain.
+
 W-175 doubles mouse-wheel zoom response. Defense modifier shields track the camera at each token's screen-left edge, keeping their face and signed value readable as the view orbits. Flat 2D hero and minion artwork follows camera heading while remaining on the board plane; minion artwork stays above its extruded base. Projected values and resource ownership are unchanged. The private Windows preview retains W-174's six selectable heroes. Inspected captures: `tmp/w175-shield-camera-detail.png` and `tmp/w175-flat-tokens.png`.
 
 W-174 packages the current presentation as a private Windows preview. Only Brogan, Misa/Riki, Rowenna, Tigerclaw, Gydion and Tali are selectable in packaged players; authority and client display share the build-scoped catalog. Full content registration and editor fixtures remain intact. Use 2v2, 3v3 or PvE; the six unique heroes cannot fill 4v4/5v5. See [build record](BUILDS.md). Earlier source-only statements below describe their original deliveries.
@@ -42,7 +44,7 @@ W-154: Five supplied WhatsApp JPEGs are preserved in Art/Inputs/Grass (originals
 
 ## Latest artifacts
 
-W-165 grass decorations: the four original grass textures now supply temporary upright bush/mushroom cutouts in angled runtime views, with grass patches beneath the lifted drawings. At 80 degrees the layer switches off to restore the unchanged flat tile, returning below 79 degrees. Source images remain unchanged; colour-keyed sampling retains their existing edge crops. Inspected runtime stills: `tmp/grass-standees-restart-angled.png` and `tmp/grass-standees-restart-top-down.png`. Private source only; no package or publication.
+W-165 grass decorations: the four original grass textures supply temporary upright bush/mushroom cutouts in angled runtime views, with grass patches beneath the lifted drawings. W-176 changes the original 80/79-degree switch to 70/69 degrees. Source images remain unchanged; colour-keyed sampling retains their existing edge crops. Inspected runtime stills: `tmp/grass-standees-restart-angled.png` and `tmp/grass-standees-restart-top-down.png`. Included in the current private preview.
 
 - [Initiative clock-badge card still](../../../Creative/gameplay-mockup-cutout/three-heroes-cards-v10.png) — W-159; four native-aspect verified prototype faces with prominent initiative dials. Still only; not integrated into the existing video.
 - [Six minimally altered concept portraits](../../../Art/ConceptPortraits/README.txt) — W-158; transparent square PNGs preserving the six supplied characters' existing orientations. Private concept assets only; no runtime or publication.

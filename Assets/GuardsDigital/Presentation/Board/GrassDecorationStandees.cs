@@ -7,8 +7,8 @@ namespace GuardsDigital.Presentation.Board
     [DisallowMultipleComponent]
     public sealed class GrassDecorationStandees : MonoBehaviour
     {
-        public const float FlatAngle = 80f;
-        public const float StandingAngle = 79f;
+        public const float FlatAngle = 70f;
+        public const float StandingAngle = 69f;
         // Pixel rectangles in the existing 512px runtime tiles; y is measured from the top.
         private static readonly Rect[][] Crops =
         {

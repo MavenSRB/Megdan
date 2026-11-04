@@ -83,7 +83,7 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null; yield return null;
                 InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint });
                 yield return null;
-                Assert.That(navigation.Elevation, Is.LessThan(79f), "Middle drag orbits into the standee range.");
+                Assert.That(navigation.Elevation, Is.LessThan(69f), "Middle drag orbits into the standee range.");
                 Assert.That(heroes.All(h => h.Standee.IsStanding), Is.True);
                 foreach (var hero in heroes)
                 {

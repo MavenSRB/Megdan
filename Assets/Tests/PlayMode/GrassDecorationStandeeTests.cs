@@ -60,7 +60,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(root.GetComponentsInChildren<Collider>(true), Is.Empty);
                 yield return null;
                 Capture(camera,"tmp/grass-standees-restart-angled.png");
-                foreach (var point in new[] { (79.5f,true),(80.1f,false),(79.5f,false),(78f,true),(90f,false) })
+                foreach (var point in new[] { (69.5f,true),(70.1f,false),(69.5f,false),(68f,true),(90f,false) })
                 {
                     camera.transform.rotation = Quaternion.Euler(point.Item1,0,0);
                     decoration.Refresh(camera);

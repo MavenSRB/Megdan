@@ -10,8 +10,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
     [DisallowMultipleComponent]
     public sealed class IllustratedStandeeView : MonoBehaviour
     {
-        public const float TokenAngle = 80f;
-        public const float StandeeAngle = 79f;
+        public const float TokenAngle = 70f;
+        public const float StandeeAngle = 69f;
         public const float PanelHeight = 1.85f;
         public const float PanelThickness = 0.045f;
         [Serializable] public sealed class Outline

@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-176 Lower the flat-view switch to 70 degrees
+
+User requested the camera representation switch move from 80 to 70 degrees. Hero and grass standees now flatten at 70 and return below 69, retaining the one-degree hysteresis and prior camera controls. Acceptance: focused boundary/resource and live camera/vegetation regressions, inspected flat/angled views, fresh player/board/multiplayer/archive/extracted checks, documentation validation and local commit. Includes an updated private Windows preview; rules, identifiers and six-hero selection remain unchanged.
+
+Historical evidence: immutable `work/W-176`; exact checks/results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-176 | Flat/standing camera switch at 70/69 degrees; updated private preview | `work/W-176` |
+
 ### [x] W-175 Improve wheel zoom, shields and 2D token camera alignment
 
 User requested more sensitive mouse zoom, shields that follow the rotating camera, and camera-aligned 2D tokens. Doubled wheel response; Defense shields retain their screen-left anchor and readable face; flat hero/minion art follows camera heading with minion art above its thick base. Acceptance: live input/token/shield journey, camera bounds and shield geometry/resource regressions, inspected angled/flat captures, fresh player/board/multiplayer/archive/extracted checks, documentation validation and local commit. W174's six-hero selection remains. No rules or remote publication changes.
