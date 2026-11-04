@@ -20,6 +20,8 @@ Latest runtime card direction: native 372:520 aspect, dark rounded frame, cream 
 
 Use Veljko's supplied frog wizard, not an invented human wizard. Original: Art/Inputs/veljko-frog-wizard-original.jpg. Board/card derivative: veljko-frog-wizard-cutout-v1.png, an AI-assisted background extraction, not a pixel-exact cutout. Full prompt/provenance sits beside it. The rejected generated human wizard and v8 still remain superseded private history only. Do not generate substitute hero designs when supplied artwork exists.
 
+W-162 refines the runtime stat rail into continuous vector silhouettes with matching cream rims: a twelve-tick initiative dial, curved pointed shield and broad diagonal movement arrow. Larger outlined numbers form a separate foreground layer; the arrow's shape is independent of its overlaid number. Existing typed colours and printed values remain authoritative. Runtime captures: `tmp/w162-megdan-card-gallery.png` at game size and `tmp/w162-card-icons-detail.png` enlarged for inspection.
+
 Discussed 3D direction: thick hex tiles, angled camera, upright illustrated characters with shadows. Full 3D heroes need models and rigs; none have been created in this work.
 
 W-154: Five supplied WhatsApp JPEGs are preserved in Art/Inputs/Grass (originals also retained in Downloads); two are byte-identical, leaving four distinct grass variants. All four are composed into the existing board still using preview-grass.py, adapting flat-top source hexes to the existing point-top lattice while retaining upright decorations. W-160 later prepared the available grass and biome references for the private runtime. No game-rule change.

@@ -1,5 +1,11 @@
 # Work completion index
 
+### [x] W-162 Refine the Megdan card stat icons
+
+User rejected the assembled icon shapes and clarified that numbers may overlay icons. Replaced them with continuous vector clock, curved shield and diagonal arrow silhouettes, matching cream rims and larger outlined foreground values. Card colours, text, art, dimensions and rules remain unchanged. Acceptance: focused existing colour/content and all-108-face layout checks plus inspected runtime captures at game size and enlarged. Private source only; no package or publication.
+
+Historical evidence: immutable `work/W-162`; exact checks/results and limitations live in its commit body.
+
 ### [x] W-161 Integrate six temporary Megdan hero portraits and card faces
 
 Temporarily mapped Brogan to the ram warrior, Misa to the cat duelist displayed as Riki, Rowenna to the knight, Tigerclaw to the goblin, Gydion to the grandmother/cat and Tali to the frog wizard. Board tokens and selector/profile surfaces use the prepared portraits; all 108 mapped synthetic card faces use Veljko's original supplied JPG artwork in the approved dark-frame and cream-panel design. Initiative now uses a clock, Defense a shield and Movement a directional arrow; all inherit each card's existing typed Red/Blue/Green/Gold/Silver colour, with neutral preserved. Every title, value, action, effect, rule, runtime identifier and gameplay contract remains unchanged. Misa remains `misa`. Acceptance: the pre-badge W-161 candidate passed affected Edit Mode 66/66 and Play Mode 4/4; the final badge delta passed its exact Edit Mode fixture 4/4 and all-108-face live Play Mode fixture 2/2; the final six-colour runtime capture was inspected. Private source only; no package or publication.
@@ -52,6 +58,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-162 | Redrew clock/shield/arrow stat icons as consistent vectors with readable overlaid numbers. | `work/W-162` |
 | W-161 | Temporarily mapped six Megdan portraits into tokens/selectors and restyled their 108 unchanged synthetic card faces with original Veljko art, typed card-colour accents and clock/shield/arrow value badges. | `work/W-161` |
 | W-160 | Replaced the Guards board face with stable private Megdan grass/biome hexes and thin borders only on possible Battle Zones, without changing topology, interaction or rules. | `work/W-160` |
 | W-159 | Prominent clock-shaped initiative badges on the latest verified prototype card still. | `work/W-159` |

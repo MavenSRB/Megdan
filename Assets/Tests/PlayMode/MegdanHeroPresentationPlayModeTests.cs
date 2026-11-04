@@ -123,7 +123,16 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(gallery.Query<VisualElement>("gd-megdan-card-frame").ToList(), Has.Count.EqualTo(6));
             Assert.That(gallery.Query<Image>("gd-card-artwork").ToList(), Has.Count.EqualTo(6));
-            yield return UiPlayer.CaptureScreen("tmp/w161-megdan-card-gallery.png");
+            yield return UiPlayer.CaptureScreen("tmp/w162-megdan-card-gallery.png");
+            // The same live vector faces enlarged for visual inspection, including a two-digit
+            // initiative and a missing secondary Movement. The six-colour capture stays at game size.
+            while (gallery.childCount > 3)
+                gallery.RemoveAt(gallery.childCount - 1);
+            foreach (var column in gallery.Children())
+                column.style.scale = new Scale(new Vector3(1.65f, 1.65f, 1f));
+            yield return null;
+            yield return null;
+            yield return UiPlayer.CaptureScreen("tmp/w162-card-icons-detail.png");
             gallery.RemoveFromHierarchy();
             yield return null;
 
@@ -135,7 +144,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(hero.HasTokenVisual, Is.True, hero.HeroContentId.Value.Value);
             }
 
-            yield return UiPlayer.CaptureScreen("tmp/w161-megdan-board-tokens.png");
+            yield return UiPlayer.CaptureScreen("tmp/w162-megdan-board-tokens.png");
         }
     }
 }

@@ -2238,7 +2238,6 @@ namespace GuardsDigital.Presentation.Match
             // The card's typed colour owns the entire accent family. Red stays red, Blue stays blue,
             // and so on; neither the hero mapping nor the artwork filename participates.
             var accent = MatchHudTheme.Face(card.Color);
-            var accentInk = MatchHudTheme.FaceText(card.Color);
             var frame = new VisualElement { name = "gd-megdan-card-frame" };
             frame.style.flexDirection = FlexDirection.Column;
             frame.style.flexGrow = 1f;
@@ -2261,9 +2260,9 @@ namespace GuardsDigital.Presentation.Match
             rail.style.flexShrink = 0f;
             rail.style.marginRight = 6f;
             rail.style.flexDirection = FlexDirection.Column;
-            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Initiative, "INIT", accent, accentInk));
-            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Defense, "DEF", accent, accentInk));
-            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Movement, "MOVE", accent, accentInk));
+            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Initiative, "INIT", accent));
+            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Defense, "DEF", accent));
+            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Movement, "MOVE", accent));
             top.Add(rail);
 
             var main = new VisualElement { name = "gd-megdan-card-main" };
@@ -2319,8 +2318,7 @@ namespace GuardsDigital.Presentation.Match
             TrayCardViewModel card,
             PrintedValueChannel channel,
             string caption,
-            Color accent,
-            Color accentInk)
+            Color accent)
         {
             var value = channel == PrintedValueChannel.Initiative
                 ? card.Face.Initiative
@@ -2337,23 +2335,16 @@ namespace GuardsDigital.Presentation.Match
             cell.style.marginBottom = channel == PrintedValueChannel.Movement ? 0f : 6f;
             cell.style.alignItems = Align.Center;
             cell.style.justifyContent = Justify.Center;
-            var isInitiative = channel == PrintedValueChannel.Initiative;
             cell.style.backgroundColor = Color.clear;
 
-            var amount = HudElements.Text(value?.AmountLabel ?? "-", 18f, accentInk, FontStyle.Bold);
+            var amount = HudElements.Text(
+                value?.AmountLabel ?? "-", 24f, new Color(0.99f, 0.96f, 0.86f, 1f), FontStyle.Bold);
+            amount.name = "gd-card-stat-amount";
             amount.style.unityTextAlign = TextAnchor.MiddleCenter;
-            if (isInitiative)
-            {
-                cell.Add(BuildMegdanInitiativeClock(amount, accent));
-            }
-            else if (channel == PrintedValueChannel.Defense)
-            {
-                cell.Add(BuildMegdanDefenseShield(amount, accent));
-            }
-            else
-            {
-                cell.Add(BuildMegdanMovementArrow(amount, accent));
-            }
+            amount.style.whiteSpace = WhiteSpace.NoWrap;
+            amount.style.unityTextOutlineColor = new Color(0.055f, 0.085f, 0.10f, 1f);
+            amount.style.unityTextOutlineWidth = 0.7f;
+            cell.Add(new MegdanStatBadge(channel, amount, accent));
 
             var label = HudElements.Text(
                 caption, 8f, new Color(0.94f, 0.90f, 0.78f, 1f), FontStyle.Bold);
@@ -2372,173 +2363,109 @@ namespace GuardsDigital.Presentation.Match
             return cell;
         }
 
-        private static VisualElement BuildMegdanInitiativeClock(Label amount, Color accent)
+        /// <summary>Continuous vector silhouettes with a separate, readable value layer.</summary>
+        private sealed class MegdanStatBadge : VisualElement
         {
-            const float diameter = 42f;
-            var cream = new Color(0.94f, 0.90f, 0.78f, 1f);
-            var clock = new VisualElement { name = "gd-card-initiative-clock" };
-            clock.style.position = Position.Relative;
-            clock.style.width = diameter;
-            clock.style.height = diameter;
-            clock.style.flexShrink = 0f;
-            clock.style.alignItems = Align.Center;
-            clock.style.justifyContent = Justify.Center;
-            clock.style.backgroundColor = accent;
-            HudElements.Border(clock, cream, 2f, diameter * 0.5f);
+            private readonly PrintedValueChannel channel;
+            private static readonly Color Rim = new Color(0.94f, 0.90f, 0.78f, 1f);
+            private static readonly Color Ink = new Color(0.055f, 0.085f, 0.10f, 1f);
 
-            // Four compact hour marks keep the initiative badge legibly clock-shaped even on a
-            // hand-sized card. They are presentation only; the typed Initiative remains the number.
-            clock.Add(BuildMegdanClockMark(19f, 2f, 2f, 5f, cream));
-            clock.Add(BuildMegdanClockMark(19f, 33f, 2f, 5f, cream));
-            clock.Add(BuildMegdanClockMark(3f, 20f, 2f, 2f, cream));
-            clock.Add(BuildMegdanClockMark(37f, 20f, 2f, 2f, cream));
-            clock.Add(amount);
-            return clock;
-        }
-
-        private static VisualElement BuildMegdanDefenseShield(Label amount, Color accent)
-        {
-            var cream = new Color(0.94f, 0.90f, 0.78f, 1f);
-            var shield = BuildMegdanBadgeContainer("gd-card-defense-shield");
-            var body = new VisualElement { name = "gd-card-defense-shield-face" };
-            body.style.position = Position.Absolute;
-            body.style.left = 2f;
-            body.style.top = 1f;
-            body.style.width = 38f;
-            body.style.height = 35f;
-            body.style.backgroundColor = accent;
-            body.style.borderTopLeftRadius = 6f;
-            body.style.borderTopRightRadius = 6f;
-            body.style.borderBottomLeftRadius = 15f;
-            body.style.borderBottomRightRadius = 15f;
-            body.style.borderLeftWidth = 2f;
-            body.style.borderRightWidth = 2f;
-            body.style.borderTopWidth = 2f;
-            body.style.borderBottomWidth = 2f;
-            body.style.borderLeftColor = cream;
-            body.style.borderRightColor = cream;
-            body.style.borderTopColor = cream;
-            body.style.borderBottomColor = cream;
-            shield.Add(body);
-
-            shield.Add(BuildMegdanTriangle(
-                "gd-card-defense-shield-point", 14f, 33f, 7f, 7f, cream, true));
-            shield.Add(BuildMegdanTriangle(
-                "gd-card-defense-shield-point-fill", 16f, 33f, 5f, 5f, accent, true));
-            shield.Add(BuildMegdanBadgeAmount(amount, 42f));
-            return shield;
-        }
-
-        private static VisualElement BuildMegdanMovementArrow(Label amount, Color accent)
-        {
-            var cream = new Color(0.94f, 0.90f, 0.78f, 1f);
-            var arrow = BuildMegdanBadgeContainer("gd-card-movement-arrow");
-
-            var outerShaft = new VisualElement { name = "gd-card-movement-arrow-outline" };
-            outerShaft.style.position = Position.Absolute;
-            outerShaft.style.left = 0f;
-            outerShaft.style.top = 8f;
-            outerShaft.style.width = 28f;
-            outerShaft.style.height = 26f;
-            outerShaft.style.backgroundColor = cream;
-            arrow.Add(outerShaft);
-            arrow.Add(BuildMegdanTriangle(
-                "gd-card-movement-arrow-head-outline", 27f, 2f, 19f, 15f, cream, false));
-
-            var shaft = new VisualElement { name = "gd-card-movement-arrow-face" };
-            shaft.style.position = Position.Absolute;
-            shaft.style.left = 2f;
-            shaft.style.top = 10f;
-            shaft.style.width = 26f;
-            shaft.style.height = 22f;
-            shaft.style.backgroundColor = accent;
-            arrow.Add(shaft);
-            arrow.Add(BuildMegdanTriangle(
-                "gd-card-movement-arrow-head", 26f, 5f, 16f, 13f, accent, false));
-            arrow.Add(BuildMegdanBadgeAmount(amount, 32f));
-            return arrow;
-        }
-
-        private static VisualElement BuildMegdanBadgeContainer(string name)
-        {
-            var badge = new VisualElement { name = name };
-            badge.style.position = Position.Relative;
-            badge.style.width = 42f;
-            badge.style.height = 42f;
-            badge.style.flexShrink = 0f;
-            return badge;
-        }
-
-        private static VisualElement BuildMegdanBadgeAmount(Label amount, float width)
-        {
-            var overlay = new VisualElement { name = "gd-card-stat-value" };
-            overlay.pickingMode = PickingMode.Ignore;
-            overlay.style.position = Position.Absolute;
-            overlay.style.left = 0f;
-            overlay.style.top = 0f;
-            overlay.style.width = width;
-            overlay.style.height = 42f;
-            overlay.style.alignItems = Align.Center;
-            overlay.style.justifyContent = Justify.Center;
-            overlay.Add(amount);
-            return overlay;
-        }
-
-        private static VisualElement BuildMegdanTriangle(
-            string name,
-            float left,
-            float top,
-            float halfHeight,
-            float length,
-            Color color,
-            bool pointsDown)
-        {
-            var triangle = new VisualElement { name = name };
-            triangle.pickingMode = PickingMode.Ignore;
-            triangle.style.position = Position.Absolute;
-            triangle.style.left = left;
-            triangle.style.top = top;
-            triangle.style.width = 0f;
-            triangle.style.height = 0f;
-            var clear = Color.clear;
-            if (pointsDown)
+            public MegdanStatBadge(PrintedValueChannel channel, Label amount, Color accent)
             {
-                triangle.style.borderLeftWidth = halfHeight;
-                triangle.style.borderRightWidth = halfHeight;
-                triangle.style.borderTopWidth = length;
-                triangle.style.borderLeftColor = clear;
-                triangle.style.borderRightColor = clear;
-                triangle.style.borderTopColor = color;
-            }
-            else
-            {
-                triangle.style.borderTopWidth = halfHeight;
-                triangle.style.borderBottomWidth = halfHeight;
-                triangle.style.borderLeftWidth = length;
-                triangle.style.borderTopColor = clear;
-                triangle.style.borderBottomColor = clear;
-                triangle.style.borderLeftColor = color;
+                this.channel = channel;
+                name = channel == PrintedValueChannel.Initiative ? "gd-card-initiative-clock"
+                    : channel == PrintedValueChannel.Defense ? "gd-card-defense-shield"
+                    : "gd-card-movement-arrow";
+                pickingMode = PickingMode.Ignore;
+                style.width = 50f;
+                style.height = 50f;
+                style.flexShrink = 0f;
+                style.color = accent;
+                amount.pickingMode = PickingMode.Ignore;
+                amount.style.position = Position.Absolute;
+                amount.style.marginLeft = amount.style.marginRight = 0f;
+                amount.style.marginTop = amount.style.marginBottom = 0f;
+                amount.style.left = 6f;
+                amount.style.top = channel == PrintedValueChannel.Movement ? 12f : 8f;
+                amount.style.width = 38f;
+                amount.style.height = 32f;
+                Add(amount);
+                generateVisualContent += Paint;
             }
 
-            return triangle;
-        }
+            private void Paint(MeshGenerationContext context)
+            {
+                var painter = context.painter2D;
+                painter.lineJoin = LineJoin.Round;
+                Outline(painter);
+                painter.fillColor = resolvedStyle.color;
+                painter.Fill();
+                painter.strokeColor = Ink;
+                painter.lineWidth = 5f;
+                painter.Stroke();
+                painter.strokeColor = Rim;
+                painter.lineWidth = 2f;
+                painter.Stroke();
 
-        private static VisualElement BuildMegdanClockMark(
-            float left,
-            float top,
-            float width,
-            float height,
-            Color color)
-        {
-            var mark = new VisualElement { name = "gd-card-initiative-clock-mark" };
-            mark.pickingMode = PickingMode.Ignore;
-            mark.style.position = Position.Absolute;
-            mark.style.left = left;
-            mark.style.top = top;
-            mark.style.width = width;
-            mark.style.height = height;
-            mark.style.backgroundColor = color;
-            return mark;
+                if (channel == PrintedValueChannel.Initiative)
+                {
+                    // Keep every tick on the perimeter, outside the two-digit number's area.
+                    painter.lineWidth = 1.2f;
+                    for (var tick = 0; tick < 12; tick++)
+                    {
+                        var angle = tick * Mathf.PI / 6f;
+                        var direction = new Vector2(Mathf.Sin(angle), -Mathf.Cos(angle));
+                        painter.BeginPath();
+                        painter.MoveTo(new Vector2(25f, 25f) + direction * 20f);
+                        painter.LineTo(new Vector2(25f, 25f) + direction * (tick % 3 == 0 ? 17f : 18.5f));
+                        painter.Stroke();
+                    }
+                }
+                else if (channel == PrintedValueChannel.Defense)
+                {
+                    // A restrained inner rim follows the curved shield down to its point.
+                    painter.strokeColor = new Color(Rim.r, Rim.g, Rim.b, 0.45f);
+                    painter.lineWidth = 1f;
+                    painter.BeginPath();
+                    painter.MoveTo(new Vector2(10f, 11f));
+                    painter.LineTo(new Vector2(10f, 25f));
+                    painter.BezierCurveTo(new Vector2(10f, 33f), new Vector2(19f, 40f), new Vector2(25f, 43f));
+                    painter.BezierCurveTo(new Vector2(31f, 40f), new Vector2(40f, 33f), new Vector2(40f, 25f));
+                    painter.LineTo(new Vector2(40f, 11f));
+                    painter.Stroke();
+                }
+            }
+
+            private void Outline(Painter2D painter)
+            {
+                painter.BeginPath();
+                if (channel == PrintedValueChannel.Initiative)
+                {
+                    painter.Arc(new Vector2(25f, 25f), 23f, 0f, 360f);
+                }
+                else if (channel == PrintedValueChannel.Defense)
+                {
+                    painter.MoveTo(new Vector2(5f, 7f));
+                    painter.BezierCurveTo(new Vector2(12f, 7f), new Vector2(20f, 5f), new Vector2(25f, 2f));
+                    painter.BezierCurveTo(new Vector2(30f, 5f), new Vector2(38f, 7f), new Vector2(45f, 7f));
+                    painter.LineTo(new Vector2(45f, 25f));
+                    painter.BezierCurveTo(new Vector2(45f, 36f), new Vector2(33f, 44f), new Vector2(25f, 48f));
+                    painter.BezierCurveTo(new Vector2(17f, 44f), new Vector2(5f, 36f), new Vector2(5f, 25f));
+                }
+                else
+                {
+                    // One broad diagonal arrow; the value overlays its tail rather than squeezing
+                    // into a rectangular shaft. No joined border triangles or visible seams.
+                    painter.MoveTo(new Vector2(5f, 34f));
+                    painter.LineTo(new Vector2(28f, 11f));
+                    painter.LineTo(new Vector2(20f, 4f));
+                    painter.LineTo(new Vector2(46f, 4f));
+                    painter.LineTo(new Vector2(46f, 30f));
+                    painter.LineTo(new Vector2(39f, 22f));
+                    painter.LineTo(new Vector2(16f, 45f));
+                }
+                painter.ClosePath();
+            }
         }
 
         private static VisualElement BuildMegdanRulesPanel(

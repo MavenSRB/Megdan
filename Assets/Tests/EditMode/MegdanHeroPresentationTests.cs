@@ -78,28 +78,17 @@ namespace GuardsDigital.Tests.EditMode
                         var expected = MatchHudTheme.Face(group.Key);
                         foreach (var name in new[]
                                  {
-                                     "gd-card-initiative-clock", "gd-card-defense-shield-face",
-                                     "gd-card-movement-arrow-face"
+                                     "gd-card-initiative-clock", "gd-card-defense-shield",
+                                     "gd-card-movement-arrow"
                                  })
                         {
                             Assert.That(Descendants(face).Single(element => element.name == name)
-                                .style.backgroundColor.value, Is.EqualTo(expected), group.Key.ToString());
+                                .style.color.value, Is.EqualTo(expected), group.Key.ToString());
                         }
 
                         var initiative = Descendants(face).Single(element =>
                             element.name == "gd-card-initiative");
-                        var clock = Descendants(face).Single(element =>
-                            element.name == "gd-card-initiative-clock");
                         Assert.That(initiative.style.backgroundColor.value, Is.EqualTo(Color.clear));
-                        Assert.That(clock.style.width.value.value, Is.EqualTo(42f));
-                        Assert.That(clock.style.height.value.value, Is.EqualTo(42f));
-                        Assert.That(clock.style.borderTopLeftRadius.value.value, Is.EqualTo(21f));
-                        Assert.That(Descendants(clock).Count(element =>
-                            element.name == "gd-card-initiative-clock-mark"), Is.EqualTo(4));
-                        Assert.That(Descendants(face).Count(element =>
-                            element.name == "gd-card-defense-shield-point"), Is.EqualTo(1));
-                        Assert.That(Descendants(face).Count(element =>
-                            element.name == "gd-card-movement-arrow-head"), Is.EqualTo(1));
                     }
                 }
             }
