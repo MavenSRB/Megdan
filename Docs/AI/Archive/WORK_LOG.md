@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-169 Clarify application origin, demonstration and funded outcome
+
+Request: adapt the application to the applicant-confirmed chronology: board-game play, Stefan's self-funded digital adaptation, positive friend-group response and improvements, then the standalone Megdan ambition. The replacement-art application demo retains inherited card text, map geometry and mechanics; the funded outcome remains an original six-hero 3v3 MVP. Updated English answers, canonical preparation context, founder-account provenance, delivery/video/readiness summaries and affected clearance-worklist distinctions. Acceptance: consistent origin/demo/grant boundaries, all English field limits, T0 documentation/diff review and local commit. No rules, budget, runtime, recording, publication or submission changes; unrelated work preserved.
+
+Historical evidence: immutable `work/W-169`; exact checks/results, review and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-169 | Application distinguishes board-game origin, inherited demo and original funded MVP | `work/W-169` |
+
 ### [x] W-168 Integrate the approved six-hero card design
 
 User approved W-167's still for the game. The shared renderer now applies its larger transparent art, local typed-colour palette, cream panels, readable text hierarchy, broad shields and upright arrows to all 108 mapped hero faces. Absent secondary Movement omits its entire cell; primary Movement, wording/values/identities, modifiers, selection/history and standard footprint remain intact. Acceptance: focused card/interaction/overlay checks, all-108 live footprint/text-fit, six-card and normal-hand capture inspection, documentation validation and local commit. Private source/resources only; existing packages unchanged, no publication.

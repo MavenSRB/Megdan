@@ -18,6 +18,12 @@ The self-funded prototype is a playable game, not just a concept or visual mock-
 
 The latest Windows W079 package includes the large-map fixes; later W080–W082 changes are source-only. Mac W075 is older and native launch/cross-platform networking are not verified. Exact artifact identities and coverage belong to [build records](BUILDS.md). The current prototype has no audio. New identities/card presentation for six selected kits, a complete 3D world for every board-bound piece and interaction cue, one production-ready map/free camera, animation/VFX and audio remain next-phase scope. Screen-space cards/HUD remain 2D. A later AI-assisted slice would be additional self-funded baseline evidence, not retroactively funded work.
 
+## Founder account: origin and demo boundary
+
+Clarification supplied by Stefan on 4 November 2026: he and friends first played the board game *Guards of Atlantis II*. He found the idea of making a computer version interesting and independently developed the private prototype. Friends liked playing it, and their response and continued play encouraged improvements. The standalone Megdan ambition grew from this experience. This refines the earlier account below: repeat requests encouraged continued development; they did not precede Stefan's initial interest in making the adaptation. This is applicant testimony, not a chronology independently established by match logs.
+
+For the application, Stefan intends a demo without the old artwork while retaining the inherited card text, map shape/geometry and mechanics. Replacement presentation is not evidence that the inherited content is original or cleared. The [preparation owner](SMART_START.md#origin-application-demo-and-funded-product) owns the distinction between this demo and the original six-hero 3v3 MVP proposed for funding. No final application recording, new package, original-rule validation or permission to distribute is established by this account. Existing source changes and visual studies remain separately described in [creative presentation](MEGDAN_CREATIVE.md).
+
 ## Reproducible local match audit
 
 Run `./Tools/Get-SmartStartMatchEvidence.ps1` from the repository root. The read-only [audit script](../../../Tools/Get-SmartStartMatchEvidence.ps1) emits JSON with relative source paths, file hashes, event timestamps, claimed-seat counts and online run identities. Raw build logs remain private and unmodified.

@@ -1,6 +1,6 @@
 # Smart Start — English working application
 
-Return to [preparation owner](SMART_START.md). Reconciled 3 November 2026. Working narrative, not a completed official form; missing evidence remains explicitly marked. Headings mirror the version 6 application prompts; bracketed instructions are blockers, not text to submit. Do not copy this file into the portal as a substitute for the protected form. [Requirements and sources](SMART_START_REQUIREMENTS.md) govern limits and facts.
+Return to [preparation owner](SMART_START.md). Origin/demo/funded-product narrative follows the applicant's 4 November 2026 clarification; dated market evidence retains its stated observation date. Working narrative, not a completed official form; missing evidence remains explicitly marked. Headings mirror the version 6 application prompts; bracketed instructions are blockers, not text to submit. Do not copy this file into the portal as a substitute for the protected form. [Requirements and sources](SMART_START_REQUIREMENTS.md) govern limits and facts.
 
 ## Brief summary
 
@@ -24,9 +24,9 @@ Eligibility questionnaire working answers, to be re-confirmed immediately before
 
 ## Development phase and innovation level
 
-Confirmed stage selection: **Other** — a self-funded functional private prototype already exists and is played/tested; the proposed original product is in validation and pre-MVP production. Application evidence will use that prototype plus clearly labelled original visual concepts. A playable 3D slice is not an application prerequisite. Existing work is the self-funded baseline, not a retrospective funding request.
+Confirmed stage selection: **Other** — a self-funded functional private digital adaptation already exists and is played/tested; the proposed original Megdan product is in validation and pre-MVP production. The application demo will replace the old artwork while retaining inherited card text, map geometry and mechanics. It shows implemented gameplay and a new presentation direction, not completed original Megdan content. A playable 3D slice is not an application prerequisite. Existing work is the self-funded baseline, not a retrospective funding request.
 
-Confirmed innovation selection: **Advanced Innovation**. This is the applicant's chosen field answer, not an independent finding of novelty. Core mechanics originate in an existing tabletop game; Stefan's demonstrated contribution is online implementation, rules automation and accessible shared information. The applicant plans to replace all art and redesign heroes, retaining only the card concept; exact redesign details are not yet defined or claimed as completed innovation. The application must substantiate competitive usefulness without claiming invention of inherited mechanics.
+Confirmed innovation selection: **Advanced Innovation**. This is the applicant's chosen field answer, not an independent finding of novelty. The prototype began as Stefan's private computer adaptation of *Guards of Atlantis II*. His demonstrated contribution is online implementation, rules automation and accessible shared information. Enjoyment and repeated play within the friend group encouraged improvements and the ambition to develop a standalone game. The funded product would have original heroes, card expression, map and visual identity; exact redesign details are not yet defined or claimed as completed innovation. The demo's inherited gameplay is not presented as a new invention.
 
 [OPEN: Fund clarification of existing-prototype/declaration fit; rights and differentiation evidence. See the current saved inquiry; nothing has been sent.]
 
@@ -34,7 +34,7 @@ Confirmed innovation selection: **Advanced Innovation**. This is the applicant's
 
 Some current and former MOBA players still enjoy hero mastery, anticipating opponents and coordinating with teammates, but want an experience that depends less on continuous reflex execution. Our hypothesis is that a deliberate, card-based team game can preserve that satisfaction while changing how players contribute.
 
-Stefan developed a private online prototype with his own work and funds. He reports that repeated requests to play again and for additional places motivated continued development. Existing match records demonstrate sustained sessions, providing a practical starting point for testing the hypothesis rather than proof of a market.
+The project grew out of playing Guards of Atlantis II with friends. Stefan first built a private computer adaptation because he found the programming challenge interesting, using his own work and funds. Friends enjoyed it and wanted to keep playing, encouraging further improvements and the idea of a standalone game. Existing match records demonstrate sustained sessions, providing a starting point for research rather than proof of a market.
 
 The remaining uncertainty is whether this experience can become an original, independently understandable product that target players voluntarily return to. Group formation is a central obstacle: interest alone does not ensure that six people can play together. Early scheduled sessions will test engagement and coordination without assuming an always-active player population.
 
@@ -56,13 +56,15 @@ Megdan's proposed distinction is competitive 3v3 play with one hero per person, 
 
 Megdan is a proposed original 3v3 tactical PC game in which each player controls one hero. Players plan card combinations, coordinate with teammates and anticipate opposing choices. Cards create competing priorities between attacking, defending and preserving the hero's ability to survive. Visible allied hands make coordinated plans easier; visible opponent options support prediction. Automated rules and online play make this tactical experience accessible without gathering around a physical table.
 
-The self-funded prototype demonstrates the core experience. The grant would support its transition to an original six-hero MVP: complete readable card sets, one coherent original 3D map, game-ready heroes and minions, a free camera, essential animation and feedback, functional audio and a quick-start guide. All art will be replaced and heroes redesigned, retaining only the card concept; final content quantities will be reconciled with scope and cost.
+The project began as Stefan's self-funded computer adaptation of a board game played with friends. Positive play experiences encouraged improvements. The application demo will replace the old artwork but retain inherited card text, map geometry and mechanics. It demonstrates functioning multiplayer, automated resolution and tactical decisions, alongside a new visual direction; it is not the original funded product.
 
-Production will prioritize readable actions and a complete match. Compatible rigs, core motions and modular environments will be shared. Additional animation variety and premium polish are later work. Original visual concepts and the existing prototype are sufficient for the application; 3D production belongs to the funded development plan.
+The grant would support a standalone six-hero Megdan MVP: original hero designs and card expression, one independently designed 3D map, game-ready heroes and minions, a free camera, essential animation and feedback, functional audio and a quick-start guide. Original content will be designed and tested during the project; the demo's kits and map are not final designs.
+
+Production will prioritize readable actions and a complete match. Compatible rigs, core motions and modular environments will be shared. Additional animation variety and premium polish are later work; 3D production belongs to the funded plan.
 
 The team will conduct scheduled playtests, gradually reduce facilitator assistance and assess comprehension, completion, voluntary return and group-formation barriers. The funded outcome is a stable, original and validated MVP plus a credible business case, not a finished global service. AI may assist development and visual exploration, with its use and temporary assets disclosed.
 
-[MISSING: final rights disposition, production quotations and detailed acceptance evidence. Original visual concepts are planned, not claimed complete.]
+[MISSING: final rights disposition for the actual demo and funded baseline, production quotations and detailed acceptance evidence. Existing visual studies are not final hero designs or proof of completed 3D production.]
 
 ## Differentiation — one or two sentences, maximum 200 words
 
@@ -72,11 +74,11 @@ Megdan combines individual hero responsibility and shared team planning with car
 
 ## Current technology and MVP steps — maximum 200 words
 
-Stefan independently built and financed a working private multiplayer prototype. Current source supports 2v2 to 5v5, 32 configured heroes, four maps, automated card/initiative/combat rules, reconnect/resynchronization and deterministic snapshots, Undo and replay. It has no audio. These capabilities demonstrate technical execution; they do not establish commercial rights, public-service scalability or demand for the original product. Source and packaged-build distinctions remain documented in the prototype evidence audit.
+After playing Guards of Atlantis II with friends, Stefan independently built and financed a private computer adaptation. Positive responses encouraged iterative improvements. Current source supports 2v2 to 5v5, 32 configured heroes, four maps, automated rules, reconnect/resynchronization, snapshots, Undo and replay. It has no audio. The application demo will replace the old artwork while retaining inherited card text, map geometry and mechanics. It demonstrates implementation and presentation, not completed original content, cleared rights or market demand.
 
-Over nine months, we will review reusable technology and content rights, establish original visual direction and a viable production pipeline, then integrate six complete hero/card packages, one coherent 3D map, essential feedback and audio. A quick-start guide will explain cards, round structure and victory, initially recommending the simplest heroes.
+Over nine months, we will review reusable technology and rights, design original heroes, card expression and map, establish a production pipeline, then integrate six complete hero/card packages, one coherent 3D map, essential feedback and audio. A quick-start guide will explain cards, rounds and victory.
 
-Structured feedback and scheduled tests will run alongside development. We will recruit a conservative 12–18 new players outside the existing group, with opportunities to return and capacity to exceed that target. Business-model and rights evidence accompany the playable result. Additional polish yields before readability, stable multiplayer or validation time.
+Scheduled tests will recruit 12–18 new players outside the existing group, with opportunities to return. We will assess comprehension, match completion and voluntary return, and produce technical, business-model and rights evidence. The outcome is an original, validated six-hero 3v3 MVP, not a finished commercial release or reimbursement for past work.
 
 [OPEN: production quotations, rights review and Fund clarification; implementation is not authorized by this draft.]
 
@@ -130,17 +132,17 @@ Publisher outreach will be bounded: review progress three months after the MVP a
 
 ## Patent search and current IP — maximum 200 words
 
-The private prototype derives core mechanics and some content from an existing tabletop game. Stefan's demonstrated contribution is the online digital implementation, rules automation and information presentation. No invention of the inherited system or completed patent/freedom-to-operate review is claimed.
+The private prototype began as a computer adaptation of Guards of Atlantis II. The application demo will replace the old artwork while retaining inherited card text, map geometry and mechanics. Stefan's contribution is the digital implementation, rules automation and information presentation; no invention of the inherited system is claimed.
 
-The funded product is intended to use original hero/card expression, map, visuals and branding, with documented review of reusable code, dependencies, licenses and contributor rights. The applicant will replace all art and redesign heroes, retaining only the card concept rather than complete source kits. Final content and quantities remain to be specified; the private prototype is not yet that original product.
+The funded Megdan MVP is intended to use original hero/card expression, map, visuals and branding. Its final designs are not fixed by the demo. Reusable code, dependencies, licenses and contributor rights will be reviewed. Replacement art and transparent attribution do not establish clearance of the retained demo material; its actual text, map and assets must be assessed before submission and signature.
 
-Relevant name/trademark and patent checks will be recorded with their scope and results. Contractor agreements must secure required rights. AI-assisted material will have documented tool terms, references and human contributions. Planned redesign is not evidence of completed original content.
+Relevant name/trademark and patent checks will be recorded with their scope and results. Contractor rights and AI-tool terms, references and human contributions will be documented. No completed clearance or freedom-to-operate review is claimed. Planned redesign is not evidence of completed original content.
 
 [BEFORE SIGNATURE: verify provenance/licenses, relevant name/search results and the actual declaration assurances. Specialist advice is conditional on a concrete unresolved legal issue, not automatically required for retaining an abstract card concept. Submitted materials must have usable rights; future replacement does not clear existing borrowed footage.]
 
 ## Team — maximum 400 words, plus individual biographies
 
-Inat comprises Stefan Petrovic and Veljko Petrovic, combining demonstrated software execution with visual-production capability. Stefan independently developed the functional multiplayer prototype through his own work and funds. His engineering background and existing build demonstrate that the project has progressed beyond an idea.
+Inat comprises Stefan Petrovic and Veljko Petrovic, combining software execution with visual-production capability. After playing a board game with friends, Stefan independently built a computer adaptation through his own work and funds. Their enjoyment and continued play encouraged improvements and the ambition for an original Megdan. His engineering background and working prototype demonstrate progress beyond an idea; the original funded content remains to be produced.
 
 Stefan leads engineering, integration, game and map design, player recruitment, validation, business-model work, rights coordination and Fund administration. He describes his current work as freelance and confirms that Megdan will be his main full-time commitment throughout the nine-month project, with other freelance work fitted around it. The RSD 600,000 applicant contribution is available from his personal savings.
 
@@ -168,9 +170,13 @@ Veljko holds a master's degree from the Faculty of Forestry (2021), as supplied 
 
 Recording preparation: [40-second gameplay shot plan and Veljko asset brief](SMART_START_VIDEO_SHOT_PLAN.md). This source-checked storyboard is not yet rehearsed or captured.
 
-Proposed outline: 0:00–0:30 the player need; 0:30–1:15 existing prototype evidence and clearly labelled original visual concepts; 1:15–2:15 both members visibly introduce their roles and relevant work; 2:15–3:00 the funded MVP, validation plan and why support is needed. The application does not require us to produce a 3D slice first. Distinguish what works now, what is concept art and what funding would deliver. Use English narration and an accessible link.
+Proposed chronological outline: 0:00–0:30 Stefan on camera explains playing the board game, making a computer adaptation out of personal interest, positive friend-group response and continued improvements, connecting this to the player need; 0:30–1:10 show the application demo; 1:10–1:25 explain its inherited-content boundary and the standalone Megdan ambition; 1:25–2:05 both members visibly explain their roles and relevant work; 2:05–3:00 show the proposed original MVP, nine-month production/validation plan and why support is needed. No pre-application 3D slice is required. Use English narration and an accessible link.
 
-[MISSING: recorded video and accessible URL. Review rights before selecting any prototype footage for public viewing; no permission to publish borrowed material is inferred. No video, visual concept, public link or official upload is claimed complete.]
+Opening draft, Stefan: “We started by playing Guards of Atlantis II with friends. As a programmer, I thought it would be interesting to make a computer version. I built a private prototype, we enjoyed playing it, and their response encouraged us to keep improving it. That experience led to Megdan: our plan for a standalone tactical team game.”
+
+Demo disclosure: “This demo uses replacement artwork, but still retains the board game's card text, map geometry and mechanics. It shows the digital implementation and our presentation direction. With the grant, we will develop and test Megdan's original six-hero MVP.” Keep **Application demo — inherited gameplay, replacement art** visible during actual capture; label concept animation and visual studies separately. Time the complete read before recording.
+
+[MISSING: final recorded application video and accessible URL. Existing creative studies/concept clips are separate from the final video and from gameplay capture. Review rights for retained text/map and replacement assets before selecting footage; no clearance, publication, accessible link or official upload is claimed complete.]
 
 ## Mentorship — maximum 200 words
 
