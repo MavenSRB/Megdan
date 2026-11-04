@@ -346,8 +346,8 @@ namespace GuardsDigital.Presentation.Match
             Texture2D portrait)
         {
             CardFootprint.Apply(surface);
-            surface.style.backgroundColor = new Color(0.93f, 0.89f, 0.77f, 1f);
-            HudElements.Border(surface, MatchHudTheme.PanelBorder, 3f, 8f);
+            surface.style.backgroundColor = Color.clear;
+            HudElements.Border(surface, Color.clear, 0f, 8f);
             surface.Add(DirectorHandsUnityView.BuildMegdanCardFrame(card, portrait));
         }
     }

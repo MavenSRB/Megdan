@@ -43,7 +43,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(File.Exists(Path.Combine(
                     UnityEngine.Application.dataPath, "..", "Art", "Inputs",
                     hero.OriginalCardArtFile)), Is.True,
-                    pair.Key + " card art must come from Veljko's supplied original input.");
+                    pair.Key + " original source artwork must remain preserved.");
                 foreach (var definition in pair.Value)
                 {
                     Assert.That(MegdanHeroPresentationCatalog.TryForCard(
@@ -75,13 +75,26 @@ namespace GuardsDigital.Tests.EditMode
                         var face = DirectorHandsUnityView.BuildStandaloneCard(
                             CurrentRoundCards.DeckCard(
                                 new CardInstanceId("megdan-color-" + group.Key), definition));
-                        var expected = MatchHudTheme.Face(group.Key);
+                        var approvedPalette = new Dictionary<CardColor, Color32>
+                        {
+                            [CardColor.Red] = new Color32(155, 71, 64, 255),
+                            [CardColor.Blue] = new Color32(66, 109, 155, 255),
+                            [CardColor.Green] = new Color32(80, 115, 71, 255),
+                            [CardColor.Silver] = new Color32(120, 134, 139, 255),
+                            [CardColor.Gold] = new Color32(161, 127, 46, 255),
+                            [CardColor.None] = new Color32(70, 84, 91, 255)
+                        };
+                        Color expected = approvedPalette[group.Key];
                         foreach (var name in new[]
                                  {
                                      "gd-card-initiative-clock", "gd-card-defense-shield",
                                      "gd-card-movement-arrow"
                                  })
                         {
+                            if (name == "gd-card-movement-arrow" &&
+                                !definition.ActionDefinitions.Any(action => action.Origin ==
+                                    ActionDefinitionOrigin.PrintedSecondary && action.Kind == ActionKind.Movement))
+                                continue;
                             Assert.That(Descendants(face).Single(element => element.name == name)
                                 .style.color.value, Is.EqualTo(expected), group.Key.ToString());
                         }
@@ -95,6 +108,53 @@ namespace GuardsDigital.Tests.EditMode
             finally
             {
                 UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
+        public void All108Faces_OmitTheCompleteMovementCellUnlessTheTypedSecondaryActionExists()
+        {
+            foreach (var definition in Definitions.Values.SelectMany(value => value))
+            {
+                var card = CurrentRoundCards.DeckCard(
+                    new CardInstanceId("megdan-secondary-" + definition.Id.Value), definition);
+                var face = DirectorHandsUnityView.BuildStandaloneCard(card);
+                var expected = definition.ActionDefinitions.Any(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedSecondary && action.Kind == ActionKind.Movement);
+                Assert.That(face.Q<VisualElement>("gd-card-secondary-movement") != null,
+                    Is.EqualTo(expected), definition.DisplayName);
+                Assert.That(face.Q<VisualElement>("gd-card-movement-arrow") != null,
+                    Is.EqualTo(expected), definition.DisplayName);
+                if (!expected)
+                    Assert.That(Descendants(face).OfType<Label>().Any(label => label.text == "MOVE"),
+                        Is.False, definition.DisplayName + " must not retain an absent-action label.");
+                if (definition.Id.Equals(RowennaCardContent.CloseQuarters))
+                {
+                    Assert.That(expected, Is.False);
+                    Assert.That(face.Q<Label>("gd-card-primary-kind").text, Is.EqualTo("MOVEMENT"));
+                    Assert.That(face.Q<Label>("gd-card-primary-value").text, Is.EqualTo("2"));
+                }
+            }
+        }
+
+        [Test]
+        public void PreparedCardPanels_UseTransparentArtworkAtTheApprovedPanelAspect()
+        {
+            foreach (var hero in MegdanHeroPresentationCatalog.Entries)
+            {
+                var texture = new Texture2D(2, 2);
+                try
+                {
+                    var path = Path.Combine(UnityEngine.Application.dataPath, "Resources", "Private",
+                        "Megdan", "HeroPortraits", hero.ContentId.Value + ".png");
+                    Assert.That(texture.LoadImage(File.ReadAllBytes(path)), Is.True, path);
+                    Assert.That(texture.width, Is.EqualTo(1024));
+                    Assert.That(texture.height, Is.EqualTo(840));
+                    Assert.That(texture.GetPixel(0, 0).a, Is.Zero, hero.ContentId.Value);
+                    Assert.That(texture.GetPixels32().Count(pixel => pixel.a > 128), Is.GreaterThan(100000),
+                        hero.ContentId.Value + " needs character art as well as transparent margins.");
+                }
+                finally { UnityEngine.Object.DestroyImmediate(texture); }
             }
         }
 

@@ -69,7 +69,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(heroes.Select(view => view.HeroContentId.Value.Value),
                 Is.EquivalentTo(red.Concat(blue)), "The screenshot must contain this exact six-hero lineup.");
             Assert.That(heroes.All(view => view.HasTokenVisual), Is.True);
-            yield return UiPlayer.CaptureScreen("tmp/w163-six-heroes-live-match.png");
+            yield return UiPlayer.CaptureScreen("tmp/w168-six-heroes-live-match.png");
         }
 
         [UnityTest]
@@ -90,7 +90,7 @@ namespace GuardsDigital.Tests.PlayMode
         {
             yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(
                 SceneCardContent.ConfiguredMatch);
-            UiPlayer.SetPlayerViewport(1920u, 1080u, "W-161 Megdan hero presentation");
+            UiPlayer.SetPlayerViewport(1920u, 1080u, "W-168 approved Megdan card design");
             yield return null;
             yield return null;
             var root = BroganUiJourneyPlayModeTests.Root();
@@ -98,8 +98,10 @@ namespace GuardsDigital.Tests.PlayMode
             foreach (var pair in Representatives)
             {
                 var content = new HeroContentId(pair.Key);
-                Assert.That(Resources.Load<Texture2D>(
-                    "Private/Megdan/HeroPortraits/" + pair.Key), Is.Not.Null, pair.Key + " card art");
+                var cardArt = Resources.Load<Texture2D>("Private/Megdan/HeroPortraits/" + pair.Key);
+                Assert.That(cardArt, Is.Not.Null, pair.Key + " card art");
+                Assert.That(cardArt.width, Is.EqualTo(1024), pair.Key + " panel aspect");
+                Assert.That(cardArt.height, Is.EqualTo(840), pair.Key + " panel aspect");
                 Assert.That(Resources.Load<Texture2D>(
                     "Private/HeroSelection/hero-" + pair.Key), Is.Not.Null, pair.Key + " selector portrait");
                 Assert.That(Resources.Load<Texture2D>(
@@ -149,7 +151,12 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(gallery.Query<VisualElement>("gd-megdan-card-frame").ToList(), Has.Count.EqualTo(6));
             Assert.That(gallery.Query<Image>("gd-card-artwork").ToList(), Has.Count.EqualTo(6));
-            yield return UiPlayer.CaptureScreen("tmp/w162-megdan-card-gallery.png");
+            Assert.That(gallery.Query<VisualElement>("gd-card-movement-arrow").ToList(), Has.Count.EqualTo(2),
+                "Only Mad Dash and Sudden Breeze have secondary Movement in this gallery.");
+            var madDash = gallery.Query<Label>("gd-card-name").ToList().Single(label => label.text == "Mad Dash");
+            Assert.That(madDash.parent.parent.parent.Q<Label>("gd-card-printed-text").resolvedStyle.fontSize,
+                Is.GreaterThanOrEqualTo(11f), "Ordinary rules text should use the larger approved hierarchy.");
+            yield return UiPlayer.CaptureScreen("tmp/w168-megdan-card-gallery.png");
             // The same live vector faces enlarged for visual inspection, including a two-digit
             // initiative and a missing secondary Movement. The six-colour capture stays at game size.
             while (gallery.childCount > 3)
@@ -158,7 +165,7 @@ namespace GuardsDigital.Tests.PlayMode
                 column.style.scale = new Scale(new Vector3(1.65f, 1.65f, 1f));
             yield return null;
             yield return null;
-            yield return UiPlayer.CaptureScreen("tmp/w162-card-icons-detail.png");
+            yield return UiPlayer.CaptureScreen("tmp/w168-card-icons-detail.png");
             gallery.RemoveFromHierarchy();
             yield return null;
 
@@ -170,7 +177,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(hero.HasTokenVisual, Is.True, hero.HeroContentId.Value.Value);
             }
 
-            yield return UiPlayer.CaptureScreen("tmp/w162-megdan-board-tokens.png");
+            yield return UiPlayer.CaptureScreen("tmp/w168-megdan-board-tokens.png");
         }
     }
 }

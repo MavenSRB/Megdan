@@ -5,6 +5,7 @@ and masking work; it does not synthesize, repaint, or alter their content.
 """
 
 from pathlib import Path
+import argparse
 
 from PIL import Image, ImageDraw, ImageOps
 
@@ -31,26 +32,26 @@ def save_png(image: Image.Image, path: Path) -> None:
     image.save(path, format="PNG", optimize=True)
 
 
+def prepare_card_art(content_id: str, portrait: Image.Image) -> None:
+    # W-168: reproduce the approved preview's transparent, uncropped character panel.
+    character = portrait.crop(portrait.getbbox())
+    character = ImageOps.contain(character, (988, 810), Image.Resampling.LANCZOS)
+    card_art = Image.new("RGBA", (1024, 840))
+    card_art.alpha_composite(character, ((1024 - character.width) // 2, 832 - character.height))
+    save_png(card_art, CARD_OUTPUT / f"{content_id}.png")
+    metadata = CARD_OUTPUT / f"{content_id}.png.meta"
+    if metadata.exists():
+        text = metadata.read_text(encoding="utf-8")
+        text = text.replace("  nPOTScale: 1", "  nPOTScale: 0")
+        text = text.replace("  alphaIsTransparency: 0", "  alphaIsTransparency: 1")
+        metadata.write_text(text, encoding="utf-8")
+
+
 def prepare(content_id: str, portrait_filename: str, original_filename: str) -> None:
     with Image.open(SOURCE / portrait_filename) as opened:
         portrait = ImageOps.exif_transpose(opened).convert("RGBA")
 
-    with Image.open(ORIGINAL_SOURCE / original_filename) as opened:
-        original = ImageOps.exif_transpose(opened).convert("RGBA")
-
-    square = ImageOps.fit(
-        portrait,
-        (1024, 1024),
-        method=Image.Resampling.LANCZOS,
-        centering=(0.5, 0.42),
-    )
-    card_art = ImageOps.fit(
-        original,
-        (1024, 720),
-        method=Image.Resampling.LANCZOS,
-        centering=(0.5, 0.5),
-    )
-    save_png(card_art, CARD_OUTPUT / f"{content_id}.png")
+    prepare_card_art(content_id, portrait)
     selection = ImageOps.fit(
         portrait,
         (372, 260),
@@ -76,8 +77,16 @@ def prepare(content_id: str, portrait_filename: str, original_filename: str) -> 
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cards-only", action="store_true",
+                        help="Refresh only the six card panels; preserve token and selector assets.")
+    args = parser.parse_args()
     for content_id, (portrait_filename, original_filename) in MAPPINGS.items():
-        prepare(content_id, portrait_filename, original_filename)
+        if args.cards_only:
+            with Image.open(SOURCE / portrait_filename) as opened:
+                prepare_card_art(content_id, ImageOps.exif_transpose(opened).convert("RGBA"))
+        else:
+            prepare(content_id, portrait_filename, original_filename)
     print(f"Prepared {len(MAPPINGS)} hero mappings.")
 
 

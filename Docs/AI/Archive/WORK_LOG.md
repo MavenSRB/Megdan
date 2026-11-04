@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-168 Integrate the approved six-hero card design
+
+User approved W-167's still for the game. The shared renderer now applies its larger transparent art, local typed-colour palette, cream panels, readable text hierarchy, broad shields and upright arrows to all 108 mapped hero faces. Absent secondary Movement omits its entire cell; primary Movement, wording/values/identities, modifiers, selection/history and standard footprint remain intact. Acceptance: focused card/interaction/overlay checks, all-108 live footprint/text-fit, six-card and normal-hand capture inspection, documentation validation and local commit. Private source/resources only; existing packages unchanged, no publication.
+
+Historical evidence: immutable `work/W-168`; exact checks/results, corrected initial failures and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-168 | Approved card design integrated for all six mapped heroes | `work/W-168` |
+
 ### [x] W-167 Refine preview arrows and omit absent secondary Movement
 
 User rejected W-166's arrow and requested no arrow where secondary Movement is absent. Revised the private renderer to draw a symmetrical upright arrow only for positive existing secondary Movement. The four other cards omit the shape, dash and label, while Rowenna's primary Movement 2 remains. Acceptance: inspect both rendered sizes, check absent/present cases against existing card values, documentation validation and local commit. No runtime, rules, content, package or publication changes; W-166 preserved.

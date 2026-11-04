@@ -2231,13 +2231,13 @@ namespace GuardsDigital.Presentation.Match
             TrayCardViewModel card,
             Texture2D portrait)
         {
-            var dark = new Color(0.055f, 0.085f, 0.10f, 1f);
-            var cream = new Color(0.94f, 0.90f, 0.78f, 1f);
-            var creamInk = new Color(0.12f, 0.16f, 0.18f, 1f);
-            var edge = new Color(0.76f, 0.69f, 0.53f, 1f);
+            Color dark = new Color32(27, 41, 49, 255);
+            Color cream = new Color32(240, 230, 204, 255);
+            Color creamInk = new Color32(27, 41, 49, 255);
+            Color edge = new Color32(203, 187, 149, 255);
             // The card's typed colour owns the entire accent family. Red stays red, Blue stays blue,
             // and so on; neither the hero mapping nor the artwork filename participates.
-            var accent = MatchHudTheme.Face(card.Color);
+            var accent = MegdanCardAccent(card.Color);
             var frame = new VisualElement { name = "gd-megdan-card-frame" };
             frame.style.flexDirection = FlexDirection.Column;
             frame.style.flexGrow = 1f;
@@ -2247,37 +2247,40 @@ namespace GuardsDigital.Presentation.Match
             frame.style.marginBottom = 3f;
             frame.style.overflow = Overflow.Hidden;
             frame.style.backgroundColor = dark;
-            HudElements.Padding(frame, 6f);
-            HudElements.Border(frame, edge, 2f, 12f);
+            HudElements.Padding(frame, 8f);
+            HudElements.Border(frame, edge, 1.5f, 10f);
 
             var top = new VisualElement { name = "gd-megdan-card-top" };
             top.style.flexDirection = FlexDirection.Row;
-            top.style.height = 204f;
+            top.style.height = 230f;
             top.style.flexShrink = 0f;
 
             var rail = new VisualElement { name = "gd-megdan-value-rail" };
-            rail.style.width = 52f;
+            rail.style.width = 50f;
             rail.style.flexShrink = 0f;
             rail.style.marginRight = 6f;
             rail.style.flexDirection = FlexDirection.Column;
             rail.Add(BuildMegdanStat(card, PrintedValueChannel.Initiative, "INIT", accent));
             rail.Add(BuildMegdanStat(card, PrintedValueChannel.Defense, "DEF", accent));
-            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Movement, "MOVE", accent));
+            if (card.Face.SecondaryValues.Any(value => value.Channel == PrintedValueChannel.Movement))
+                rail.Add(BuildMegdanStat(card, PrintedValueChannel.Movement, "MOVE", accent));
             top.Add(rail);
 
             var main = new VisualElement { name = "gd-megdan-card-main" };
             main.style.flexGrow = 1f;
             main.style.flexDirection = FlexDirection.Column;
 
-            var title = HudElements.Text(card.DisplayName, 15f, creamInk, FontStyle.Bold);
+            var title = HudElements.Text(card.DisplayName, 18f, creamInk, FontStyle.Bold);
             title.name = "gd-card-name";
             title.style.height = 38f;
             title.style.flexShrink = 0f;
             title.style.paddingLeft = 7f;
             title.style.paddingRight = 7f;
             title.style.unityTextAlign = TextAnchor.MiddleCenter;
+            title.style.whiteSpace = WhiteSpace.NoWrap;
             title.style.backgroundColor = cream;
             HudElements.Border(title, edge, 1f, 6f);
+            title.RegisterCallback<GeometryChangedEvent>(_ => FitMegdanText(title, 18f, 12f));
             main.Add(title);
 
             var hero = new VisualElement { name = "gd-megdan-card-hero" };
@@ -2286,7 +2289,7 @@ namespace GuardsDigital.Presentation.Match
             hero.style.marginTop = 6f;
             hero.style.overflow = Overflow.Hidden;
             hero.style.backgroundColor = accent;
-            HudElements.Border(hero, accent, 1f, 2f);
+            HudElements.Border(hero, accent, 0f, 6f);
             if (portrait != null)
             {
                 var art = new Image
@@ -2314,6 +2317,46 @@ namespace GuardsDigital.Presentation.Match
             return frame;
         }
 
+        // The approved palette is local to this skin; existing typed card colours still select it.
+        private static Color MegdanCardAccent(CardColor color)
+        {
+            switch (color)
+            {
+                case CardColor.Red: return new Color32(155, 71, 64, 255);
+                case CardColor.Blue: return new Color32(66, 109, 155, 255);
+                case CardColor.Green: return new Color32(80, 115, 71, 255);
+                case CardColor.Silver: return new Color32(120, 134, 139, 255);
+                case CardColor.Gold: return new Color32(161, 127, 46, 255);
+                default: return new Color32(70, 84, 91, 255);
+            }
+        }
+
+        private static void FitMegdanText(Label label, float preferred, float minimum)
+        {
+            var width = label.contentRect.width;
+            var height = label.contentRect.height;
+            if (width <= 0f || height <= 0f) return;
+            var measuredSize = label.resolvedStyle.fontSize;
+            if (measuredSize <= 0f) return;
+            var noWrap = label.resolvedStyle.whiteSpace == WhiteSpace.NoWrap;
+            var fitted = minimum;
+            for (var size = preferred; size >= minimum; size -= 0.5f)
+            {
+                // MeasureTextSize reads the resolved font, not a font-size style written in this
+                // callback. Scale the wrap width instead, then scale the measured result back.
+                var scale = size / measuredSize;
+                var needed = label.MeasureTextSize(label.text, noWrap ? 0f : width / scale,
+                    noWrap ? VisualElement.MeasureMode.Undefined : VisualElement.MeasureMode.Exactly,
+                    0f, VisualElement.MeasureMode.Undefined) * scale;
+                if (needed.y <= height && (!noWrap || needed.x <= width))
+                {
+                    fitted = size;
+                    break;
+                }
+            }
+            label.style.fontSize = fitted;
+        }
+
         private static VisualElement BuildMegdanStat(
             TrayCardViewModel card,
             PrintedValueChannel channel,
@@ -2331,7 +2374,8 @@ namespace GuardsDigital.Presentation.Match
                         ? "gd-card-secondary-defense"
                         : "gd-card-secondary-movement"
             };
-            cell.style.flexGrow = 1f;
+            cell.style.height = 71f;
+            cell.style.flexShrink = 0f;
             cell.style.marginBottom = channel == PrintedValueChannel.Movement ? 0f : 6f;
             cell.style.alignItems = Align.Center;
             cell.style.justifyContent = Justify.Center;
@@ -2343,7 +2387,7 @@ namespace GuardsDigital.Presentation.Match
             amount.style.unityTextAlign = TextAnchor.MiddleCenter;
             amount.style.whiteSpace = WhiteSpace.NoWrap;
             amount.style.unityTextOutlineColor = new Color(0.055f, 0.085f, 0.10f, 1f);
-            amount.style.unityTextOutlineWidth = 0.7f;
+            amount.style.unityTextOutlineWidth = 0f;
             cell.Add(new MegdanStatBadge(channel, amount, accent));
 
             var label = HudElements.Text(
@@ -2367,8 +2411,7 @@ namespace GuardsDigital.Presentation.Match
         private sealed class MegdanStatBadge : VisualElement
         {
             private readonly PrintedValueChannel channel;
-            private static readonly Color Rim = new Color(0.94f, 0.90f, 0.78f, 1f);
-            private static readonly Color Ink = new Color(0.055f, 0.085f, 0.10f, 1f);
+            private static readonly Color Rim = new Color32(240, 230, 204, 255);
 
             public MegdanStatBadge(PrintedValueChannel channel, Label amount, Color accent)
             {
@@ -2386,9 +2429,10 @@ namespace GuardsDigital.Presentation.Match
                 amount.style.marginLeft = amount.style.marginRight = 0f;
                 amount.style.marginTop = amount.style.marginBottom = 0f;
                 amount.style.left = 6f;
-                amount.style.top = channel == PrintedValueChannel.Movement ? 12f : 8f;
+                amount.style.top = channel == PrintedValueChannel.Movement ? 22f : 8f;
                 amount.style.width = 38f;
-                amount.style.height = 32f;
+                amount.style.height = channel == PrintedValueChannel.Movement ? 26f : 32f;
+                if (channel == PrintedValueChannel.Movement) amount.style.fontSize = 21f;
                 Add(amount);
                 generateVisualContent += Paint;
             }
@@ -2400,11 +2444,8 @@ namespace GuardsDigital.Presentation.Match
                 Outline(painter);
                 painter.fillColor = resolvedStyle.color;
                 painter.Fill();
-                painter.strokeColor = Ink;
-                painter.lineWidth = 5f;
-                painter.Stroke();
                 painter.strokeColor = Rim;
-                painter.lineWidth = 2f;
+                painter.lineWidth = 1.5f;
                 painter.Stroke();
 
                 if (channel == PrintedValueChannel.Initiative)
@@ -2421,19 +2462,6 @@ namespace GuardsDigital.Presentation.Match
                         painter.Stroke();
                     }
                 }
-                else if (channel == PrintedValueChannel.Defense)
-                {
-                    // A restrained inner rim follows the curved shield down to its point.
-                    painter.strokeColor = new Color(Rim.r, Rim.g, Rim.b, 0.45f);
-                    painter.lineWidth = 1f;
-                    painter.BeginPath();
-                    painter.MoveTo(new Vector2(10f, 11f));
-                    painter.LineTo(new Vector2(10f, 25f));
-                    painter.BezierCurveTo(new Vector2(10f, 33f), new Vector2(19f, 40f), new Vector2(25f, 43f));
-                    painter.BezierCurveTo(new Vector2(31f, 40f), new Vector2(40f, 33f), new Vector2(40f, 25f));
-                    painter.LineTo(new Vector2(40f, 11f));
-                    painter.Stroke();
-                }
             }
 
             private void Outline(Painter2D painter)
@@ -2446,23 +2474,22 @@ namespace GuardsDigital.Presentation.Match
                 else if (channel == PrintedValueChannel.Defense)
                 {
                     painter.MoveTo(new Vector2(5f, 7f));
-                    painter.BezierCurveTo(new Vector2(12f, 7f), new Vector2(20f, 5f), new Vector2(25f, 2f));
-                    painter.BezierCurveTo(new Vector2(30f, 5f), new Vector2(38f, 7f), new Vector2(45f, 7f));
+                    painter.LineTo(new Vector2(25f, 2f));
+                    painter.LineTo(new Vector2(45f, 7f));
                     painter.LineTo(new Vector2(45f, 25f));
                     painter.BezierCurveTo(new Vector2(45f, 36f), new Vector2(33f, 44f), new Vector2(25f, 48f));
                     painter.BezierCurveTo(new Vector2(17f, 44f), new Vector2(5f, 36f), new Vector2(5f, 25f));
                 }
                 else
                 {
-                    // One broad diagonal arrow; the value overlays its tail rather than squeezing
-                    // into a rectangular shaft. No joined border triangles or visible seams.
-                    painter.MoveTo(new Vector2(5f, 34f));
-                    painter.LineTo(new Vector2(28f, 11f));
-                    painter.LineTo(new Vector2(20f, 4f));
-                    painter.LineTo(new Vector2(46f, 4f));
-                    painter.LineTo(new Vector2(46f, 30f));
-                    painter.LineTo(new Vector2(39f, 22f));
-                    painter.LineTo(new Vector2(16f, 45f));
+                    // W-167's approved upright arrow: symmetrical head and a straight value shaft.
+                    painter.MoveTo(new Vector2(25f, 2f));
+                    painter.LineTo(new Vector2(46f, 23f));
+                    painter.LineTo(new Vector2(38f, 23f));
+                    painter.LineTo(new Vector2(38f, 48f));
+                    painter.LineTo(new Vector2(12f, 48f));
+                    painter.LineTo(new Vector2(12f, 23f));
+                    painter.LineTo(new Vector2(4f, 23f));
                 }
                 painter.ClosePath();
             }
@@ -2483,7 +2510,7 @@ namespace GuardsDigital.Presentation.Match
             panel.style.paddingTop = 7f;
             panel.style.paddingBottom = 5f;
             panel.style.backgroundColor = cream;
-            HudElements.Border(panel, accent, 1f, 7f);
+            HudElements.Border(panel, cream, 1f, 7f);
 
             var action = new VisualElement { name = "gd-card-primary-action" };
             action.style.flexDirection = FlexDirection.Row;
@@ -2491,13 +2518,13 @@ namespace GuardsDigital.Presentation.Match
             action.style.justifyContent = Justify.Center;
             action.style.flexShrink = 0f;
             action.style.minHeight = 26f;
-            var kind = HudElements.Text(card.Face.PrimaryActionLabel, 13f, ink, FontStyle.Bold);
+            var kind = HudElements.Text(card.Face.PrimaryActionLabel, 14.5f, ink, FontStyle.Bold);
             kind.name = "gd-card-primary-kind";
             action.Add(kind);
             var primary = card.Face.PrimaryValue;
             if (primary != null)
             {
-                var value = HudElements.Text(primary.AmountLabel, 13f, ink, FontStyle.Bold);
+                var value = HudElements.Text(primary.AmountLabel, 14.5f, ink, FontStyle.Bold);
                 value.name = "gd-card-primary-value";
                 value.style.marginLeft = 5f;
                 value.tooltip = primary.AssistiveLabel;
@@ -2505,19 +2532,29 @@ namespace GuardsDigital.Presentation.Match
                 CardValueOverlay.AddInline(action, card.ValueBonuses, primary.Channel);
             }
             panel.Add(action);
+            action.style.borderBottomWidth = 1f;
+            action.style.borderBottomColor = (Color)new Color32(203, 187, 149, 255);
+            action.style.marginBottom = 5f;
 
             var transcribed = card.Face.PrintedTextKind == CardSourceContentKind.Transcribed ||
                 card.Face.PrintedTextKind == CardSourceContentKind.Authored;
             var words = HudElements.Text(
                 transcribed ? card.Face.PrintedText : card.Face.EmptyTextLabel,
-                transcribed ? 10.5f : 9.5f,
+                transcribed ? 12f : 9.5f,
                 transcribed ? ink : MatchHudTheme.RulesPanelMutedText,
                 transcribed ? FontStyle.Normal : FontStyle.Italic);
             words.name = "gd-card-printed-text";
             words.style.flexGrow = 1f;
             words.style.flexShrink = 1f;
             words.style.unityTextAlign = TextAnchor.UpperLeft;
+            words.RegisterCallback<GeometryChangedEvent>(_ => FitMegdanText(words, transcribed ? 12f : 9.5f, 8.5f));
             panel.Add(words);
+
+            var footer = new VisualElement { name = "gd-megdan-card-footer" };
+            footer.style.flexDirection = FlexDirection.Row;
+            footer.style.alignItems = Align.Center;
+            footer.style.justifyContent = Justify.SpaceBetween;
+            footer.style.flexShrink = 0f;
 
             var spatial = card.Face.SpatialValue;
             if (spatial != null)
@@ -2540,7 +2577,7 @@ namespace GuardsDigital.Presentation.Match
                 badge.Add(spatialLabel);
                 CardValueOverlay.AddInline(badge, card.ValueBonuses, spatial.Channel);
                 badge.tooltip = spatial.AssistiveLabel;
-                panel.Add(badge);
+                footer.Add(badge);
             }
 
             var history = HudElements.Text(card.HistoryLabel, 8f, ink, FontStyle.Bold);
@@ -2548,7 +2585,11 @@ namespace GuardsDigital.Presentation.Match
             history.style.flexShrink = 0f;
             history.style.marginTop = 3f;
             history.style.unityTextAlign = TextAnchor.MiddleCenter;
-            panel.Add(history);
+            history.style.marginLeft = 4f;
+            history.style.flexGrow = 1f;
+            history.style.unityTextAlign = TextAnchor.MiddleRight;
+            footer.Add(history);
+            panel.Add(footer);
             return panel;
         }
 
