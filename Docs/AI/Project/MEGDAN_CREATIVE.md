@@ -4,6 +4,8 @@ Return to [project context](../PROJECT_CONTEXT.md). Private presentation studies
 
 ## Current decisions
 
+W-166 card presentation study: [six-card still](../../../Creative/card-redesign-v1/six-heroes-preview.png), with one existing card per mapped hero, larger transparent character artwork on typed-colour panels, cream title/rules panels, broader curved shields and solid diagonal movement arrows. Shows native 372:520 faces and a 223x312 hand-size row. Uses W-158's prepared portraits; their reconstruction limitations remain applicable. Existing values and wording are preserved, including Rowenna's separate primary Movement 2 versus secondary dash. Renderer: `Tools/Render-MegdanCardPreview.py`. Private still only, awaiting user feedback; no runtime integration or final art approval.
+
 W-164 concept still: [six illustrated standees](../../../Creative/standees/six-team-standees-v1.png), with upright thin cutout panels, raised circular bases (ram/cat/knight Red; goblin/grandmother/frog Blue) and soft contact shadows. Ram and goblin retain the supplied bust/head crops. Built-in image generation reconstructs the art with minor variation; prompt/provenance is beside the output. Still only, awaiting visual feedback; no runtime integration or 3D models.
 
 Latest six-hero game screenshot: `tmp/w163-six-heroes-live-match.png` (1920x1080, W-163). The ordinary local 3v3 camera/HUD shows Brogan, Riki and Rowenna against Tigerclaw, Gydion and Tali, with Riki's hand open.

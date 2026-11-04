@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-166 Preview refined cards for the six mapped heroes
+
+User requested a six-card comparison still following the preferred mockup. Produced larger transparent character compositions, cream panels, readable text hierarchy, broad curved shields and solid diagonal movement arrows. One existing card per hero appears at native aspect and hand size. Acceptance: source-linked values/wording, rendered inspection, documentation validation and local commit. Private preview only; no runtime/content/rules changes, package, video or publication. Existing W-165 runtime work remains unfinished and preserved.
+
+Historical evidence: immutable `work/W-166`; exact checks/results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-166 | Six-hero card visual study; preview only | `work/W-166` |
+
 ### [x] W-164 Preview illustrated standees with circular team bases
 
 User requested standees from the new tokens and selected a concept still first. Created a six-character product still with upright illustrated panels, visible edge thickness, three circular red and three circular blue raised bases, and contact shadows. Retained source identities, poses and defining props; ram/goblin remain bust/head cutouts. Output and exact prompt/provenance are preserved privately in Creative/standees. Acceptance: source/output visual inspection, all six present, correct team bases, documentation validation and local commit. Generated reconstruction has minor art/base variation. No runtime, rules, video, package or publication change.
