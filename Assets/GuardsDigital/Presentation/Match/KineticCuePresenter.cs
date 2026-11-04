@@ -6,11 +6,69 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Presentation.Match
 {
+    /// <summary>
+    /// Derives the board-space journey used only to draw a completed Fast Travel.
+    /// Fast Travel authority remains endpoint-based and does not require this route to exist.
+    /// </summary>
+    public static class FastTravelPresentationRoute
+    {
+        public static IReadOnlyList<HexCoordinate> Find(
+            HeroId heroId,
+            HexCoordinate origin,
+            HexCoordinate destination,
+            BoardMapDefinition map,
+            IEnumerable<HeroOccupancy> heroes,
+            IEnumerable<ObstacleOccupancy> obstacles,
+            IEnumerable<MinionOccupancy> minions)
+        {
+            var direct = new[] { origin, destination };
+            if (!heroId.IsDefined || map == null || origin.Equals(destination))
+            {
+                return direct;
+            }
+
+            var standing = (heroes ?? Enumerable.Empty<HeroOccupancy>()).ToArray();
+            var arrivedBodies = standing.Where(value =>
+                value.HeroId.Equals(heroId) && value.Coordinate.Equals(destination)).ToArray();
+            if (arrivedBodies.Length != 1)
+            {
+                return direct;
+            }
+
+            // The projection already contains the completed Fast Travel, so put only the acting body
+            // back at the recorded origin for this pure visual query. Every other body and piece stays
+            // where the public projection says it stands.
+            var arrived = arrivedBodies[0];
+            var departed = new HeroOccupancy(arrived.HeroId, arrived.Body, origin);
+            var beforeTravel = standing
+                .Where(value => !(value.HeroId.Equals(arrived.HeroId) && value.Body == arrived.Body))
+                .Concat(new[] { departed });
+            var maximumDistance = Math.Max(0, map.PlayableCoordinates.Count - 1);
+            var route = MovementReachabilityQuery.FindReachableDestinations(
+                    departed,
+                    map.PlayableCoordinates,
+                    beforeTravel,
+                    obstacles ?? Enumerable.Empty<ObstacleOccupancy>(),
+                    minions ?? Enumerable.Empty<MinionOccupancy>(),
+                    maximumDistance)
+                .FirstOrDefault(value => value.Destination.Equals(destination))
+                .Route;
+
+            // Fast Travel has no path requirement. A board can therefore allow the authoritative
+            // relocation while ordinary empty-space movement cannot connect the endpoints; drawing
+            // the old direct journey is the honest fallback and never changes the accepted action.
+            return route ?? direct;
+        }
+    }
+
     /// <summary>
     /// Milestone 8.35y. What a surface should play right now, and what should currently be
     /// breathing.
@@ -694,7 +752,16 @@ namespace GuardsDigital.Presentation.Match
                                 subject,
                                 route: entry.Kind == MatchLogEntryKind.Move && entry.MovementRoute.Count >= 2
                                     ? entry.MovementRoute
-                                    : new[] { entry.Origin, entry.Destination })
+                                    : entry.Kind == MatchLogEntryKind.FastTravel && projection != null
+                                        ? FastTravelPresentationRoute.Find(
+                                            entry.SubjectHeroId,
+                                            entry.Origin,
+                                            entry.Destination,
+                                            projection.SelectedMap,
+                                            projection.Heroes,
+                                            projection.Obstacles,
+                                            projection.Minions)
+                                        : new[] { entry.Origin, entry.Destination })
                         },
                         label: "slide:" + entry.SubjectHeroId));
                     return;

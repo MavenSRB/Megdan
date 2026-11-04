@@ -5,8 +5,10 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 
@@ -138,6 +140,57 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(cues.Count, Is.EqualTo(1));
             Assert.That(cues[0].Kind, Is.EqualTo(KineticCueKind.Slide));
+        }
+
+        [Test]
+        public void FastTravelPresentationRoute_WalksAroundOccupiedSpaces()
+        {
+            var origin = new HexCoordinate(0, 0);
+            var blocked = new HexCoordinate(1, 0);
+            var destination = new HexCoordinate(2, 0);
+            var detourOne = new HexCoordinate(0, 1);
+            var detourTwo = new HexCoordinate(1, 1);
+            var map = BoardMapDefinition.CreateSynthetic(
+                new MapId("fast-travel-animation"), 1,
+                new[] { origin, blocked, destination, detourOne, detourTwo });
+
+            var route = FastTravelPresentationRoute.Find(
+                Attacker,
+                origin,
+                destination,
+                map,
+                new[]
+                {
+                    new HeroOccupancy(Attacker, destination),
+                    new HeroOccupancy(Defender, blocked)
+                },
+                Array.Empty<ObstacleOccupancy>(),
+                Array.Empty<MinionOccupancy>());
+
+            Assert.That(route, Is.EqualTo(new[] { origin, detourOne, detourTwo, destination }),
+                "The visual journey should use the same adjacent empty-space shape as ordinary movement.");
+        }
+
+        [Test]
+        public void FastTravelPresentationRoute_WithNoEmptyRoute_PreservesTheLegalDirectFallback()
+        {
+            var origin = new HexCoordinate(0, 0);
+            var destination = new HexCoordinate(2, 0);
+            var map = BoardMapDefinition.CreateSynthetic(
+                new MapId("pathless-fast-travel-animation"), 1,
+                new[] { origin, destination });
+
+            var route = FastTravelPresentationRoute.Find(
+                Attacker,
+                origin,
+                destination,
+                map,
+                new[] { new HeroOccupancy(Attacker, destination) },
+                Array.Empty<ObstacleOccupancy>(),
+                Array.Empty<MinionOccupancy>());
+
+            Assert.That(route, Is.EqualTo(new[] { origin, destination }),
+                "Presentation cannot turn Fast Travel's pathless rules permission into a rejection.");
         }
 
         [Test]

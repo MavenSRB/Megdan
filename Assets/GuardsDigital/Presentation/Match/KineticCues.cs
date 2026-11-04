@@ -320,16 +320,10 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// The spaces a slide travels, in order, starting where the piece stood.
         ///
-        /// <para><b>Two waypoints is the honest maximum today, and that is a recorded finding rather
-        /// than a shortcut.</b> The SIXTEENTH AMENDMENT assumed "the events carry the steps"; they do
-        /// not reach a client. <c>MatchLogEntry</c>'s own contract excludes "a per-hex movement step"
-        /// by name, and <c>MatchLogProjection</c> folds a whole move into ONE row keeping only the
-        /// first origin and the last destination. Carrying the true per-hex route to a seat would be a
-        /// change to that selection contract and to the wire schema - Core, Application and Network
-        /// territory, not Presentation's. So a slide travels from the space the piece left to the
-        /// space it reached, which is a true statement about the move and an enormous improvement on
-        /// teleporting. This list is shaped for N waypoints so that a later milestone which does carry
-        /// the route drops it in here without a view changing at all.</para>
+        /// <para>Ordinary Movement carries every committed space from the public match log. Fast
+        /// Travel remains an endpoint-only rules fact, but Presentation derives a deterministic
+        /// adjacent empty-space journey when one exists and uses the endpoint pair as its honest
+        /// fallback when the pathless Fast Travel rule reaches somewhere ordinary movement cannot.</para>
         /// </summary>
         public IReadOnlyList<HexCoordinate> Route { get; }
 

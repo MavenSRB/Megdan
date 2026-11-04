@@ -65,6 +65,68 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class KineticCuePlayModeTests
     {
         [UnityTest]
+        public IEnumerator TheRealHud_FastTravelFollowsItsDerivedAdjacentRoute()
+        {
+            yield return LoadMirrorScene();
+            var runtime = Root().Runtime;
+            var blueHeroId = HeroOf(runtime, TeamSide.Blue);
+            var subject = KineticSubject.ForHero(blueHeroId);
+
+            Commit(runtime, TeamSide.Red, WaspCardContent.Shock);
+            Commit(runtime, TeamSide.Blue, WaspCardContent.MagneticDagger);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
+
+            var authorityOffer = runtime.Projection.AvailableFastTravelOptions.Single();
+            var journey = authorityOffer.LegalDestinations
+                .Select(destination =>
+                {
+                    var after = runtime.ReadModel.Heroes.Select(hero =>
+                        hero.HeroId.Equals(blueHeroId)
+                            ? hero.MovedTo(destination)
+                            : hero).ToArray();
+                    return new
+                    {
+                        Destination = destination,
+                        Route = FastTravelPresentationRoute.Find(
+                            blueHeroId,
+                            runtime.ReadModel.Heroes.Single(hero =>
+                                hero.HeroId.Equals(blueHeroId)).Coordinate,
+                            destination,
+                            runtime.ReadModel.SelectedMap,
+                            after,
+                            runtime.ReadModel.Obstacles,
+                            runtime.ReadModel.Minions)
+                    };
+                })
+                .First(value => value.Route.Count > 2);
+
+            Assert.That(runtime.RoundPresenter.SelectFastTravel(
+                runtime.RoundView.Model.FastTravelOffers.Single()), Is.True);
+            Assert.That(runtime.BoardPresenter.SubmitDestination(journey.Destination), Is.True);
+
+            const float Frame = 1f / 60f;
+            var drainedFrames = 0;
+            while (runtime.KineticView.Playback.RouteFor(subject) == null && drainedFrames < 600)
+            {
+                runtime.KineticView.Tick(Frame);
+                drainedFrames++;
+            }
+
+            Assert.That(drainedFrames, Is.LessThan(600));
+            var played = runtime.KineticView.Playback.RouteFor(subject);
+            Assert.That(played, Is.EqualTo(journey.Route));
+            Assert.That(played.Count, Is.GreaterThan(2),
+                "Fast Travel should bend through intervening hexes instead of flying directly over them.");
+            for (var index = 1; index < played.Count; index++)
+            {
+                Assert.That(played[index - 1].GetNeighbors(), Does.Contain(played[index]),
+                    "Every visible Fast Travel leg should be one ordinary adjacent movement step.");
+            }
+
+            yield return UiPlayer.CaptureScreen("tmp/w180-fast-travel-route.png");
+        }
+
+        [UnityTest]
         public IEnumerator TheRealHud_SlidesThePieceItMovedAndLungesTheAttackItResolved()
         {
             yield return LoadEngagedScene();
@@ -550,6 +612,21 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.EnsurePlayerViewport();
             MatchSceneCompositionRoot.NextComposedCardContent =
                 SceneCardContent.VerifiedEngagedMirror;
+            var operation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(operation, Is.Not.Null);
+            while (!operation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+            yield return null;
+        }
+
+        private static IEnumerator LoadMirrorScene()
+        {
+            UiPlayer.EnsurePlayerViewport();
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.VerifiedMirror;
             var operation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(operation, Is.Not.Null);
             while (!operation.isDone)

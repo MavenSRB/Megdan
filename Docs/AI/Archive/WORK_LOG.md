@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-180 Animate Fast Travel along an ordinary movement route
+
+Request: make Fast Travel follow a step-by-step legal route instead of flying directly over intervening spaces. Outcome: presentation derives a deterministic adjacent route through playable unoccupied spaces and feeds it to the existing kinetic slide for replacement-action and card-text Fast Travel; pathless rules authority and destination eligibility remain unchanged, with direct endpoint playback only when no ordinary empty route exists.
+
+Historical evidence: immutable `work/W-180`; exact failing/passing checks, visual review, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-180 | Fast Travel follows a deterministic stepwise visual route without changing its rules | `work/W-180` |
+
 ### [x] W-179 Package both presentation fixes for Windows
 
 Request: create a new private Windows build containing W-177 flat standee-relative Defense shields and W-178 precise bush clearance. Scope: one fresh candidate, same-artifact player/board/multiplayer smokes, archive/hash/extracted launch checks; reuse unaffected focused source evidence. Acceptance: both committed fixes included, six-hero roster preserved, exact package identity and local delivery, documentation validation and local commit. No remote publication or Mac build.
