@@ -57,6 +57,22 @@ namespace GuardsDigital.Tests.PlayMode
                 decoration.ApplyClearance(System.Array.Empty<Bounds>());
                 Assert.That(firstPanel.gameObject.activeSelf, Is.True, "Moving/removing a piece restores the decoration.");
                 Assert.That(firstPatch.gameObject.activeSelf, Is.True);
+                var patchOnly = firstPatch.position + Vector3.forward * firstPatch.lossyScale.z * .4f;
+                decoration.ApplyClearance(new[] { new Bounds(patchOnly, Vector3.one * .04f) });
+                Assert.That(firstPanel.gameObject.activeSelf, Is.True,
+                    "A token touching only the cleanup patch must not hide a separate upright bush.");
+                camera.transform.rotation = Quaternion.Euler(50,45,0);
+                decoration.Refresh(camera);
+                var halfWidth = firstPanel.right * firstPanel.lossyScale.x * .5f;
+                var emptyCorner = firstPanel.position + new Vector3(Mathf.Abs(halfWidth.x),0,Mathf.Abs(halfWidth.z));
+                decoration.ApplyClearance(new[] { new Bounds(emptyCorner, Vector3.one * .04f) });
+                Assert.That(firstPanel.gameObject.activeSelf, Is.True,
+                    "A token in an empty corner of a rotated panel's bounding box must leave the bush visible.");
+                decoration.ApplyClearance(new[] { blocker });
+                Assert.That(firstPanel.gameObject.activeSelf, Is.False, "Real panel intersections still hide the bush after rotation.");
+                decoration.ApplyClearance(System.Array.Empty<Bounds>());
+                camera.transform.rotation = Quaternion.Euler(50,0,0);
+                decoration.Refresh(camera);
                 Assert.That(root.GetComponentsInChildren<Collider>(true), Is.Empty);
                 yield return null;
                 Capture(camera,"tmp/grass-standees-restart-angled.png");

@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-178 Keep nearby bushes visible around pieces
+
+Request: investigate and repair missing middle-board bushes attributed to token clearance. Scope: vegetation presentation only. Acceptance: only panels physically intersecting a piece footprint plus the existing small margin disappear; ground-cleanup patch overlap and rotated bounding-box corners do not hide nearby panels; movement restores hidden plants. Closing checks: failing/passing focused vegetation regressions, live configured-board capture, T2 affected tests, documentation validation and local commit. No rules, package or publication changes.
+
+Historical evidence: immutable `work/W-178`; exact failing/passing checks, results, review and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-178 | Bush clearance uses the actual upright panel footprint rather than cleanup patches or bounding-box corners | `work/W-178` |
+
 ### [x] W-177 Flat camera-rotating Defense shield
 
 Request: lay the Defense modifier shield flat on the hero base at a fixed offset relative to the rotating standee. Scope: presentation geometry and directly affected tests only; no rule/value changes or package. Accepted: horizontal shield/text above the base through camera pitch/yaw changes, fixed standee-left rim placement, focused T2 Edit/Play checks and rendered inspection, documentation validation, review and local commit.

@@ -128,17 +128,21 @@ namespace GuardsDigital.Presentation.Board
             for (int i=0; i<panels.Count; i++)
             {
                 var panel = panels[i].transform;
-                var patch = groundPatches[i].transform;
-                var bounds = new Bounds(patch.position, new Vector3(patch.lossyScale.x,0,patch.lossyScale.z));
+                // Clearance belongs to the upright panel's ground segment, not the larger
+                // cleanup painting or the empty corners of a rotated axis-aligned box.
                 var halfWidth = panel.right * (panel.lossyScale.x * .5f);
-                bounds.Encapsulate(panel.position - halfWidth);
-                bounds.Encapsulate(panel.position + halfWidth);
+                var start = panel.position - halfWidth;
+                var length = panel.lossyScale.x;
+                var ray = new Ray(start, panel.right);
                 bool clear = true;
                 foreach (var footprint in footprints)
                 {
                     const float margin = .10f;
-                    if (bounds.min.x <= footprint.max.x+margin && bounds.max.x >= footprint.min.x-margin &&
-                        bounds.min.z <= footprint.max.z+margin && bounds.max.z >= footprint.min.z-margin)
+                    var flatFootprint = new Bounds(
+                        new Vector3(footprint.center.x, panel.position.y, footprint.center.z),
+                        new Vector3(footprint.size.x + margin*2, 1f, footprint.size.z + margin*2));
+                    if (flatFootprint.Contains(start) ||
+                        (flatFootprint.IntersectRay(ray, out float distance) && distance <= length))
                     { clear = false; break; }
                 }
                 panels[i].SetActive(clear);

@@ -43,6 +43,13 @@ namespace GuardsDigital.Tests.PlayMode
             camera.orthographicSize = 2.1f;
             yield return null;
             yield return UiPlayer.CaptureScreen("tmp/w172-grass-low-angle-detail.png");
+            var heroes = root.Runtime.BoardView.HeroViews.Where(h => h.gameObject.activeInHierarchy).ToArray();
+            focus = Vector3.zero;
+            foreach (var hero in heroes) focus += hero.transform.position / heroes.Length;
+            camera.transform.SetPositionAndRotation(focus - rotation * Vector3.forward * 18f, rotation);
+            camera.orthographicSize = 7f;
+            yield return new WaitForSecondsRealtime(1f);
+            yield return UiPlayer.CaptureScreen("tmp/w178-middle-board-clearance.png");
         }
 
         [UnityTest]
