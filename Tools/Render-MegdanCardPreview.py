@@ -1,10 +1,10 @@
-"""Private W-166 card-layout study. Does not write runtime assets or card definitions."""
+"""Private W-167 card-layout study. Does not write runtime assets or card definitions."""
 from pathlib import Path
 import math
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'Creative/card-redesign-v1'
+OUT = ROOT / 'Creative/card-redesign-v2'
 OUT.mkdir(parents=True, exist_ok=True)
 S = 3
 INK = '#1b2931'
@@ -81,12 +81,16 @@ def card(data):
     d.polygon(points,fill=color);d.line(points,fill=CREAM,width=2*S,joint='curve')
     center(d,38,134,defense or '–',30,CREAM,True)
     center(d,38,185,'DEF',9,GOLD,True)
-    # Broad diagonal arrow leaves its central field clear for the value.
-    pts=[(11,251),(31,231),(20,220),(65,209),(65,254),(53,242),(33,263),(11,251)]
-    points=[(x*S,y*S) for x,y in pts]
-    d.polygon(points,fill=color);d.line(points,fill=CREAM,width=2*S,joint='curve')
-    center(d,42,236,move or '–',27,CREAM,True)
-    center(d,38,282,'MOVE',9,GOLD,True)
+    # Symmetrical upright arrow: a clear triangular head and straight shaft.
+    # A missing secondary Movement action has no icon, dash or MOVE label.
+    if move > 0:
+        pts=[(38,207),(65,233),(54,233),(54,269),
+             (22,269),(22,233),(11,233),(38,207)]
+        points=[(x*S,y*S) for x,y in pts]
+        d.polygon(points,fill=color)
+        d.line(points,fill=CREAM,width=2*S,joint='curve')
+        center(d,38,249,move,25,CREAM,True)
+        center(d,38,282,'MOVE',9,GOLD,True)
     rounded((15,312,356,502),8,fill=CREAM)
     center(d,185,333,primary,18,INK,True)
     d.line((28*S,350*S,343*S,350*S),fill=GOLD,width=S)
@@ -109,7 +113,7 @@ def label(x,y,text,n,color=CREAM):
     f=ImageFont.truetype('C:/Windows/Fonts/arialbd.ttf',n)
     d.text((x,y),text,font=f,fill=color,anchor='mm')
 label(1210,38,'MEGDAN  /  CARD DESIGN STUDY',28)
-label(1210,72,'Larger character art · cream panels · clearer shield and movement silhouettes',17,'#a9bdc8')
+label(1210,72,'Revised movement arrow · secondary Movement shown only when available',17,'#a9bdc8')
 for i,data in enumerate(CARDS):
     face=card(data);x=24+i*400
     label(x+186,112,data[0],16,GOLD)

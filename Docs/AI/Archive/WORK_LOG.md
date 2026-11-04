@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-167 Refine preview arrows and omit absent secondary Movement
+
+User rejected W-166's arrow and requested no arrow where secondary Movement is absent. Revised the private renderer to draw a symmetrical upright arrow only for positive existing secondary Movement. The four other cards omit the shape, dash and label, while Rowenna's primary Movement 2 remains. Acceptance: inspect both rendered sizes, check absent/present cases against existing card values, documentation validation and local commit. No runtime, rules, content, package or publication changes; W-166 preserved.
+
+Historical evidence: immutable `work/W-167`; exact checks/results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-167 | Corrected movement-arrow private card preview | `work/W-167` |
+
 ### [x] W-166 Preview refined cards for the six mapped heroes
 
 User requested a six-card comparison still following the preferred mockup. Produced larger transparent character compositions, cream panels, readable text hierarchy, broad curved shields and solid diagonal movement arrows. One existing card per hero appears at native aspect and hand size. Acceptance: source-linked values/wording, rendered inspection, documentation validation and local commit. Private preview only; no runtime/content/rules changes, package, video or publication. Existing W-165 runtime work remains unfinished and preserved.

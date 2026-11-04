@@ -4,6 +4,8 @@ Return to [project context](../PROJECT_CONTEXT.md). Private presentation studies
 
 ## Current decisions
 
+W-167 supersedes W-166's rejected movement-arrow design with a symmetrical upright arrow, straight shaft and centred value. [Revised six-card still](../../../Creative/card-redesign-v2/six-heroes-preview.png). Cards without secondary Movement omit the entire arrow, dash and MOVE label; Rowenna's primary Movement 2 remains in the action heading. Other card artwork, values, text and layout remain unchanged. Private preview only, awaiting feedback; W-166 output is preserved and runtime remains unchanged.
+
 W-166 card presentation study: [six-card still](../../../Creative/card-redesign-v1/six-heroes-preview.png), with one existing card per mapped hero, larger transparent character artwork on typed-colour panels, cream title/rules panels, broader curved shields and solid diagonal movement arrows. Shows native 372:520 faces and a 223x312 hand-size row. Uses W-158's prepared portraits; their reconstruction limitations remain applicable. Existing values and wording are preserved, including Rowenna's separate primary Movement 2 versus secondary dash. Renderer: `Tools/Render-MegdanCardPreview.py`. Private still only, awaiting user feedback; no runtime integration or final art approval.
 
 W-164 concept still: [six illustrated standees](../../../Creative/standees/six-team-standees-v1.png), with upright thin cutout panels, raised circular bases (ram/cat/knight Red; goblin/grandmother/frog Blue) and soft contact shadows. Ram and goblin retain the supplied bust/head crops. Built-in image generation reconstructs the art with minor variation; prompt/provenance is beside the output. Still only, awaiting visual feedback; no runtime integration or 3D models.
