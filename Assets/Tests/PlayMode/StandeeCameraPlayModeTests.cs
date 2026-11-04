@@ -39,10 +39,10 @@ namespace GuardsDigital.Tests.PlayMode
             camera.orthographicSize = 3.6f;
             yield return new WaitForSecondsRealtime(1f);
             Assert.That(root.MapView.GetComponent<GuardsDigital.Presentation.Board.GrassDecorationStandees>().IsStanding, Is.True);
-            yield return UiPlayer.CaptureScreen("tmp/w170-grass-low-angle-live-match.png");
+            yield return UiPlayer.CaptureScreen("tmp/w172-grass-low-angle-live-match.png");
             camera.orthographicSize = 2.1f;
             yield return null;
-            yield return UiPlayer.CaptureScreen("tmp/w170-grass-low-angle-detail.png");
+            yield return UiPlayer.CaptureScreen("tmp/w172-grass-low-angle-detail.png");
         }
 
         [UnityTest]

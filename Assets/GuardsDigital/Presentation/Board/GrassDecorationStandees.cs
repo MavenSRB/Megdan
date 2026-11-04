@@ -122,7 +122,7 @@ namespace GuardsDigital.Presentation.Board
             if (renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy)
                 pieceBounds.Add(renderer.bounds);
         }
-        /// <summary>Presentation bounds only: raised panels and their cleanup patches retire together.</summary>
+        /// <summary>Hide intersecting panels; keep their painted originals covered until the whole layer goes flat.</summary>
         public void ApplyClearance(IReadOnlyList<Bounds> footprints)
         {
             for (int i=0; i<panels.Count; i++)
@@ -142,7 +142,7 @@ namespace GuardsDigital.Presentation.Board
                     { clear = false; break; }
                 }
                 panels[i].SetActive(clear);
-                groundPatches[i].SetActive(clear);
+                groundPatches[i].SetActive(true);
             }
         }
         private void LateUpdate() => Refresh(viewCamera);

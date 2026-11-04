@@ -50,7 +50,7 @@ namespace GuardsDigital.Tests.PlayMode
                 var blocker = new Bounds(firstPanel.position, Vector3.one * .1f);
                 decoration.ApplyClearance(new[] { blocker });
                 Assert.That(firstPanel.gameObject.activeSelf, Is.False, "A piece excludes an intersecting standee.");
-                Assert.That(firstPatch.gameObject.activeSelf, Is.False, "Its flat original must return together with it.");
+                Assert.That(firstPatch.gameObject.activeSelf, Is.True, "Keep the painted plant covered when its upright panel is hidden.");
                 decoration.Refresh(camera);
                 decoration.ApplyClearance(new[] { blocker });
                 Assert.That(firstPanel.gameObject.activeSelf, Is.False, "Inactive panels must keep stable clearance bounds.");

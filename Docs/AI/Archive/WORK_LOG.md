@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-172 Hide intersecting plants while keeping angled vegetation upright
+
+User requested upright-only vegetation in angled views and the same low-angle screenshot. Intersecting panels now hide while their ground cleanup patches remain visible, preventing the original painted plant from returning flat. Panels restore when clear; the entire layer still switches to the original flat tiles at 80 degrees and returns below 79. Acceptance: observed failing-then-passing patch regression, affected switch/rebuild/clearance checks, inspected actual-match 25-degree screenshots, documentation validation and local commit. Earlier screenshots remain preserved. No rules, package or publication changes.
+
+Historical evidence: immutable `work/W-172`; exact checks/results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-172 | Hide intersecting standees without restoring flat plants | `work/W-172` |
+
 ### [x] W-171 Keep grass standees clear of board pieces
 
 After W-170's close capture, user requested vegetation stop cutting through tokens. Intersecting upright decorations and their cleanup patches now restore the original flat artwork around visible hero, minion and placed-token footprints; they return when the piece moves away. Clearance uses current presentation bounds and preserves angle switching. Acceptance: exclusion, stable hidden bounds, reactivation and switch regressions; repeated actual-game low-angle capture and visual review; documentation/diff checks and local commit. Rules and existing packages remain unchanged.

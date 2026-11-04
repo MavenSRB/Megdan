@@ -28,7 +28,9 @@ All decorations switch together at 80 degrees to the original flat tile, returni
 
 Four-variant runtime inspections: `tmp/grass-standees-restart-angled.png` and `tmp/grass-standees-restart-top-down.png`. The abandoned raster-extraction script/output remains private historical work and is not consumed by runtime.
 
-W-170 captures the actual configured match at 25 degrees with the normal HUD: `tmp/w170-grass-low-angle-live-match.png` and the closer `tmp/w170-grass-low-angle-detail.png`. Initial inspection exposed decoration overlap on minion faces. W-171 refreshes these captures after adding clearance: panels and cleanup patches fall back together to the original flat artwork whenever their board-plane extent intersects a visible hero, minion or placed-token footprint, including a small margin. The check follows current piece positions each frame and restores upright decorations after a piece moves away; inactive panel bounds are calculated from transforms so hiding cannot invalidate clearance. This remains presentation-only.
+W-170 captures the actual configured match at 25 degrees with the normal HUD: `tmp/w170-grass-low-angle-live-match.png` and the closer `tmp/w170-grass-low-angle-detail.png`. W-171 refreshes these after adding piece clearance. W-172 supersedes its flat-plant fallback: only the intersecting panel disappears; the cleanup patch stays visible so no flat painted plant returns in an angled view. The check follows visible hero, minion and placed-token footprints each frame, including a small margin, and restores upright decorations after a piece moves away. Inactive panel bounds are calculated from transforms so hiding cannot invalidate clearance. At 80 degrees the entire decoration layer, including cleanup patches, switches off to reveal the untouched original flat tile. This remains presentation-only.
+
+Current same-camera W-172 stills: `tmp/w172-grass-low-angle-live-match.png` and `tmp/w172-grass-low-angle-detail.png`. Earlier W-170 captures remain preserved for comparison.
 
 ## Creeps and evidence
 
