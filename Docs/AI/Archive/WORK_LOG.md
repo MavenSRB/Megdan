@@ -1,5 +1,17 @@
 # Work completion index
 
+### [x] W-159 Emphasize initiative with a clock badge
+
+User requested that initiative stand out by placing its number inside a clock. Revised the latest four verified prototype faces so initiative uses a larger gold-rimmed circular dial with twelve clock ticks; defense and movement remain rectangular ribbon cells. Delivered `three-heroes-cards-v10.png` as a new still while preserving the native 372:520 card proportions, values, rules text, supplied artwork and board composition. Acceptance: deterministic render, native face-size checks and visual inspection. No video, runtime, rule or publication change.
+
+Historical evidence: immutable `work/W-159`; exact checks/results and limitations live in its commit body.
+
+### [x] W-158 Prepare six minimally altered concept portraits
+
+User requested portrait assets from Veljko's six supplied character illustrations, then explicitly required minimal intervention and preservation of each character's existing orientation. Delivered six separate 1254x1254 transparent PNGs for the knight, ram warrior, goblin, grandmother/cat, frog wizard and cat duelist, with source mapping and prompt provenance beside them. Visual comparison confirms the original facing directions, poses and defining designs remain recognizable; source files are untouched. These are private AI-assisted concept reconstructions, not pixel-exact crops, approved final hero canon, runtime integration or publication.
+
+Historical evidence: immutable `work/W-158`; exact checks/results and limitations live in its commit body.
+
 ### [x] W-157 Animate the approved three-hero initiative sequence
 
 User requested commitments/reveal, frog displacement, cat charge/attack, knight defense and subsequent movement on its own committed card. Delivered a private 44-second captioned concept animation using supplied artwork and verified prototype cards. Initiative 9/7/3; one-space enemy move; straight two-space charge and Attack 6; uncommitted Defense 6 spent to discard; Focus secondary Movement 2 into two clear grass hexes. Resolved commitments remain in the turn area; defense is a response. Acceptance: focused geometry/timeline checks, keyframe review and exact artifact metadata/decode checks. No runtime, rules, narration or publication changes.
@@ -28,6 +40,8 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-159 | Prominent clock-shaped initiative badges on the latest verified prototype card still. | `work/W-159` |
+| W-158 | Six minimally altered transparent concept portraits preserving the supplied characters' existing orientations and defining designs. | `work/W-158` |
 | W-157 | Animated private three-hero commitment, initiative, attack/defense and movement sequence. | `work/W-157` |
 | W-156 | Three-hero pre-resolution still with verified cards and Veljko's supplied frog wizard. | `work/W-156` |
 | W-155 | Illustrated native-aspect cards integrated into the grass-board still. | `work/W-155` |
