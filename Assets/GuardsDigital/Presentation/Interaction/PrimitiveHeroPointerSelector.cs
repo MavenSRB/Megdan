@@ -121,8 +121,8 @@ namespace GuardsDigital.Presentation.Interaction
             var capsule = GetComponent<CapsuleCollider>();
             capsule.direction = 1;
             capsule.radius = hero != null ? hero.SelectionRadius : PrimitiveHeroView.DefaultBaseRadius;
-            capsule.height = PrimitiveHeroView.DefaultHeight;
-            capsule.center = Vector3.up * (PrimitiveHeroView.DefaultHeight * 0.5f);
+            capsule.height = hero != null ? hero.SelectionHeight : PrimitiveHeroView.DefaultHeight;
+            capsule.center = Vector3.up * (capsule.height * 0.5f);
         }
 
         private void Awake()

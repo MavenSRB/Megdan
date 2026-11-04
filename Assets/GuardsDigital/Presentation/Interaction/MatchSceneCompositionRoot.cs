@@ -2167,6 +2167,11 @@ namespace GuardsDigital.Presentation.Interaction
             // at: this root already resolved both.
             runtime.SpotlightView.CameraSource = () => eventCamera;
             runtime.SpotlightView.BoardFramingRestored = mapView.ReapplyCameraFrame;
+            var navigation = eventCamera.GetComponent<BoardCameraController>() ??
+                eventCamera.gameObject.AddComponent<BoardCameraController>();
+            navigation.Configure(hud.BlocksPointerAt, () => runtime.SpotlightView.IsDrivingCamera, hud.RootElement);
+            // Reuse the map's proven home frame and bounds; later redraws preserve the player's pose.
+            mapView.ReapplyCameraFrame();
             Match.AttackSpotlightDriver.Attach(
                 gameObject, runtime.SpotlightPresenter, runtime.SpotlightView);
 

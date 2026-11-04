@@ -126,14 +126,15 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_UsesOneFixedTopDownCameraWithPointerInputAndNoCameraController()
+        public void Scene_UsesOneNavigableCameraWithPointerInputAndATopDownHome()
         {
             OpenConfiguredScene();
             var cameras = Object.FindObjectsByType<Camera>();
 
             Assert.That(cameras, Has.Length.EqualTo(1));
             Assert.That(cameras[0].name, Is.EqualTo("Fixed Camera"));
-            Assert.That(cameras[0].GetComponents<MonoBehaviour>(), Has.All.TypeOf<PrimitiveHeroPointerInput>());
+            Assert.That(cameras[0].GetComponents<PrimitiveHeroPointerInput>(), Has.Length.EqualTo(1));
+            Assert.That(cameras[0].GetComponents<BoardCameraController>(), Has.Length.EqualTo(1));
             Assert.That(cameras[0].transform.position.y, Is.GreaterThan(0f));
             RebuildOfficialMap();
             Assert.That(cameras[0].orthographic, Is.True);

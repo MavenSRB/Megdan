@@ -28,6 +28,10 @@ namespace GuardsDigital.Presentation.Units.Minions
         private BoardTargetRing targetRing;
         private MinionBattlePickBadges pickBadges;
         private int defenseContributionAmount;
+        private Mesh tokenBodyMesh;
+        private Material tokenBodyMaterial;
+        private GameObject tokenBody;
+        public Renderer TokenBodyRenderer => tokenBody == null ? null : tokenBody.GetComponent<MeshRenderer>();
 
         public MinionOccupancy Occupancy => occupancy;
         public MinionId BoundMinionId => occupancy != null
@@ -85,6 +89,7 @@ namespace GuardsDigital.Presentation.Units.Minions
             var renderer = GetComponent<SpriteRenderer>();
             renderer.sprite = StandardMinionArtCatalog.Load(state.TeamSide, state.MinionType);
             renderer.sortingOrder = 10;
+            EnsureTokenBody(renderer.sprite);
             if (identityChanged)
             {
                 SetDefenseContributionHighlight(0);
@@ -159,6 +164,8 @@ namespace GuardsDigital.Presentation.Units.Minions
 
         private void OnDestroy()
         {
+            DestroyBodyResource(tokenBodyMesh);
+            DestroyBodyResource(tokenBodyMaterial);
             if (!ReferenceEquals(targetRing, null))
             {
                 targetRing.ReleaseOwnedResources();
@@ -168,6 +175,51 @@ namespace GuardsDigital.Presentation.Units.Minions
             {
                 pickBadges.ReleaseOwnedResources();
             }
+        }
+
+        private void EnsureTokenBody(Sprite sprite)
+        {
+            if (tokenBody == null)
+            {
+                tokenBody = new GameObject("Solid creep token", typeof(MeshFilter), typeof(MeshRenderer));
+                tokenBody.transform.SetParent(transform, false);
+                float radius = Mathf.Min(sprite.bounds.extents.x, sprite.bounds.extents.y);
+                tokenBodyMesh = CreateTokenBody(radius, BoardPieceDepth.Standard / DefaultScale);
+                tokenBody.GetComponent<MeshFilter>().sharedMesh = tokenBodyMesh;
+                tokenBodyMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                tokenBody.GetComponent<MeshRenderer>().sharedMaterial = tokenBodyMaterial;
+            }
+            tokenBodyMaterial.color = Heroes.HeroTokenArtwork.TeamRim(occupancy.TeamSide);
+        }
+
+        public static Mesh CreateTokenBody(float radius, float depth)
+        {
+            const int count = 64;
+            var vertices = new Vector3[count * 2 + 2];
+            var triangles = new int[count * 12];
+            vertices[count * 2] = new Vector3(0, 0, -0.001f);
+            vertices[count * 2 + 1] = new Vector3(0, 0, -depth);
+            for (int i = 0; i < count; i++)
+            {
+                float angle = i * Mathf.PI * 2f / count;
+                vertices[i] = new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, -0.001f);
+                vertices[i + count] = new Vector3(vertices[i].x, vertices[i].y, -depth);
+                int next = (i + 1) % count;
+                int k = i * 12;
+                triangles[k] = count * 2; triangles[k+1] = i; triangles[k+2] = next;
+                triangles[k+3] = count * 2 + 1; triangles[k+4] = next + count; triangles[k+5] = i + count;
+                triangles[k+6] = i; triangles[k+7] = i + count; triangles[k+8] = next;
+                triangles[k+9] = next; triangles[k+10] = i + count; triangles[k+11] = next + count;
+            }
+            var mesh = new Mesh { name = "Solid circular creep token", vertices = vertices, triangles = triangles };
+            mesh.RecalculateNormals(); mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private static void DestroyBodyResource(Object value)
+        {
+            if (value == null) return;
+            if (UnityEngine.Application.isPlaying) Destroy(value); else DestroyImmediate(value);
         }
 
         private void RefreshTargetCue()

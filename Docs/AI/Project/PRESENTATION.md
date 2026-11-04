@@ -6,9 +6,9 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 - Active-effect ring order is token, violet effect ring, then gold activity ring. Without an effect, activity contracts beside the token. The radius tint uses the shipped Unlit alpha-blended template unchanged, at the shared overlay alpha, so board markings remain visible in built players as well as the Editor.
 - The Unity scene is 3D from the beginning, with the board on the XZ plane.
-- Early implementation uses primitive meshes and a fixed camera.
+- Board navigation, standee switching and creep thickness follow [the camera/standee contract](BOARD_CAMERA_AND_STANDEES.md).
 - URP 17.5 is the accepted rendering baseline: one checked-in pipeline is active globally and at all six quality levels, and retained primitive authored/runtime materials use URP Lit or URP Unlit. Built-In-only shaders, production art direction, final lighting, and post-processing remain outside the retained baseline.
-- The minimal-grid validation scene centers its fixed camera directly above the map and looks straight down.
+- The minimal-grid validation scene starts at its existing top-down whole-board home. The serialized camera name remains `Fixed Camera`; navigation is attached at composition.
 - Pointy-top presentation maps `q` eastward and decreasing `r` northward; the same outer-radius value defines both the regular hex mesh and its center spacing.
 - Placeholder hexes use one light-gray fill with a darker gray perimeter for separation; this styling is non-semantic and the logical origin has no unique treatment.
 - The polished pitch uses a stylized tabletop presentation.
@@ -16,11 +16,11 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Milestone 8.11b uses the private Tabletopia `Wasp` vertical-token entry's Red and Blue circular faces for the configured mirrored hero views, reuses the tray's complete card faces for pending Defense responses, and turns each resolved or discarded rail card into its own number-free mini-card icon with a complete face on mouseover. Hero/team identity, interaction, Defense legality, totals and card lifecycle remain projected authority rather than readings of art, and absent private assets retain the tracked primitive fallback.
 - All artwork-backed board heroes now use the same 0.15-world-unit player-colour token rim inside the unchanged 0.81 outer radius and pointer footprint. Team-baked source faces are cropped within their original orange/blue printed edge before the runtime rim is drawn; team-neutral faces keep their existing sampling. The source artwork remains private and unmodified, and the generated-prism fallback is unchanged.
 - Milestone 8.11d gives every projected hero, minion, or token target one static identity-keyed cue: a board-facing ring fitted to its local circular or convex base contour plus an exact-footprint translucent wash just above the actual art. `Eligible` is one thick ring of eight separated segments with wash alpha `0.18`; `Selected` is a double ring with alpha `0.23`; the reserved future `Hovered` treatment is a brighter solid ring with four connected outward ticks and the bounded-overlay maximum alpha `0.28`, but the current direct-click flow manufactures no hover state. `Attack` remains typed distinctly from `Removal`, while both share blood red RGB `194/10/24`; `Affect` uses dark green RGB `27/129/71`; all share the light-neutral keyline RGB `248/247/242`. Shape, count, luminance, and assistive reading preserve meaning without colour alone. The bounded tint leaves source art and labels legible, the cue remains distinct from destination-space fills, and it adds no collider or pointer surface. Its static wash is part of the existing cue, not animation, production VFX, source-art tinting, or a team-palette change.
-- Heroes and minions appear as 3D miniatures on clearly marked team bases.
+- The six mapped Megdan heroes use illustrated standees on team bases; creeps retain printed faces on solid counters. Sculpted miniatures remain future art.
 - Miniatures may briefly animate when acting.
-- When the camera approaches top-down, units automatically crossfade to readable 2D tokens.
-- Separate enter and exit thresholds prevent visual flicker near the switching angle.
-- One logical unit owns interchangeable 3D-miniature and 2D-token representations.
+- Near top-down, standees switch to their regular tokens with separate enter/exit thresholds.
+- Upright panels face the viewer without mirroring the supplied artwork.
+- One logical unit owns interchangeable standee and token representations.
 - Standard minions use the circular artwork embedded along the top of the private reference atlas `Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/g713916_s799373.sprite0__45.jpg` when they first become visible in milestone 4.4. Steam/orange maps to project Red and Crystal/light-blue maps to project Blue; the round riveted/broad spiked face is Heavy, the narrow helmet with cheek guards/armored shoulders is Melee, and the two-pronged helmet/narrow crystal crest is Ranged. The source manifest's `Melee_Steam` label on the Crystal melee sprite is a known metadata error. Milestones 9.3 and 9.5 retain these images as the 2D side of each minion's interchangeable presentation; authoritative team/type data selects the image, and rules identity is never inferred from art or the incorrect source label.
 
 ### Camera

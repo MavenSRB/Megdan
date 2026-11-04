@@ -80,6 +80,25 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private Material ownedRimMaterial;
         private Color? identityAccent;
         private Texture2D tokenFaceOverride;
+        private IllustratedStandeeView standee;
+        public IllustratedStandeeView Standee => standee;
+        public float SelectionHeight => standee != null && standee.IsStanding
+            ? IllustratedStandeeView.PanelHeight + BoardPieceDepth.Standard : DefaultHeight;
+
+        public void SetStandeeBase(bool standing)
+        {
+            if (!HasTokenVisual) return;
+            ownedRimMaterial.color = standing ? HeroTokenArtwork.TeamRim(teamSide) : identityAccent ?? HeroTokenArtwork.TeamRim(teamSide);
+            GetComponent<MeshRenderer>().sharedMaterials = standing
+                ? new[] { ownedRimMaterial, ownedRimMaterial }
+                : new[] { ownedRimMaterial, ownedMaterial };
+            var capsule = GetComponent<CapsuleCollider>();
+            if (capsule != null)
+            {
+                capsule.height = SelectionHeight;
+                capsule.center = Vector3.up * (SelectionHeight * 0.5f);
+            }
+        }
 
         /// <summary>Optional presentation-only face; preserves the unit's identity and board behavior.</summary>
         public void SetTokenFaceOverride(Texture2D face)
@@ -92,7 +111,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
         public void SetIdentityAccent(Color colour)
         {
             identityAccent = colour;
-            if (ownedRimMaterial != null) ownedRimMaterial.color = colour;
+            if (ownedRimMaterial != null) ownedRimMaterial.color = standee != null && standee.IsStanding
+                ? HeroTokenArtwork.TeamRim(teamSide) : colour;
         }
         private BoardTargetRing targetRing;
         private ActiveEffectHeroMarker activeEffectMarker;
@@ -542,6 +562,10 @@ namespace GuardsDigital.Presentation.Units.Heroes
             meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             meshRenderer.receiveShadows = false;
             HasTokenVisual = true;
+            standee ??= gameObject.GetComponent<IllustratedStandeeView>() ??
+                gameObject.AddComponent<IllustratedStandeeView>();
+            standee.Configure(this, tokenFaceOverride == null ? HeroContentId?.Value : null);
+            if (standee.IsStanding) SetStandeeBase(true);
             return true;
         }
 

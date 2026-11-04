@@ -1,0 +1,133 @@
+using System.Collections;
+using System.Linq;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
+
+namespace GuardsDigital.Tests.PlayMode
+{
+    public sealed class StandeeCameraPlayModeTests
+    {
+        [UnityTest]
+        public IEnumerator PlayerCanPanOrbitZoomResetAndSwitchRepresentationsInTheLiveMatch()
+        {
+            var addedKeyboard = Keyboard.current == null;
+            var keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
+            var addedMouse = Mouse.current == null;
+            var mouse = Mouse.current ?? InputSystem.AddDevice<Mouse>();
+            try
+            {
+                var roster = RegisteredHeroRoster.ForThisBuild;
+                MatchSceneCompositionRoot.NextComposedSeat = null;
+                MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
+                MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                    new[] { "brogan", "misa", "rowenna" }.Select(id => roster.Single(h => h.ContentId.Value == id)),
+                    new[] { "tigerclaw", "gydion", "tali" }.Select(id => roster.Single(h => h.ContentId.Value == id)));
+                yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+                UiPlayer.SetPlayerViewport(1920, 1080, "W-165 standees and board camera");
+                var root = BroganUiJourneyPlayModeTests.Root();
+                var camera = Camera.main;
+                var navigation = camera.GetComponent<BoardCameraController>();
+                Assert.That(navigation, Is.Not.Null);
+                yield return null; yield return null;
+                var heroes = root.Runtime.BoardView.HeroViews.Where(v => v.gameObject.activeInHierarchy).ToArray();
+                Assert.That(heroes, Has.Length.EqualTo(6));
+                var identities = heroes.Select(h => h.Occupancy).ToArray();
+                var home = camera.transform.position;
+                var boardPoint = new Vector2(Screen.width * 0.55f, Screen.height * 0.68f);
+                Assert.That(root.Hud.BlocksPointerAt(boardPoint), Is.False);
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint });
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W));
+                yield return new WaitForSecondsRealtime(0.15f);
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+                Assert.That(Vector3.Distance(home, camera.transform.position), Is.GreaterThan(0.01f), "Actual WASD input pans.");
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint, delta = new Vector2(60, 175) }.WithButton(UnityEngine.InputSystem.LowLevel.MouseButton.Middle));
+                yield return null; yield return null;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint });
+                yield return null;
+                Assert.That(navigation.Elevation, Is.LessThan(79f), "Middle drag orbits into the standee range.");
+                Assert.That(heroes.All(h => h.Standee.IsStanding), Is.True);
+                float size = camera.orthographicSize;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint, scroll = new Vector2(0, 120) });
+                yield return null; yield return null;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint });
+                yield return null;
+                Assert.That(camera.orthographicSize, Is.LessThan(size), "Wheel zoom works on the board.");
+                var hudPoint = new Vector2(Screen.width * 0.5f, Screen.height - 8f);
+                Assert.That(root.Hud.BlocksPointerAt(hudPoint), Is.True);
+                size = camera.orthographicSize;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = hudPoint, scroll = new Vector2(0, 120) });
+                yield return null; yield return null;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint });
+                yield return null;
+                Assert.That(camera.orthographicSize, Is.EqualTo(size), "Scrolling HUD does not zoom the board.");
+                var manualPosition = camera.transform.position;
+                var manualRotation = camera.transform.rotation;
+                root.MapView.ReapplyCameraFrame();
+                Assert.That(camera.transform.position, Is.EqualTo(manualPosition));
+                Assert.That(camera.transform.rotation, Is.EqualTo(manualRotation));
+
+                var field = new TextField("Camera input guard");
+                root.Hud.RootElement.Add(field);
+                field.Focus();
+                yield return null;
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W));
+                yield return new WaitForSecondsRealtime(0.1f);
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+                Assert.That(camera.transform.position, Is.EqualTo(manualPosition), "Typing must not pan the camera.");
+                field.RemoveFromHierarchy();
+
+                var minions = root.MapView.CurrentMinionViews.Where(m => m.gameObject.activeInHierarchy).ToArray();
+                Assert.That(minions.Length, Is.GreaterThan(0));
+                foreach (var minion in minions)
+                {
+                    Assert.That(minion.TokenBodyRenderer, Is.Not.Null);
+                    Assert.That(minion.TokenBodyRenderer.bounds.size.y, Is.GreaterThan(0.15f));
+                    Assert.That(minion.GetComponent<SpriteRenderer>().sprite, Is.Not.Null);
+                }
+                Assert.That(heroes.Select(h => h.Occupancy), Is.EqualTo(identities));
+                navigation.ResetView();
+                navigation.Navigate(Vector2.zero, new Vector2(0, 35f), 0, 0);
+                yield return new WaitForSecondsRealtime(2f);
+                yield return UiPlayer.CaptureScreen("tmp/w165-angled-live-match.png");
+                // A close view through the same live camera, so panel edges/base depth can be judged.
+                var focal = heroes.First(h => h.HeroContentId.Value.Value == "misa").transform.position;
+                camera.transform.position = focal + new Vector3(0, 5.5f, -7.5f);
+                camera.transform.LookAt(focal + Vector3.up * 0.5f);
+                camera.orthographicSize = 4f;
+                yield return new WaitForSecondsRealtime(1f);
+                yield return UiPlayer.CaptureScreen("tmp/w165-standee-detail.png");
+                focal = minions[0].transform.position;
+                camera.transform.position = focal + new Vector3(0, 3f, -6f);
+                camera.transform.LookAt(focal);
+                camera.orthographicSize = 3f;
+                yield return new WaitForSecondsRealtime(0.5f);
+                yield return UiPlayer.CaptureScreen("tmp/w165-creep-detail.png");
+                navigation.ResetView();
+                yield return null; yield return null;
+                Assert.That(heroes.All(h => !h.Standee.IsStanding), Is.True);
+                yield return UiPlayer.CaptureScreen("tmp/w165-top-down-live-match.png");
+                navigation.Navigate(Vector2.right, Vector2.zero, 0, 0.2f);
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Home));
+                yield return null;
+                Assert.That(camera.transform.position, Is.EqualTo(home));
+            }
+            finally
+            {
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                InputSystem.QueueStateEvent(mouse, new MouseState());
+                if (addedKeyboard) InputSystem.RemoveDevice(keyboard);
+                if (addedMouse) InputSystem.RemoveDevice(mouse);
+            }
+        }
+    }
+}

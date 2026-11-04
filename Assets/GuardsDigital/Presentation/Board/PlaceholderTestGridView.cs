@@ -4,6 +4,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
+using GuardsDigital.Presentation.Interaction;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Board
@@ -109,6 +110,7 @@ namespace GuardsDigital.Presentation.Board
         private Vector3 cachedFramePosition;
         private Quaternion cachedFrameRotation;
         private bool hasCachedCameraFrame;
+        private Bounds cachedFrameBounds;
 
         public float OuterRadius => outerRadius;
         public BoardMapDefinition RenderedDefinition => renderedDefinition;
@@ -846,6 +848,7 @@ namespace GuardsDigital.Presentation.Board
                 targetCamera.farClipPlane = 100f;
                 targetCamera.transform.position = cachedFramePosition;
                 targetCamera.transform.rotation = cachedFrameRotation;
+                targetCamera.GetComponent<BoardCameraController>()?.AcceptHomeFrame(definition, cachedFrameBounds);
                 return;
             }
 
@@ -912,6 +915,10 @@ namespace GuardsDigital.Presentation.Board
             cachedFramePosition = targetCamera.transform.position;
             cachedFrameRotation = targetCamera.transform.rotation;
             hasCachedCameraFrame = true;
+            var bounds = new Bounds(positions[0], Vector3.zero);
+            foreach (var position in positions) bounds.Encapsulate(position);
+            cachedFrameBounds = bounds;
+            targetCamera.GetComponent<BoardCameraController>()?.AcceptHomeFrame(definition, bounds);
         }
 
         /// <summary>

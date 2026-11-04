@@ -125,12 +125,12 @@ if (-not (Test-Path -LiteralPath $unityPath -PathType Leaf)) {
 New-Item -ItemType Directory -Path (Split-Path -Parent $resultsPath) -Force | Out-Null
 New-Item -ItemType Directory -Path (Split-Path -Parent $logPath) -Force | Out-Null
 
-$activeEditor = Get-Process -Name 'Unity' -ErrorAction SilentlyContinue
+$hubPath = Resolve-ToolPath -OverrideVariable 'GUARDS_UNITY_HUB_PATH' -Candidates $hubCandidates -Description 'Unity Hub'
+$activeEditor = Get-UnityValidationActiveEditors -HubPath $hubPath
 if ($activeEditor) {
     throw 'A Unity Editor process is already active. Monitor that process instead of starting another validation run.'
 }
 
-$hubPath = Resolve-ToolPath -OverrideVariable 'GUARDS_UNITY_HUB_PATH' -Candidates $hubCandidates -Description 'Unity Hub'
 Restart-UnityValidationSupportProcesses -HubPath $hubPath
 
 $unityArguments = @()

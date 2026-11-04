@@ -347,6 +347,49 @@ Assert-ContractCase `
     -Condition ($unfilteredExpression -ceq '' -and $legacyCompositeExpression -ceq 'FixtureA;FixtureB') `
     -Reason 'the existing scalar filter contract changed'
 
+$hubExecutable = 'C:\Program Files\Unity Hub\Unity Hub.exe'
+$editorProcesses = @(Get-UnityValidationActiveEditors -HubPath $hubExecutable -Candidates @(
+    [pscustomobject]@{ Id = 1; Path = 'C:\Program Files\Unity Hub\resources\unity.exe' },
+    [pscustomobject]@{ Id = 2; Path = 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' },
+    [pscustomobject]@{ Id = 3; Path = $null }
+    [pscustomobject]@{ Id = 4; Path = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Unity/bin/unity.exe') }
+))
+Assert-ContractCase -Name 'HubHelperIsNotAnEditor_UnknownPathsStillBlock' -Condition (
+    $editorProcesses.Count -eq 2 -and $editorProcesses[0].Id -eq 2 -and $editorProcesses[1].Id -eq 3)
+
+if ($env:OS -eq 'Windows_NT') {
+    # Exercise the production invoker with a parent which leaves a persistent helper child.
+    # Start-Process -Wait waits for that entire tree; the validation contract needs the parent PID.
+    $parentPath = Join-Path $fixtureRoot 'fake-editor-parent.ps1'
+    $childPidPath = Join-Path $fixtureRoot 'fake-editor-child.pid'
+    $sourceXmlPath = Join-Path $fixtureRoot 'fake-editor-source.xml'
+    $parentResults = Join-Path $fixtureRoot 'fake-editor-results.xml'
+    $parentLog = Join-Path $fixtureRoot 'fake-editor.log'
+    [IO.File]::WriteAllText($sourceXmlPath, $greenXml)
+    [IO.File]::WriteAllText($parentPath, @'
+param($Results, $Log, $SourceXml, $ChildPid)
+$helper = Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-Command', 'Start-Sleep -Seconds 12') -PassThru -WindowStyle Hidden
+[IO.File]::WriteAllText($ChildPid, [string]$helper.Id)
+[IO.File]::WriteAllText($Results, [IO.File]::ReadAllText($SourceXml))
+[IO.File]::WriteAllText($Log, 'Clean fake Editor log.')
+'@)
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    try {
+        Invoke-UnityValidationProcessAndRequireEvidence -UnityPath 'powershell.exe' -UnityArguments @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f $parentPath),
+            ('"{0}"' -f $parentResults), ('"{0}"' -f $parentLog),
+            ('"{0}"' -f $sourceXmlPath), ('"{0}"' -f $childPidPath)
+        ) -ResultsPath $parentResults -LogPath $parentLog | Out-Null
+        Assert-ContractCase -Name 'EditorExitDoesNotWaitForPersistentHelperChild' -Condition ($timer.Elapsed.TotalSeconds -lt 8)
+    }
+    finally {
+        if (Test-Path -LiteralPath $childPidPath) {
+            $helperPid = [int][IO.File]::ReadAllText($childPidPath)
+            Get-Process -Id $helperPid -ErrorAction SilentlyContinue | Stop-Process -Force
+        }
+    }
+}
+
 Write-Output "Contract cases: passed=$script:passed failed=$script:failed"
 if ($script:failed -ne 0) {
     throw "$script:failed Unity validation launcher contract case(s) failed."

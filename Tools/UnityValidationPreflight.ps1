@@ -1,5 +1,20 @@
 $ErrorActionPreference = 'Stop'
 
+function Get-UnityValidationActiveEditors {
+    param([string] $HubPath, [object[]] $Candidates = @(Get-Process -Name 'Unity' -ErrorAction SilentlyContinue))
+    # Recent Hub versions run resources/unity.exe serve. Only that exact executable
+    # is excluded; missing/inaccessible paths conservatively retain the Editor guard.
+    $helperPath = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $HubPath) 'resources/unity.exe'))
+    $brokerPath = [IO.Path]::GetFullPath((Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Unity/bin/unity.exe'))
+    foreach ($candidate in $Candidates) {
+        if ([string]::IsNullOrWhiteSpace($candidate.Path) -or
+            (-not [string]::Equals([IO.Path]::GetFullPath($candidate.Path), $helperPath, [StringComparison]::OrdinalIgnoreCase) -and
+             -not [string]::Equals([IO.Path]::GetFullPath($candidate.Path), $brokerPath, [StringComparison]::OrdinalIgnoreCase))) {
+            $candidate
+        }
+    }
+}
+
 function Restart-UnityValidationSupportProcesses {
     param(
         [Parameter(Mandatory = $true)] [string] $HubPath,

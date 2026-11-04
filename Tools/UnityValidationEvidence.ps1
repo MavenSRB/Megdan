@@ -164,7 +164,12 @@ function Invoke-UnityValidationProcessAndRequireEvidence {
     $runStartedUtc = [datetime]::UtcNow
 
     if ($null -eq $ProcessInvoker) {
-        $process = Start-Process -FilePath $UnityPath -ArgumentList $UnityArguments -Wait -PassThru -WindowStyle Hidden
+        $process = Start-Process -FilePath $UnityPath -ArgumentList $UnityArguments -PassThru -WindowStyle Hidden
+        # Wait for this Editor PID, not its process tree: Unity's auth broker is a
+        # persistent child and can outlive an already-exited Editor indefinitely.
+        $null = $process.Handle
+        $process.WaitForExit()
+        $process.Refresh()
     }
     else {
         # Test injection lives below the fixed parameterless production entry point. The launcher

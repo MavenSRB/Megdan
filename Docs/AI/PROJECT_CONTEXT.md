@@ -48,6 +48,7 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 - [Minimum private-online architecture decision](Project/PRIVATE_ONLINE_ARCHITECTURE.md)
 - [Host-owned private-session bots](Project/PRIVATE_SESSION_BOTS.md)
 - [Presentation and accessibility direction](Project/PRESENTATION.md)
+- [Board camera and illustrated standees](Project/BOARD_CAMERA_AND_STANDEES.md)
 - [Development workflow, references, and terminology](Project/WORKFLOW_AND_TERMS.md)
 
 ## Historical status snapshot
