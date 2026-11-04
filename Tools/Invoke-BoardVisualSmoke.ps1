@@ -21,7 +21,8 @@
 param(
     [int] $PlayerTimeoutSeconds = 180,
     [double] $MaximumFlatFraction = 0.5,
-    [switch] $ReuseBuild
+    [switch] $ReuseBuild,
+    [switch] $MegdanBoard
 )
 
 Set-StrictMode -Version Latest
@@ -127,9 +128,9 @@ if (-not $artworkMatch.Success) {
     Write-Output 'FAIL: the player did not report whether the board artwork was underneath.'
     $failed = $true
 }
-elseif ($artworkMatch.Groups[1].Value -ne 'true') {
+elseif ($artworkMatch.Groups[1].Value -ne $(if ($MegdanBoard) { 'false' } else { 'true' })) {
     # Without artwork the board is generated debug colour and this gate would judge the wrong thing.
-    Write-Output 'FAIL: the built player found no official board artwork, so its board was not the reviewed one.'
+    Write-Output 'FAIL: the built player board artwork does not match the selected board presentation.'
     $failed = $true
 }
 
@@ -198,5 +199,5 @@ if ($failed) {
     exit 1
 }
 
-Write-Output 'GATE PASSED: the built player drew the official board artwork with its overlays blended.'
+Write-Output 'GATE PASSED: the built player drew the selected board presentation without flat white/black degradation.'
 exit 0

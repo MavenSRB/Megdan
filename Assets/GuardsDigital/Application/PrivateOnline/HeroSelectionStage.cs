@@ -264,7 +264,7 @@ namespace GuardsDigital.Application
             this.seats = Array.AsReadOnly(seatArray);
             this.firstPickingTeam = firstPickingTeam;
             Method = method;
-            registered = registeredHeroes ?? RegisteredHeroRoster.ForThisBuild;
+            registered = registeredHeroes ?? MegdanSelectionRoster.Current;
         }
 
         public HeroSelectionMethod Method { get; }

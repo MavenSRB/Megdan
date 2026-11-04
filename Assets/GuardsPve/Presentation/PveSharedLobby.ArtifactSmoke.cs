@@ -64,7 +64,8 @@ namespace GuardsDigital.Pve.Presentation
             var localSeats = (number == 1 ? Enumerable.Range(1, 3).Where(n => n == 1 || n > playerCount) : new[] { number })
                 .Select(n => "blue-player-0" + n).ToArray();
             var seat = "blue-player-0" + number;
-            var hero = new[] { "hero-wasp", "hero-arien", "hero-brogan" }[number - 1];
+            var smokeHeroes = MegdanSelectionRoster.Current.Take(3).Select(value => value.HeroIdValue).ToArray();
+            var hero = smokeHeroes[number - 1];
             var deadline = Time.realtimeSinceStartup + 150;
             Debug.Log(SmokeMarker + "BEGIN seat=" + seat + " stamp=" + BuildIdentityStamp.Current);
             yield return null;
@@ -115,7 +116,7 @@ namespace GuardsDigital.Pve.Presentation
                 }
                 if (opened.model?.Selection.IsOwnPick == true && !picked.Contains(client.TargetSeat.Value))
                 {
-                    var chosen = new[] { "hero-wasp", "hero-arien", "hero-brogan" }[int.Parse(client.TargetSeat.Value.Substring("blue-player-".Length)) - 1];
+                    var chosen = smokeHeroes[int.Parse(client.TargetSeat.Value.Substring("blue-player-".Length)) - 1];
                     var option = opened.view.Root.Query<Button>(PrivateLobbyUnityView.HeroOptionName).ToList()
                         .Single(b => ((PrivateLobbyHeroOption)b.userData).HeroIdValue == chosen);
                     PveCoopLobby.SmokeClick(option);

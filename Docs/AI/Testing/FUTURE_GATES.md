@@ -4,6 +4,8 @@ Canonical active shard. Return to [../TESTING.md](../TESTING.md).
 
 ## Scope of these recipes
 
+For W-160's replacement Megdan tile presentation, run the board smoke with `-ReuseBuild -MegdanBoard` and inspect its captured tiles. This explicitly expects the retired official underlay to be absent while retaining the pixel degradation checks. The default smoke still requires the official underlay.
+
 [Current testing policy](POLICY.md#new-builds-use-change-based-validation) owns selection and reuse. Named phase/internet gates below preserve their particular acceptance; they are not an automatic pre-build regression campaign. Routine packages use short player, multi-client and board artifact smokes against one freshly built candidate, plus changed/affected checks. Use supported reuse options to keep smokes on the same binary. Full-match/fault/internet runs need an affectedness trigger or explicit gate.
 
 ## Official board-map specification validation

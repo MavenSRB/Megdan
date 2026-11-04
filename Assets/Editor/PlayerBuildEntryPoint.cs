@@ -147,7 +147,7 @@ namespace GuardsDigital.EditorTools
                     targetGroup = BuildTargetGroup.Standalone,
                     options = BuildOptions.StrictMode,
                     extraScriptingDefines = target == BuildTarget.StandaloneWindows64 || target == BuildTarget.StandaloneOSX
-                        ? new[] { "GUARDS_PVE" } : Array.Empty<string>()
+                        ? new[] { "GUARDS_PVE", "MEGDAN_SIX_HERO_PACKAGE" } : Array.Empty<string>()
                 });
             }
             finally

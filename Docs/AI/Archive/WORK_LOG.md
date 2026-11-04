@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-174 Build the private six-hero Megdan Windows preview
+
+User requested the latest Windows build with only the six revamped heroes selectable. The package offers Brogan, Misa/Riki, Rowenna, Tigerclaw, Gydion and Tali through a shared build-scoped selection catalog; full internal registration and editor fixtures remain preserved. Includes the current cards, camera, board and standees. Acceptance: focused roster/selection checks, player interaction, Megdan board render, PvP host/two joiners, PvE one/two/three players, 184-file archive integrity and extracted launch, documentation validation and local commit. Use 2v2/3v3 or PvE; six unique heroes cannot fill larger teams. No remote publication.
+
+Historical evidence: immutable `work/W-174`; exact checks/results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-174 | Current Megdan Windows preview with six selectable heroes | `work/W-174` |
+
 ### [x] W-172 Hide intersecting plants while keeping angled vegetation upright
 
 User requested upright-only vegetation in angled views and the same low-angle screenshot. Intersecting panels now hide while their ground cleanup patches remain visible, preventing the original painted plant from returning flat. Panels restore when clear; the entire layer still switches to the original flat tiles at 80 degrees and returns below 79. Acceptance: observed failing-then-passing patch regression, affected switch/rebuild/clearance checks, inspected actual-match 25-degree screenshots, documentation validation and local commit. Earlier screenshots remain preserved. No rules, package or publication changes.

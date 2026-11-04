@@ -998,7 +998,7 @@ namespace GuardsDigital.Application
             }
 
             var heroes = new List<PrivateLobbyHeroOption>();
-            foreach (var hero in RegisteredHeroRoster.ForThisBuild)
+            foreach (var hero in MegdanSelectionRoster.Current)
             {
                 var available = !taken.Contains(hero.HeroIdValue);
                 heroes.Add(new PrivateLobbyHeroOption(

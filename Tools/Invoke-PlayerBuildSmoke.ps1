@@ -69,7 +69,8 @@ else {
 
 $unityPath = Resolve-ToolPath -OverrideVariable 'GUARDS_UNITY_PATH' -Candidates $unityCandidates -Description "Unity $unityEditorVersion Editor"
 
-$activeEditor = Get-Process -Name 'Unity' -ErrorAction SilentlyContinue
+. (Join-Path $PSScriptRoot 'UnityValidationPreflight.ps1')
+$activeEditor = Get-UnityValidationActiveEditors -HubPath (Join-Path $programFiles 'Unity Hub/Unity Hub.exe')
 if ($activeEditor) {
     throw 'A Unity Editor process is already active. Monitor that process instead of starting another build.'
 }
