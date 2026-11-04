@@ -303,6 +303,10 @@ namespace GuardsDigital.Presentation.Board
             currentTiles.Clear();
             currentTiles.AddRange(tilesByCoordinate.Values);
 
+            var grassStandees = GetComponent<GrassDecorationStandees>();
+            if (grassStandees == null) grassStandees = gameObject.AddComponent<GrassDecorationStandees>();
+            grassStandees.Configure(currentTiles, sceneCamera);
+
             EnsureSpawnMarkers(definition);
             RemoveLegacyObstacles();
             if (clearConfiguredMinions)

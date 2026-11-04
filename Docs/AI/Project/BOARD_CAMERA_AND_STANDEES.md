@@ -20,6 +20,14 @@ The six mapped Megdan heroes use upright illustrated panels on raised circular R
 
 Standee bases express authoritative team colour even when the seat has another HUD accent. Flat tokens keep their previous seat-accent rim. Missing standee resources retain the existing token/primitive fallback. One hero view owns both representations; board coordinates, root transforms, animation ownership, footprint and target-ring fitting stay unchanged. Picking extends up the standing panel. Generated meshes/materials are released with their owners.
 
+## Grass decorations
+
+The four supplied grass variants have temporary upright bush/mushroom panels in angled views. `GrassDecorationStandees` samples bounded regions of the unchanged original tile textures through `Rendering/GrassDecoration.shader`, rejecting grass-coloured pixels and clipping samples to the original hex footprint. Small patches sampled from the same tile cover the lifted paintings beneath the panels. These are temporary colour-keyed cutouts, with the supplied edge crops retained.
+
+All decorations switch together at 80 degrees to the original flat tile, returning below 79 degrees with the same hysteresis band as heroes. Panels turn around the vertical axis toward the board camera. The layer adds no colliders or rules objects and applies only to tiles using one of the four grass textures. Two meshes and per-decoration materials are shared across the board; rebuild replaces its children and releases owned resources. Missing private grass textures retain the existing board fallback.
+
+Four-variant runtime inspections: `tmp/grass-standees-restart-angled.png` and `tmp/grass-standees-restart-top-down.png`. The abandoned raster-extraction script/output remains private historical work and is not consumed by runtime.
+
 ## Creeps and evidence
 
 Standard creeps keep their existing sprite faces and board rotation. A circular team-colour body extends 0.16 world units beneath the face, staying above the board and retaining the same footprint, identity and selection path. Removal/respawn follows the existing parent view lifecycle.
