@@ -1,5 +1,11 @@
 # Work completion index
 
+### [x] W-160 Replace the Guards board face with the generated Megdan grass board
+
+User requested removal of the Guards map picture from runtime, restoration of the generated hex lattice, stable randomized use of Veljko's four supplied grass variants, water at map-edge terrain, lava on internal terrain, desert on the two side Zones, and thin coloured outlines only on the three lane Zones that can become the Battle Zone. Map topology, zone identity, spawn points, pieces, highlights, interaction and rules remain unchanged. Acceptance: focused Edit Mode 24/24, focused Play Mode 5/5, exact 1920x1080 runtime capture inspected, living-document validation and diff hygiene. No package or publication.
+
+Historical evidence: immutable `work/W-160`; exact checks/results and limitations live in its commit body.
+
 ### [x] W-159 Emphasize initiative with a clock badge
 
 User requested that initiative stand out by placing its number inside a clock. Revised the latest four verified prototype faces so initiative uses a larger gold-rimmed circular dial with twelve clock ticks; defense and movement remain rectangular ribbon cells. Delivered `three-heroes-cards-v10.png` as a new still while preserving the native 372:520 card proportions, values, rules text, supplied artwork and board composition. Acceptance: deterministic render, native face-size checks and visual inspection. No video, runtime, rule or publication change.
@@ -40,6 +46,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-160 | Replaced the Guards board face with stable private Megdan grass/biome hexes and thin borders only on possible Battle Zones, without changing topology, interaction or rules. | `work/W-160` |
 | W-159 | Prominent clock-shaped initiative badges on the latest verified prototype card still. | `work/W-159` |
 | W-158 | Six minimally altered transparent concept portraits preserving the supplied characters' existing orientations and defining designs. | `work/W-158` |
 | W-157 | Animated private three-hero commitment, initiative, attack/defense and movement sequence. | `work/W-157` |

@@ -161,28 +161,6 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        [Test]
-        public void TheUnderlayQuad_LiesFlatBeneathTheTilesAndCoversTheWholeFace()
-        {
-            var corners = OfficialBoardArtwork.Corners();
-
-            Assert.That(corners, Has.Length.EqualTo(4));
-            Assert.That(corners.All(corner => Mathf.Approximately(corner.y, 0f)), Is.True,
-                "The corners are stated on the board plane; the view is what drops them below it.");
-            Assert.That(OfficialBoardUnderlayView.PlaneOffset, Is.LessThan(0f),
-                "and it drops them below the tiles at y = 0 rather than above.");
-            Assert.That(OfficialBoardUnderlayView.PlaneOffset, Is.LessThan(-0.02f),
-                "far enough below the debug edge at y = 0.015 that nothing z-fights with it.");
-
-            var side = OfficialBoardArtwork.ArtworkSideInBoardUnits * OfficialBoardArtwork.BoardToWorldScale;
-            Assert.That(Vector3.Distance(corners[0], corners[1]), Is.EqualTo(side).Within(1e-3f));
-            Assert.That(Vector3.Distance(corners[1], corners[2]), Is.EqualTo(side).Within(1e-3f));
-            Assert.That(Vector3.Distance(corners[2], corners[3]), Is.EqualTo(side).Within(1e-3f));
-            Assert.That(Vector3.Distance(corners[3], corners[0]), Is.EqualTo(side).Within(1e-3f));
-            Assert.That(Vector3.Distance(corners[0], corners[2]),
-                Is.EqualTo(side * Mathf.Sqrt(2f)).Within(1e-2f), "and the diagonals say it is square.");
-        }
-
         /// <summary>
         /// The registration is for one map at one revision. Any other definition - every synthetic grid
         /// a test builds, and any future map - must keep the generated presentation, because drawing
@@ -198,8 +176,6 @@ namespace GuardsDigital.Tests.EditMode
                 view.Rebuild(CreateForeignMap());
 
                 Assert.That(view.IsUnderlayActive, Is.False);
-                Assert.That(view.UnderlayView, Is.Null);
-                Assert.That(root.GetComponentsInChildren<OfficialBoardUnderlayView>(true), Is.Empty);
 
                 var tile = view.CurrentTiles.Single();
                 var renderer = tile.GetComponent<MeshRenderer>();
@@ -216,42 +192,30 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// With the face present, the tiles are suppressed but not removed: the same views stand in the
-        /// same places, the same highlight path swaps to an opaque material and back, and only the fill
-        /// and the debug edge change. That is what keeps every selection, targeting and correction path
-        /// working against the artwork.
+        /// W-160 removes the face and keeps the same tile views and highlight path over the generated
+        /// grass board.
         /// </summary>
         [Test]
-        public void WithTheFacePresent_TilesKeepTheirViewsAndTheirHighlightPath()
+        public void OfficialMap_UsesGeneratedTilesAndKeepsTheirHighlightPath()
         {
-            RequireArtwork();
-            var root = new GameObject("Official Board Underlay");
+            var root = new GameObject("Generated Grass Board");
             Material highlight = null;
             try
             {
                 var view = root.AddComponent<PlaceholderTestGridView>();
                 view.Rebuild(OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap));
 
-                Assert.That(view.IsUnderlayActive, Is.True);
-                Assert.That(view.UnderlayView, Is.Not.Null);
-                Assert.That(view.UnderlayView.HasArtwork, Is.True);
+                Assert.That(view.IsUnderlayActive, Is.False);
                 Assert.That(view.CurrentTiles, Has.Count.EqualTo(292),
-                    "Every space still has its view - the artwork replaces the fill, not the tile.");
+                    "Every map space remains one generated, interactive tile.");
 
                 var tile = view.CurrentTiles.First();
                 var renderer = tile.GetComponent<MeshRenderer>();
-                Assert.That(renderer.sharedMaterial.color.a, Is.EqualTo(0f).Within(1e-3f),
-                    "Its fill is fully transparent, so the face below is what reads.");
-                // Milestone 8.31b: a fully transparent fill draws nothing by not being rendered,
-                // rather than by being rendered at zero alpha. Blending is a shader variant and a
-                // built player keeps only the variants its build data asks for, so the zero-alpha
-                // fill came out opaque there and hid the whole board; a renderer that is off draws
-                // nothing on any build. This assertion used to require the opposite, for the reason
-                // the next one still keeps true.
-                Assert.That(renderer.enabled, Is.False,
-                    "so nothing of the tile is drawn over the face.");
+                var restingMaterial = renderer.sharedMaterial;
+                Assert.That(renderer.enabled, Is.True, "The generated hex itself is visible.");
+                Assert.That(restingMaterial.color.a, Is.EqualTo(1f).Within(1e-3f));
                 Assert.That(tile.GetComponentInChildren<LineRenderer>(true).enabled, Is.False,
-                    "The debug edge is switched off rather than restyled.");
+                    "Ordinary tiles have no resting outline.");
 
                 highlight = new Material(Shader.Find("Standard")) { color = Color.yellow };
                 tile.SetHighlighted(true, highlight);
@@ -262,9 +226,9 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(tile.IsHighlighted, Is.True);
 
                 tile.SetHighlighted(false, highlight);
-                Assert.That(renderer.sharedMaterial.color.a, Is.EqualTo(0f).Within(1e-3f),
-                    "and clearing it returns the tile to the suppressed fill, not to a zone colour.");
-                Assert.That(renderer.enabled, Is.False, "and to drawing nothing again.");
+                Assert.That(renderer.sharedMaterial, Is.SameAs(restingMaterial),
+                    "Clearing the highlight returns to the exact grass/fallback material.");
+                Assert.That(renderer.enabled, Is.True);
             }
             finally
             {
@@ -273,16 +237,94 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void GrassAndBiomesAreStable_AndOnlyTheThreePossibleBattleZonesKeepThinOutlines()
+        {
+            var definition = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var selected = definition.Spaces
+                .Select(space => MegdanGrassTileCatalog.VariantIndex(definition.Reference, space.Coordinate))
+                .ToArray();
+            Assert.That(selected.Distinct(), Is.EquivalentTo(new[] { 0, 1, 2, 3 }),
+                "The full board uses every supplied grass variation.");
+            Assert.That(definition.Spaces.Select((space, index) =>
+                    MegdanGrassTileCatalog.VariantIndex(definition.Reference, space.Coordinate) == selected[index])
+                .All(value => value), Is.True,
+                "Selection is a stable coordinate function, never runtime randomness.");
+
+            var root = new GameObject("Stable Grass And Zone Borders");
+            try
+            {
+                var view = root.AddComponent<PlaceholderTestGridView>();
+                view.Rebuild(definition);
+
+                var possibleBattleZones = definition.Zones.Where(zone =>
+                        string.Equals(zone.Kind, "lane", StringComparison.OrdinalIgnoreCase))
+                    .Select(zone => zone.Id).ToHashSet();
+                Assert.That(possibleBattleZones, Has.Count.EqualTo(3));
+                foreach (var tile in view.CurrentTiles)
+                {
+                    var edge = tile.GetComponentInChildren<LineRenderer>(true);
+                    var expected = tile.IsPlayable && possibleBattleZones.Contains(tile.ZoneId.Value);
+                    Assert.That(edge.enabled, Is.EqualTo(expected), tile.SpaceId.Value);
+                    if (expected)
+                    {
+                        Assert.That(edge.startWidth, Is.EqualTo(0.030f).Within(0.0001f));
+                    }
+                }
+
+                var tileMaterials = view.CurrentTiles.Select(tile =>
+                    tile.GetComponent<MeshRenderer>().sharedMaterial).ToArray();
+                if (MegdanGrassTileCatalog.TryLoadTextures(out var textures) &&
+                    MegdanGrassTileCatalog.TryLoadBiomeTextures(out var water, out var lava, out var desert))
+                {
+                    Assert.That(textures, Has.Length.EqualTo(MegdanGrassTileCatalog.VariantCount));
+                    Assert.That(tileMaterials.Select(material => material.mainTexture).Distinct().Count(),
+                        Is.EqualTo(MegdanGrassTileCatalog.VariantCount + 3));
+                    Assert.That(tileMaterials.All(material => material.mainTexture != null), Is.True);
+
+                    var byCoordinate = view.CurrentTiles.ToDictionary(
+                        tile => tile.Coordinate,
+                        tile => tile.GetComponent<MeshRenderer>().sharedMaterial.mainTexture);
+                    var allCoordinates = definition.Spaces.Select(space => space.Coordinate).ToHashSet();
+                    var zones = definition.Zones.ToDictionary(zone => zone.Id);
+                    foreach (var space in definition.Spaces)
+                    {
+                        if (space.Kind == BoardMapSpaceKind.Terrain)
+                        {
+                            var expected = space.Coordinate.GetNeighbors().Any(neighbor =>
+                                !allCoordinates.Contains(neighbor)) ? water : lava;
+                            Assert.That(byCoordinate[space.Coordinate], Is.SameAs(expected));
+                        }
+                        else if (string.Equals(zones[space.ZoneId.Value].Kind, "jungle",
+                                     StringComparison.OrdinalIgnoreCase))
+                        {
+                            Assert.That(byCoordinate[space.Coordinate], Is.SameAs(desert));
+                        }
+                        else
+                        {
+                            Assert.That(textures, Has.Member(byCoordinate[space.Coordinate]));
+                        }
+                    }
+                }
+                else if (!MegdanGrassTileCatalog.TryLoadTextures(out _) &&
+                    !MegdanGrassTileCatalog.TryLoadBiomeTextures(out _, out _, out _))
+                {
+                    Assert.That(tileMaterials.All(material => material.mainTexture == null), Is.True,
+                        "A clean checkout retains the opaque generated fallback when private grass is absent.");
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         /// <summary>
-        /// The no-HUD fallback framing claim, under the rotated basis the face brings: the camera is
-        /// oriented by the board's own axes so the square reads upright, and every reviewed space is
-        /// centered inside the whole viewport. The configured scene supplies its separate L-shaped
-        /// safe layout before rebuilding the map.
+        /// The no-HUD fallback framing claim for the restored synthetic lattice.
         /// </summary>
         [Test]
         public void TheFallbackFramingCamera_CentresEveryReviewedSpaceInsideTheViewport()
         {
-            RequireArtwork();
             var root = new GameObject("Official Board Framing");
             var cameraObject = new GameObject("Framing Camera");
             try
@@ -293,11 +335,11 @@ namespace GuardsDigital.Tests.EditMode
                 view.ConfigureSceneBindings(camera, Array.Empty<GuardsDigital.Presentation.Units.Heroes.PrimitiveHeroView>());
                 view.Rebuild(OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap));
 
-                Assert.That(view.IsUnderlayActive, Is.True);
+                Assert.That(view.IsUnderlayActive, Is.False);
                 Assert.That(
-                    Vector3.Dot(camera.transform.up, OfficialBoardArtwork.BoardUpInWorld),
+                    Vector3.Dot(camera.transform.up, Vector3.forward),
                     Is.EqualTo(1f).Within(1e-3f),
-                    "Screen up is the board's own up, which is what puts the square square to the view.");
+                    "Screen up returns to the synthetic lattice's world-forward axis.");
                 Assert.That(camera.transform.forward.y, Is.LessThan(-0.999f), "and it still looks straight down.");
 
                 var viewport = view.CurrentTiles
@@ -323,15 +365,11 @@ namespace GuardsDigital.Tests.EditMode
 
 
         /// <summary>
-        /// Milestone 8.11a, at the user's request. With the official face underneath, the generated
-        /// spawn rings and the tile fills are hidden rather than removed: the artwork prints every spawn
-        /// itself, so drawing rings over it would be saying the same thing twice, and the views stay
-        /// configured so that removing the artwork restores them on the next rebuild.
+        /// W-160 restores the generated spawn rings because the retired face no longer prints them.
         /// </summary>
         [Test]
-        public void WithTheFacePresent_SpawnMarkersAreHiddenButKeepTheirReviewedConfiguration()
+        public void WithoutTheFace_SpawnMarkersAreVisibleAndKeepTheirReviewedConfiguration()
         {
-            RequireArtwork();
             var root = new GameObject("Official Board Spawn Markers");
             try
             {
@@ -341,13 +379,13 @@ namespace GuardsDigital.Tests.EditMode
 
                 var markers = root.GetComponentsInChildren<BoardMapSpawnMarkerView>(true);
                 Assert.That(markers, Has.Length.EqualTo(definition.SpawnPoints.Count),
-                    "Every spawn point still has its view - the artwork replaces what is drawn, not the map.");
+                    "Every spawn point keeps its generated view.");
                 Assert.That(
-                    markers.All(marker => !marker.GetComponent<LineRenderer>().enabled), Is.True,
-                    "and none of them is drawn, because the board already prints them.");
+                    markers.All(marker => marker.GetComponent<LineRenderer>().enabled), Is.True,
+                    "and each is drawn because no board picture supplies it now.");
                 Assert.That(
                     markers.All(marker => marker.GetComponent<LineRenderer>().positionCount > 0), Is.True,
-                    "Their reviewed shapes survive, so removing the artwork puts them straight back.");
+                    "Their reviewed shapes remain configured.");
             }
             finally
             {
@@ -402,13 +440,11 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// The rim is drawn on the perimeter renderer the tile already has, and clearing the highlight
-        /// puts that renderer back exactly as the map view left it - switched off under the artwork,
-        /// drawn in the debug colour without it.
+        /// puts that renderer back exactly as the map view left it - the zone-coloured resting border.
         /// </summary>
         [Test]
         public void AHighlightRim_UsesTheTilesOwnPerimeterAndRestoresItWhenCleared()
         {
-            RequireArtwork();
             var root = new GameObject("Official Board Highlight Rim");
             Material fill = null;
             Material rim = null;
@@ -421,7 +457,7 @@ namespace GuardsDigital.Tests.EditMode
                 var restingMaterial = edge.sharedMaterial;
                 var restingWidth = edge.startWidth;
 
-                Assert.That(edge.enabled, Is.False, "It rests switched off, because the artwork is underneath.");
+                Assert.That(edge.enabled, Is.False, "An ordinary tile has no resting outline.");
 
                 fill = new Material(Shader.Find("Standard"));
                 rim = new Material(Shader.Find("Standard"));
@@ -436,7 +472,7 @@ namespace GuardsDigital.Tests.EditMode
                 tile.SetHighlighted(false, fill, rim);
 
                 Assert.That(tile.IsRimmed, Is.False);
-                Assert.That(edge.enabled, Is.False, "Clearing it returns the perimeter to where the map view left it.");
+                Assert.That(edge.enabled, Is.False, "Clearing it restores the outline-free resting state.");
                 Assert.That(edge.sharedMaterial, Is.SameAs(restingMaterial));
                 Assert.That(edge.startWidth, Is.EqualTo(restingWidth).Within(1e-4f));
             }
@@ -452,14 +488,6 @@ namespace GuardsDigital.Tests.EditMode
         {
             var colour = owner.RimMaterial.GetColor("_EmissionColor");
             return new Vector3(colour.r, colour.g, colour.b);
-        }
-
-        private static void RequireArtwork()
-        {
-            if (OfficialBoardArtwork.TryLoadTexture(out _)) return;
-            Assert.Ignore(
-                "The private board artwork is absent, which is a clean checkout's ordinary state. " +
-                "Run Tools/Prepare-OfficialBoardArtwork.ps1 to exercise this case.");
         }
 
         private static BoardMapDefinition CreateForeignMap()

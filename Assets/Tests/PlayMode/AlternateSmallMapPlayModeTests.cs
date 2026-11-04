@@ -166,7 +166,7 @@ namespace GuardsDigital.Tests.PlayMode
             PrivateLobbyDriver.FieldMemoryOverride=null;PrivateLobbyDriver.SuppressRouterQuestion=false;
         }
 
-        [UnityTest] public IEnumerator StandardHostSelectorAndMapArtworkWorkAtBothSizes()
+        [UnityTest] public IEnumerator StandardHostSelectorAndGeneratedMapWorkAtBothSizes()
         {
             var oldWidth=(uint)Screen.width;var oldHeight=(uint)Screen.height;
             try
@@ -218,7 +218,7 @@ namespace GuardsDigital.Tests.PlayMode
                         yield return null;yield return null;root.Hud.Layout();yield return null;yield return null;
                         var map=root.Runtime.ReadModel.SelectedMap;
                         var grid=Object.FindAnyObjectByType<PlaceholderTestGridView>();
-                        Assert.That(grid.IsUnderlayActive,Is.True,"The approved private image must be imported for the visual gate.");
+                        Assert.That(grid.IsUnderlayActive,Is.False,"The Guards map picture is retired.");
                         var tiles=grid.GetComponentsInChildren<HexTileView>();
                         Assert.That(tiles.Length,Is.EqualTo(258));
                         foreach (var zoneId in new[] { "top-jungle", "bottom-jungle" })
@@ -230,9 +230,8 @@ namespace GuardsDigital.Tests.PlayMode
                         foreach(var spawn in map.SpawnPoints)
                         {
                             var coordinate=map.Spaces.Single(s=>s.Id.Equals(spawn.SpaceId)).Coordinate;
-                            var pixel=new Vector2(453.4f+42.04f*coordinate.Q+29.49f*coordinate.R,424.4f-9.78f*coordinate.Q+31.52f*coordinate.R);
                             var tile=tiles.Single(t=>t.Coordinate.Equals(coordinate));
-                            Assert.That(Vector3.Distance(tile.transform.localPosition,BoardArtworkCatalog.PixelToWorld(pixel,tile.OuterRadius)),Is.LessThan(.001f));
+                            Assert.That(Vector3.Distance(tile.transform.localPosition,HexWorldLayout.ToWorld(coordinate,tile.OuterRadius)),Is.LessThan(.001f));
                         }
                         Assert.That(root.Runtime.ReadModel.Setup.Heroes.Count,Is.EqualTo(format.PlayerCount));
                         yield return UiPlayer.CaptureScreen("tmp/961-map-"+format.Id+"-"+width+".png");

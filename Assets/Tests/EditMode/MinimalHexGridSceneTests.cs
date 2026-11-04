@@ -147,63 +147,53 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_UsesSharedJungleColorAndDistinctNonJungleAndTerrainColors()
+        public void Scene_UsesStableGrassWaterLavaAndDesertOrTheGeneratedFallback()
         {
             OpenConfiguredScene();
             var mapView = RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>();
-            var playableMaterialsByZone = tiles.Where(tile => tile.IsPlayable)
-                .GroupBy(tile => tile.ZoneId.Value)
-                .ToDictionary(group => group.Key, group => group.Select(tile =>
-                    tile.GetComponent<MeshRenderer>().sharedMaterial).Distinct().Single());
-            var terrainMaterials = tiles.Where(tile => !tile.IsPlayable)
-                .Select(tile => tile.GetComponent<MeshRenderer>().sharedMaterial).Distinct().ToArray();
+            var materials = tiles.Select(tile => tile.GetComponent<MeshRenderer>().sharedMaterial).ToArray();
 
-            Assert.That(playableMaterialsByZone.Keys,
-                Is.EquivalentTo(mapView.RenderedDefinition.Zones.Select(zone => zone.Id)));
-
-            // Milestone 8.11a. The generated colouring is what a board with no artwork under it says,
-            // and it is still exactly what it was. With the official face present there is nothing for
-            // it to say: every zone the colours stood for is painted on the board itself, so each tile
-            // is drawn with one fully transparent fill instead. Both readings are asserted, because a
-            // clean checkout has no artwork and this project's own does.
-            if (mapView.IsUnderlayActive)
+            Assert.That(mapView.IsUnderlayActive, Is.False, "The Guards board face is retired.");
+            Assert.That(tiles.All(tile => tile.GetComponent<MeshRenderer>().enabled), Is.True);
+            if (MegdanGrassTileCatalog.TryLoadTextures(out _) &&
+                MegdanGrassTileCatalog.TryLoadBiomeTextures(out _, out _, out _))
             {
-                Assert.That(
-                    playableMaterialsByZone.Values.Concat(terrainMaterials).Distinct().Count(),
-                    Is.EqualTo(1),
-                    "One suppressed fill serves every space while the artwork is underneath.");
-                Assert.That(terrainMaterials.Single().color.a, Is.EqualTo(0f).Within(1f / 255f),
-                    "and it is fully transparent, so the zone a player reads is the painted one.");
-                return;
+                Assert.That(materials.Select(material => material.mainTexture).Distinct().Count(), Is.EqualTo(7));
+                Assert.That(materials.All(material => material.mainTexture != null), Is.True);
             }
-
-            Assert.That(playableMaterialsByZone[new ZoneId("bottom-jungle")].color,
-                Is.EqualTo(playableMaterialsByZone[new ZoneId("top-jungle")].color));
-            Assert.That(playableMaterialsByZone.Values.Select(material => material.color).Distinct().Count(),
-                Is.EqualTo(6));
-            Assert.That(terrainMaterials, Has.Length.EqualTo(1));
-            Assert.That(playableMaterialsByZone.Values.Select(material => material.color),
-                Has.No.Member(terrainMaterials[0].color));
+            else if (!MegdanGrassTileCatalog.TryLoadTextures(out _) &&
+                !MegdanGrassTileCatalog.TryLoadBiomeTextures(out _, out _, out _))
+            {
+                Assert.That(materials.All(material => material.mainTexture == null), Is.True,
+                    "A clean checkout keeps the opaque synthetic fallback.");
+            }
         }
 
         [Test]
-        public void Scene_UsesOneDarkerGrayClosedEdgeForEveryTile()
+        public void Scene_UsesThinOutlinesOnlyOnTheThreePossibleBattleZones()
         {
             OpenConfiguredScene();
-            RebuildOfficialMap();
+            var mapView = RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>();
-            var darkestFill = tiles.Min(tile => tile.GetComponent<MeshRenderer>().sharedMaterial.color.grayscale);
             var edgeRenderers = tiles.Select(tile => tile.GetComponentInChildren<LineRenderer>()).ToArray();
 
             Assert.That(edgeRenderers, Has.All.Not.Null);
             Assert.That(edgeRenderers.All(edge => edge.loop && edge.positionCount == 6), Is.True);
-            Assert.That(edgeRenderers.Select(edge => edge.sharedMaterial).Distinct().Count(), Is.EqualTo(1));
-
-            var edgeColor = edgeRenderers[0].sharedMaterial.color;
-            Assert.That(Mathf.Abs(edgeColor.r - edgeColor.g), Is.LessThan(0.05f));
-            Assert.That(Mathf.Abs(edgeColor.g - edgeColor.b), Is.LessThan(0.05f));
-            Assert.That(edgeColor.grayscale, Is.LessThan(darkestFill - 0.05f));
+            var possibleBattleZones = mapView.RenderedDefinition.Zones.Where(zone =>
+                    string.Equals(zone.Kind, "lane", System.StringComparison.OrdinalIgnoreCase))
+                .Select(zone => zone.Id).ToHashSet();
+            Assert.That(possibleBattleZones, Has.Count.EqualTo(3));
+            foreach (var tile in tiles)
+            {
+                var edge = tile.GetComponentInChildren<LineRenderer>();
+                var expected = tile.IsPlayable && possibleBattleZones.Contains(tile.ZoneId.Value);
+                Assert.That(edge.enabled, Is.EqualTo(expected), tile.SpaceId.Value);
+                if (expected)
+                {
+                    Assert.That(edge.startWidth, Is.EqualTo(0.030f).Within(0.0001f));
+                }
+            }
         }
 
         [Test]

@@ -52,6 +52,17 @@ namespace GuardsDigital.Presentation.Board
             JungleColor
         };
 
+        private static readonly Color[] ZoneBorderColors =
+        {
+            new Color(0.92f, 0.18f, 0.12f, 1f),
+            new Color(0.96f, 0.48f, 0.08f, 1f),
+            new Color(0.96f, 0.79f, 0.12f, 1f),
+            new Color(0.10f, 0.68f, 0.96f, 1f),
+            new Color(0.12f, 0.30f, 0.92f, 1f),
+            new Color(0.24f, 0.76f, 0.30f, 1f),
+            new Color(0.06f, 0.54f, 0.42f, 1f)
+        };
+
         [SerializeField] private float outerRadius = HexWorldLayout.DefaultOuterRadius;
         [SerializeField] private float cameraPadding = 1.5f;
 
@@ -66,6 +77,9 @@ namespace GuardsDigital.Presentation.Board
         [SerializeField] private PrimitiveHeroView[] heroViews;
 
         private readonly Dictionary<ZoneId, Material> zoneMaterials = new Dictionary<ZoneId, Material>();
+        private readonly Dictionary<ZoneId, Material> zoneEdgeMaterials = new Dictionary<ZoneId, Material>();
+        private readonly List<Material> grassMaterials = new List<Material>();
+        private readonly HashSet<HexCoordinate> renderedCoordinates = new HashSet<HexCoordinate>();
         private readonly List<HexTileView> currentTiles = new List<HexTileView>();
         private readonly List<StandardMinionView> currentMinionViews = new List<StandardMinionView>();
         private readonly List<PlacedTokenView> currentTokenViews = new List<PlacedTokenView>();
@@ -77,16 +91,17 @@ namespace GuardsDigital.Presentation.Board
         private Material redSpawnMaterial;
         private Material blueSpawnMaterial;
         private Material suppressedFillMaterial;
+        private Material waterMaterial;
+        private Material lavaMaterial;
+        private Material desertMaterial;
         private Mesh generatedTileMesh;
         private MapDefinitionReference materialMapReference;
-        private OfficialBoardUnderlayView underlayView;
         private BoardCameraSafeLayout configuredCameraLayout;
         private bool hasConfiguredCameraViewport;
         private Camera cachedFrameCamera;
         private BoardMapDefinition cachedFrameDefinition;
         private BoardCameraSafeLayout cachedFrameLayout;
         private bool cachedFrameUsedConfiguredLayout;
-        private bool cachedFrameUsedUnderlay;
         private float cachedFrameOuterRadius;
         private float cachedFramePadding;
         private float cachedFrameAspect;
@@ -102,29 +117,30 @@ namespace GuardsDigital.Presentation.Board
             ? renderedDefinition.Spaces.Select(space => space.Coordinate).ToArray()
             : System.Array.Empty<HexCoordinate>();
         public int OwnedNativeResourceCount => zoneMaterials.Count +
+            zoneEdgeMaterials.Count +
+            grassMaterials.Count +
             (terrainMaterial != null ? 1 : 0) +
             (edgeMaterial != null ? 1 : 0) +
             (redSpawnMaterial != null ? 1 : 0) +
             (blueSpawnMaterial != null ? 1 : 0) +
             (suppressedFillMaterial != null ? 1 : 0) +
-            (generatedTileMesh != null ? 1 : 0) +
-            (underlayView != null ? underlayView.OwnedNativeResourceCount : 0);
+            (waterMaterial != null ? 1 : 0) +
+            (lavaMaterial != null ? 1 : 0) +
+            (desertMaterial != null ? 1 : 0) +
+            (generatedTileMesh != null ? 1 : 0);
 
         /// <summary>
         /// Milestone 8.11a. True while the official board face is being drawn underneath, which is the
         /// one condition that suppresses the generated fills and debug edges. It is false whenever the
         /// private artwork is absent, and false for every map that is not the reviewed official one.
         /// </summary>
-        public bool IsUnderlayActive => underlayView != null && underlayView.HasArtwork;
-
-        public OfficialBoardUnderlayView UnderlayView => underlayView;
+        public bool IsUnderlayActive => false;
 
         /// <summary>
         /// Which world direction the framing camera treats as up. The board's own up while the official
         /// face is underneath, and world +Z otherwise, which is what it always was.
         /// </summary>
-        public Vector3 ScreenUpInWorld =>
-            IsUnderlayActive ? BoardArtworkCatalog.Up(renderedDefinition.Reference) : Vector3.forward;
+        public Vector3 ScreenUpInWorld => Vector3.forward;
 
         /// <summary>
         /// The views this rebuild actually produced, excluding any object it retired. Consumers must
@@ -245,10 +261,11 @@ namespace GuardsDigital.Presentation.Board
             }
 
             renderedDefinition = definition;
+            renderedCoordinates.Clear();
+            renderedCoordinates.UnionWith(definition.Spaces.Select(space => space.Coordinate));
             renderedSetup = null;
             // Before the materials, because whether the artwork is underneath is what decides which
             // fill a tile is configured with and whether its debug edge is drawn at all.
-            EnsureUnderlay(definition);
             // Every board-facing cue turns to match the framing, so a marker reads level with the
             // screen rather than level with a world axis the camera no longer uses. Set here rather
             // than beside the camera, because a rebuild with no camera bound still places cues.
@@ -332,7 +349,7 @@ namespace GuardsDigital.Presentation.Board
             var edge = tile.GetComponentInChildren<LineRenderer>(true);
             if (edge != null)
             {
-                ConfigureEdge(edge);
+                ConfigureEdge(edge, space);
             }
         }
 
@@ -363,22 +380,27 @@ namespace GuardsDigital.Presentation.Board
             tile.Configure(space, outerRadius, GetSpaceMaterial(space));
 
             var edgeObject = CreateGeneratedObject("Debug Edge", tileObject.transform);
-            ConfigureEdge(edgeObject.AddComponent<LineRenderer>());
+            ConfigureEdge(edgeObject.AddComponent<LineRenderer>(), space);
             return tile;
         }
 
-        private void ConfigureEdge(LineRenderer lineRenderer)
+        private void ConfigureEdge(LineRenderer lineRenderer, BoardMapSpace space)
         {
-            // Milestone 8.11a: the debug perimeter is what the artwork replaces most directly, so it is
-            // switched off rather than restyled while the face is underneath. The renderer stays on the
-            // tile, configured and ready, so removing the artwork restores it on the next rebuild.
-            lineRenderer.enabled = !IsUnderlayActive;
-            lineRenderer.sharedMaterial = edgeMaterial;
+            // W-160 follow-up: ordinary tile seams are deliberately absent. Only the three lane
+            // zones that can become the active Battle Zone keep thin coloured member-hex outlines.
+            var drawsBattleZoneEdge = space.Kind == BoardMapSpaceKind.Playable &&
+                renderedDefinition.Zones.Any(zone =>
+                    zone.Id.Equals(space.ZoneId.Value) &&
+                    string.Equals(zone.Kind, "lane", System.StringComparison.OrdinalIgnoreCase));
+            lineRenderer.enabled = drawsBattleZoneEdge;
+            lineRenderer.sharedMaterial = drawsBattleZoneEdge
+                ? zoneEdgeMaterials[space.ZoneId.Value]
+                : edgeMaterial;
             lineRenderer.useWorldSpace = false;
             lineRenderer.loop = true;
             lineRenderer.positionCount = 6;
-            lineRenderer.startWidth = 0.045f;
-            lineRenderer.endWidth = 0.045f;
+            lineRenderer.startWidth = 0.030f;
+            lineRenderer.endWidth = 0.030f;
             lineRenderer.numCornerVertices = 2;
             for (var side = 0; side < 6; side++)
             {
@@ -436,7 +458,7 @@ namespace GuardsDigital.Presentation.Board
                 var markerRenderer = marker.GetComponent<LineRenderer>();
                 if (markerRenderer != null)
                 {
-                    markerRenderer.enabled = !IsUnderlayActive;
+                    markerRenderer.enabled = true;
                 }
 
                 markersById.Remove(spawnPoint.Id);
@@ -598,56 +620,18 @@ namespace GuardsDigital.Presentation.Board
             DestroyObject(view.gameObject);
         }
 
-        /// <summary>
-        /// Milestone 8.11a. Puts the official board face under the reviewed official map when a prepared
-        /// copy is present, and retires it in every other case.
-        /// </summary>
-        /// <remarks>
-        /// Two conditions, and both are ordinary rather than exceptional. The registration in
-        /// <see cref="OfficialBoardArtwork"/> is for one map at one revision, so no other definition may
-        /// receive it - a synthetic grid in a test would be drawn under a picture of somewhere else. And
-        /// the artwork itself is private and ignored, so a clean checkout resolves nothing and the board
-        /// keeps exactly the generated presentation it had before this milestone.
-        /// </remarks>
-        private void EnsureUnderlay(BoardMapDefinition definition)
-        {
-            if (!BoardArtworkCatalog.TryLoadTexture(definition.Reference, out var artwork))
-            {
-                RetireUnderlay();
-                return;
-            }
-
-            if (underlayView == null)
-            {
-                underlayView = GetComponentInChildren<OfficialBoardUnderlayView>(true);
-            }
-
-            if (underlayView == null)
-            {
-                var underlayObject = CreateGeneratedObject("Official Board Underlay", transform);
-                underlayView = underlayObject.AddComponent<OfficialBoardUnderlayView>();
-            }
-
-            underlayView.Configure(artwork, outerRadius, BoardArtworkCatalog.Corners(definition.Reference, outerRadius));
-        }
-
-        private void RetireUnderlay()
-        {
-            underlayView ??= GetComponentInChildren<OfficialBoardUnderlayView>(true);
-            if (underlayView == null) return;
-            underlayView.ReleaseOwnedResources();
-            DestroyObject(underlayView.gameObject);
-            underlayView = null;
-        }
-
         private void EnsureMaterials(BoardMapDefinition definition)
         {
             terrainMaterial ??= CreateMaterial("Terrain Debug", new Color(0.20f, 0.23f, 0.26f, 1f));
-            edgeMaterial ??= CreateMaterial("Map Edge Debug", new Color(0.10f, 0.11f, 0.13f, 1f));
+            edgeMaterial ??= CreateEdgeMaterial("Terrain Border", new Color(0.13f, 0.15f, 0.17f, 1f));
             suppressedFillMaterial ??= CreateTransparentMaterial("Suppressed Tile Fill");
             redSpawnMaterial ??= CreateMaterial("Red Spawn Debug", new Color(1f, 0.18f, 0.12f, 1f));
             blueSpawnMaterial ??= CreateMaterial("Blue Spawn Debug", new Color(0.12f, 0.55f, 1f, 1f));
-            if (materialMapReference.Equals(definition.Reference) && zoneMaterials.Count == definition.Zones.Count)
+            EnsureGrassMaterials();
+            EnsureBiomeMaterials();
+            if (materialMapReference.Equals(definition.Reference) &&
+                zoneMaterials.Count == definition.Zones.Count &&
+                zoneEdgeMaterials.Count == definition.Zones.Count)
             {
                 return;
             }
@@ -657,6 +641,8 @@ namespace GuardsDigital.Presentation.Board
             {
                 var zone = definition.Zones[index];
                 zoneMaterials.Add(zone.Id, CreateMaterial($"Zone {zone.DisplayName} Debug", ZoneColors[index % ZoneColors.Length]));
+                zoneEdgeMaterials.Add(zone.Id, CreateEdgeMaterial(
+                    $"Zone {zone.DisplayName} Border", ZoneBorderColors[index % ZoneBorderColors.Length]));
             }
 
             materialMapReference = definition.Reference;
@@ -682,7 +668,60 @@ namespace GuardsDigital.Presentation.Board
             }
 
             zoneMaterials.Clear();
+            foreach (var material in zoneEdgeMaterials.Values)
+            {
+                DestroyOwnedResource(material);
+            }
+
+            zoneEdgeMaterials.Clear();
             materialMapReference = default;
+        }
+
+        private void EnsureGrassMaterials()
+        {
+            if (grassMaterials.Count == MegdanGrassTileCatalog.VariantCount)
+            {
+                return;
+            }
+
+            foreach (var material in grassMaterials)
+            {
+                DestroyOwnedResource(material);
+            }
+
+            grassMaterials.Clear();
+            if (!MegdanGrassTileCatalog.TryLoadTextures(out var textures))
+            {
+                return;
+            }
+
+            for (var index = 0; index < textures.Length; index++)
+            {
+                grassMaterials.Add(CreateTexturedMaterial($"Veljko Grass {index + 1}", textures[index]));
+            }
+        }
+
+        private void EnsureBiomeMaterials()
+        {
+            if (waterMaterial != null && lavaMaterial != null && desertMaterial != null)
+            {
+                return;
+            }
+
+            DestroyOwnedResource(waterMaterial);
+            DestroyOwnedResource(lavaMaterial);
+            DestroyOwnedResource(desertMaterial);
+            waterMaterial = null;
+            lavaMaterial = null;
+            desertMaterial = null;
+            if (!MegdanGrassTileCatalog.TryLoadBiomeTextures(out var water, out var lava, out var desert))
+            {
+                return;
+            }
+
+            waterMaterial = CreateTexturedMaterial("Veljko Water Terrain", water);
+            lavaMaterial = CreateTexturedMaterial("Veljko Lava Terrain", lava);
+            desertMaterial = CreateTexturedMaterial("Veljko Desert Side Zone", desert);
         }
 
         /// <summary>
@@ -692,12 +731,33 @@ namespace GuardsDigital.Presentation.Board
         /// keeps its renderer and its material, so <see cref="HexTileView.SetHighlighted"/> still swaps
         /// to an opaque highlight and back with no knowledge of any of this.
         /// </summary>
-        private Material GetSpaceMaterial(BoardMapSpace space) =>
-            IsUnderlayActive
-                ? suppressedFillMaterial
-                : space.Kind == BoardMapSpaceKind.Terrain
-                    ? terrainMaterial
-                    : zoneMaterials[space.ZoneId.Value];
+        private Material GetSpaceMaterial(BoardMapSpace space)
+        {
+            if (space.Kind == BoardMapSpaceKind.Terrain && waterMaterial != null && lavaMaterial != null)
+            {
+                return space.Coordinate.GetNeighbors().Any(neighbor => !renderedCoordinates.Contains(neighbor))
+                    ? waterMaterial
+                    : lavaMaterial;
+            }
+
+            if (space.Kind == BoardMapSpaceKind.Playable && desertMaterial != null &&
+                renderedDefinition.Zones.Any(zone =>
+                    zone.Id.Equals(space.ZoneId.Value) &&
+                    string.Equals(zone.Kind, "jungle", System.StringComparison.OrdinalIgnoreCase)))
+            {
+                return desertMaterial;
+            }
+
+            if (grassMaterials.Count == MegdanGrassTileCatalog.VariantCount)
+            {
+                return grassMaterials[MegdanGrassTileCatalog.VariantIndex(
+                    renderedDefinition.Reference, space.Coordinate)];
+            }
+
+            return space.Kind == BoardMapSpaceKind.Terrain
+                ? terrainMaterial
+                : zoneMaterials[space.ZoneId.Value];
+        }
 
         private static Material CreateMaterial(string name, Color color)
         {
@@ -706,6 +766,35 @@ namespace GuardsDigital.Presentation.Board
             {
                 throw new System.InvalidOperationException(
                     $"The generated board material '{name}' requires the URP Lit shader.");
+            }
+
+            var material = new Material(shader) { name = name, color = color };
+            material.hideFlags = HideFlags.DontSave;
+            return material;
+        }
+
+        private static Material CreateTexturedMaterial(string name, Texture2D texture)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                throw new System.InvalidOperationException(
+                    $"The generated board material '{name}' requires the URP Unlit shader.");
+            }
+
+            var material = new Material(shader) { name = name, color = Color.white, mainTexture = texture };
+            material.SetTexture("_BaseMap", texture);
+            material.hideFlags = HideFlags.DontSave;
+            return material;
+        }
+
+        private static Material CreateEdgeMaterial(string name, Color color)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                throw new System.InvalidOperationException(
+                    $"The generated board border '{name}' requires the URP Unlit shader.");
             }
 
             var material = new Material(shader) { name = name, color = color };
@@ -731,7 +820,7 @@ namespace GuardsDigital.Presentation.Board
             // is world +Z, which is exactly what this did before - and they become the board's own axes
             // once the artwork is there, so the square face reads upright. Measuring the map's extent in
             // the same basis is what keeps every space inside the viewport either way.
-            var screenRight = IsUnderlayActive ? BoardArtworkCatalog.Right(definition.Reference) : Vector3.right;
+            var screenRight = Vector3.right;
             var screenUp = ScreenUpInWorld;
             var aspect = hasConfiguredCameraViewport && configuredCameraLayout.PanelViewport.y > 0f
                 ? configuredCameraLayout.PanelViewport.x / configuredCameraLayout.PanelViewport.y
@@ -748,7 +837,6 @@ namespace GuardsDigital.Presentation.Board
                 cachedFrameUsedConfiguredLayout == hasConfiguredCameraViewport &&
                 (!hasConfiguredCameraViewport ||
                     Approximately(cachedFrameLayout, configuredCameraLayout)) &&
-                cachedFrameUsedUnderlay == IsUnderlayActive &&
                 Mathf.Approximately(cachedFrameOuterRadius, outerRadius) &&
                 Mathf.Approximately(cachedFramePadding, cameraPadding) &&
                 Mathf.Approximately(cachedFrameAspect, aspect))
@@ -817,7 +905,6 @@ namespace GuardsDigital.Presentation.Board
             cachedFrameDefinition = definition;
             cachedFrameLayout = configuredCameraLayout;
             cachedFrameUsedConfiguredLayout = hasConfiguredCameraViewport;
-            cachedFrameUsedUnderlay = IsUnderlayActive;
             cachedFrameOuterRadius = outerRadius;
             cachedFramePadding = cameraPadding;
             cachedFrameAspect = aspect;
@@ -1161,6 +1248,15 @@ namespace GuardsDigital.Presentation.Board
         private void OnDestroy()
         {
             DestroyZoneMaterials();
+            foreach (var material in grassMaterials)
+            {
+                DestroyOwnedResource(material);
+            }
+
+            grassMaterials.Clear();
+            DestroyOwnedResource(waterMaterial);
+            DestroyOwnedResource(lavaMaterial);
+            DestroyOwnedResource(desertMaterial);
             DestroyOwnedResource(terrainMaterial);
             DestroyOwnedResource(edgeMaterial);
             DestroyOwnedResource(redSpawnMaterial);
@@ -1172,6 +1268,9 @@ namespace GuardsDigital.Presentation.Board
             redSpawnMaterial = null;
             blueSpawnMaterial = null;
             suppressedFillMaterial = null;
+            waterMaterial = null;
+            lavaMaterial = null;
+            desertMaterial = null;
             generatedTileMesh = null;
         }
 
