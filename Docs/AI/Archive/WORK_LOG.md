@@ -1,5 +1,11 @@
 # Work completion index
 
+### [x] W-163 Capture the six mapped heroes in a live match
+
+User requested a game screenshot with all six mapped heroes selected. Captured the live local 3v3 scene at 1920x1080 with Brogan/Riki/Rowenna on Red and Tigerclaw/Gydion/Tali on Blue, all six board tokens and side panels visible, and Riki's ordinary hand open. The reproducible capture fixture verifies the exact active roster and token visuals. Output: `tmp/w163-six-heroes-live-match.png`. Acceptance: focused capture and visual inspection. No production behavior, package or publication change.
+
+Historical evidence: immutable `work/W-163`; exact checks/results and limitations live in its commit body.
+
 ### [x] W-162 Refine the Megdan card stat icons
 
 User rejected the assembled icon shapes and clarified that numbers may overlay icons. Replaced them with continuous vector clock, curved shield and diagonal arrow silhouettes, matching cream rims and larger outlined foreground values. Card colours, text, art, dimensions and rules remain unchanged. Acceptance: focused existing colour/content and all-108-face layout checks plus inspected runtime captures at game size and enlarged. Private source only; no package or publication.
@@ -58,6 +64,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-163 | Captured a live 3v3 game with all six mapped heroes and Riki's updated card hand. | `work/W-163` |
 | W-162 | Redrew clock/shield/arrow stat icons as consistent vectors with readable overlaid numbers. | `work/W-162` |
 | W-161 | Temporarily mapped six Megdan portraits into tokens/selectors and restyled their 108 unchanged synthetic card faces with original Veljko art, typed card-colour accents and clock/shield/arrow value badges. | `work/W-161` |
 | W-160 | Replaced the Guards board face with stable private Megdan grass/biome hexes and thin borders only on possible Battle Zones, without changing topology, interaction or rules. | `work/W-160` |

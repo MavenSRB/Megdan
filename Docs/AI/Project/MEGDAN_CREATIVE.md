@@ -4,6 +4,8 @@ Return to [project context](../PROJECT_CONTEXT.md). Private presentation studies
 
 ## Current decisions
 
+Latest six-hero game screenshot: `tmp/w163-six-heroes-live-match.png` (1920x1080, W-163). The ordinary local 3v3 camera/HUD shows Brogan, Riki and Rowenna against Tigerclaw, Gydion and Tali, with Riki's hand open.
+
 Work only in the independent Megdan folder. User wants small visual iterations: show a still of the requested change before another video. Do not automatically regenerate videos.
 
 The knight, sheep, goblin, grandmother/cat, frog and cat-duelist pictures are Veljko's previous portfolio work, not approved Megdan hero concepts. Original inputs are in Art/Inputs. Built-in image generation prepared transparent cat/knight sprites and reconstructed missing parts; this is not a pixel-exact extraction or 3D modelling.

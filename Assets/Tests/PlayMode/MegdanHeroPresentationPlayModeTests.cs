@@ -47,6 +47,32 @@ namespace GuardsDigital.Tests.PlayMode
             };
 
         [UnityTest]
+        public IEnumerator CaptureSixMappedHeroesInTheLiveMatch()
+        {
+            var roster = RegisteredHeroRoster.ForThisBuild;
+            var red = new[] { "brogan", "misa", "rowenna" };
+            var blue = new[] { "tigerclaw", "gydion", "tali" };
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                red.Select(id => roster.Single(hero => hero.ContentId.Value == id)),
+                blue.Select(id => roster.Single(hero => hero.ContentId.Value == id)));
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(
+                SceneCardContent.ConfiguredMatch);
+            UiPlayer.SetPlayerViewport(1920u, 1080u, "Six mapped Megdan heroes in a local 3v3 match");
+            var root = BroganUiJourneyPlayModeTests.Root();
+            root.Runtime.SelectViewedHero(new GuardsDigital.Core.Units.Heroes.HeroId("hero-misa"));
+            root.Hud.Layout();
+            yield return new WaitForSecondsRealtime(1f);
+            var heroes = root.Runtime.BoardView.HeroViews.Where(view =>
+                view.HeroContentId.HasValue && view.gameObject.activeInHierarchy).ToArray();
+            Assert.That(heroes.Select(view => view.HeroContentId.Value.Value),
+                Is.EquivalentTo(red.Concat(blue)), "The screenshot must contain this exact six-hero lineup.");
+            Assert.That(heroes.All(view => view.HasTokenVisual), Is.True);
+            yield return UiPlayer.CaptureScreen("tmp/w163-six-heroes-live-match.png");
+        }
+
+        [UnityTest]
         public IEnumerator All108MappedFaces_KeepTheStandardFootprintAndTheirTypedTextVisible()
         {
             yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(
