@@ -23,6 +23,7 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 - [SMART_START_APPLICATION](Project/SMART_START_APPLICATION.md)
 
 - [Megdan Smart Start preparation](Project/SMART_START.md)
+- [Megdan, Pantheon Tactics and Atlas Reactor comparison](Project/SMART_START_COMPETITOR_COMPARISON.md)
 - [Megdan creative presentation](Project/MEGDAN_CREATIVE.md)
 
 - [PvE design and rule decisions](Project/PVE_DESIGN.md)

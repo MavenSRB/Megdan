@@ -28,6 +28,8 @@ Confirmed stage selection: **Other** — a self-funded functional private digita
 
 Confirmed innovation selection: **Advanced Innovation**. This is the applicant's chosen field answer, not an independent finding of novelty. The prototype began as Stefan's private computer adaptation of *Guards of Atlantis II*. His demonstrated contribution is online implementation, rules automation and accessible shared information. Enjoyment and repeated play within the friend group encouraged improvements and the ambition to develop a standalone game. The funded product would have original heroes, card expression, map and visual identity; exact redesign details are not yet defined or claimed as completed innovation. The demo's inherited gameplay is not presented as a new invention.
 
+Proposed innovation argument: a differentiated digital experience coupling the hero's limited hand, initiative and reactive defense with team lane/minion objectives. The prototype demonstrates that trade-off; its inherited mechanics are not individually claimed as inventions. The [focused competitor comparison](SMART_START_COMPETITOR_COMPARISON.md) records Pantheon Tactics as a newly discovered close comparator and separates known differences from unverified systems. This is proposed product positioning, not approval of final original rules or a verified exclusivity claim.
+
 [OPEN: Fund clarification of existing-prototype/declaration fit; rights and differentiation evidence. See the current saved inquiry; nothing has been sent.]
 
 ## Problem — maximum 300 words
@@ -44,13 +46,15 @@ We will investigate player motivations and barriers through structured feedback 
 
 ## Affected users and current alternatives — maximum 200 words
 
-Our initial audience is existing groups of adult PC players with MOBA experience who enjoy competition and planning together. Tactical and tabletop communities provide adjacent recruitment channels.
+Our initial audience is adult PC friend groups with MOBA experience who enjoy competition and planning together. Tactical and tabletop communities provide adjacent recruitment channels.
 
-Dota 2 is a free-to-play substitute for hero mastery and teamwork, with continuous real-time execution. Skygard Arena offers turn-based three-Champion squad tactics, a campaign and online PvP; its publisher describes 15–20-minute PvP matches. Gloomhaven combines cards and cooperative hero tactics, playable solo or with up to four players. These alternatives offer established content or lower group-formation requirements.
+Dota 2 offers real-time hero competition. Skygard Arena offers turn-based squad tactics, while Gloomhaven combines cards and cooperative hero tactics. These alternatives offer established content or lower group-formation requirements.
 
-Atlas Reactor is the closest identified historical precedent: 4v4 team tactics with simultaneous, timed turns. Its publisher announced closure in 2019 because the game could no longer sustain itself; the announcement does not isolate the cause.
+Atlas Reactor is a historical precedent for timed team tactics; its standard mode was a 4v4 deathmatch. Its publisher announced closure in 2019, citing sustainability without isolating the cause.
 
-Megdan's proposed distinction is competitive 3v3 play with one hero per person, card decisions and lane/minion objectives. We must demonstrate that interplayer coordination justifies gathering six people, learning a new game and potentially buying it. We do not claim an empty market or shorter matches. [Sources and comparison](SMART_START_REQUIREMENTS.md#initial-competitor-evidence).
+Pantheon Tactics, newly identified during this research, also advertises 3v3 card tactics and a base objective. Its precise hand and defense economy remains unverified here.
+
+Megdan's proposed distinction links individual hero responsibility, limited-hand choices, initiative-based execution and reactive defense to lane/minion objectives. We must demonstrate that this combination justifies gathering six players and potentially paying. We do not claim an empty market or shorter matches. [Detailed comparison and evidence gaps](SMART_START_COMPETITOR_COMPARISON.md).
 
 ## Solution — maximum 300 words
 
@@ -68,9 +72,9 @@ The team will conduct scheduled playtests, gradually reduce facilitator assistan
 
 ## Differentiation — one or two sentences, maximum 200 words
 
-Megdan combines individual hero responsibility and shared team planning with card-based decisions and lane/minion objectives, targeting MOBA-experienced friend groups seeking deliberate competitive play. Compared with real-time Dota 2, squad-controlled Skygard Arena and cooperative Gloomhaven, its proposed benefit is coordinated competition between independently controlled heroes; Atlas Reactor establishes historical precedent, so preference for Megdan's particular combination must be demonstrated through player testing.
+Megdan's proposed product innovation is a 3v3 digital team-tactics experience linking a limited hero hand, initiative-based action resolution and reactive card defense to shared lane and minion objectives, so surviving an attack can cost a player's next offensive opportunity. The inherited-rule prototype demonstrates this decision structure; the grant would develop original content and validate the experience, with Atlas Reactor and the newly identified Pantheon Tactics treated as comparators rather than claiming that the category has never existed.
 
-[MISSING: consented participant evidence of preference; comparison supports positioning, not proven superiority.]
+[MISSING: verify Pantheon's full card/defense economy and obtain consented participant preference evidence. The comparison supports a product-design hypothesis, not proven superiority; final original content/rules are still to be designed. See the focused comparison.]
 
 ## Current technology and MVP steps — maximum 200 words
 
@@ -97,6 +101,8 @@ Before submission, Stefan will collect structured feedback from existing players
 Megdan targets international PC players at the intersection of MOBA teamwork and deliberate tactical play. Valve's official statistics snapshot, updated 2 November 2026 at 10:08pm, reports 42.61 million peak concurrent Steam users over the preceding 48 hours and a Dota 2 daily peak of 701,331 players. These indicate platform and adjacent-category scale, not Megdan's addressable market or sales potential.
 
 Commercial alternatives establish an active tactical niche: Skygard Arena offers turn-based hero PvP, while Gloomhaven offers card-driven cooperative tactics. Neither their existence nor broad card-game popularity proves demand for competitive 3v3 card play. Atlas Reactor's announced closure highlights sustainability risk. No reliable numerical estimate currently isolates our precise target segment, and we do not assume a percentage of Dota's audience will convert.
+
+The newly identified Pantheon Tactics is a close comparator under review; the [focused comparison](SMART_START_COMPETITOR_COMPARISON.md) records verified overlap and unknowns.
 
 The first reachable segment is existing friend groups with MOBA experience. Recruitment will use Stefan's contacts and the Facebook communities game.rs and Društvene igre. He reports 5–6 incidental requests to be notified about testing; these are leads, not confirmed attendees, purchases or necessarily additional unique players.
 

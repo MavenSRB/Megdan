@@ -41,6 +41,7 @@ Generic engine, networking, Undo and replay are candidates for reuse, subject to
 ## Dossier
 
 - [Sources, requirements and strategy fit](SMART_START_REQUIREMENTS.md)
+- [Megdan / Pantheon Tactics / Atlas Reactor comparison and proposed innovation wording](SMART_START_COMPETITOR_COMPARISON.md)
 - [English application working draft](SMART_START_APPLICATION.md)
 - [Gameplay recording and Veljko board/UI brief](SMART_START_VIDEO_SHOT_PLAN.md)
 - [Application readiness audit and closing matrix](SMART_START_APPLICATION_READINESS.md)
@@ -56,6 +57,8 @@ Primary fit: creative industries, specifically video games and interactive media
 The user confirms AI-assisted development. Describe AI as a production tool, including code assistance and intended synthetic artwork, not as a novel AI technology inside the product. Any claim of faster or cheaper production needs measured task-level comparisons. Do not invent AI features to qualify for another priority domain.
 
 Original mythology-inspired expression supports product identity; changing names/art alone does not establish competitive innovation. The application must explain the distinct player experience and why a reachable audience values it.
+
+The [focused comparison](SMART_START_COMPETITOR_COMPARISON.md) owns the proposed product-innovation argument and remaining checks. Pantheon Tactics was first discovered by the team in this discussion on 4 November 2026, per the applicant; do not portray it as an earlier inspiration. Its close overlap rules out an Atlas-only competitor claim. The prototype's linked hand/initiative/defense and lane economy is the current differentiation hypothesis; original final designs and target-player preference remain to be established.
 
 ## Evidence boundaries
 

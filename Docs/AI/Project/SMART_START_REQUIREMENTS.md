@@ -117,6 +117,8 @@ S6 explicitly identifies video games and interactive media among creative-indust
 
 Primary-source refresh: **3 November 2026**. This is a focused comparison, not a complete market census. Store descriptions are publisher claims; timing, counters and regional prices can change. The former comparison is preserved in the [pre-W150 snapshot](../Archive/SMART_START_BEFORE_W150.txt).
 
+Targeted addition, 4 November 2026: [Pantheon/Atlas comparison](SMART_START_COMPETITOR_COMPARISON.md) adds the newly discovered close comparator, sources and unknowns. Earlier platform statistics and other competitor observations retain their stated dates.
+
 | Reference | Verified source fact | Implication for Megdan (our analysis) |
 | --- | --- | --- |
 | M1: [Valve live statistics](https://store.steampowered.com/stats/stats?l=english) | Page labelled updated 2 November 2026, 10:08pm (timezone unspecified): Steam peak concurrent users over most recent 48 hours **42,610,586**; Dota 2 **Peak Today 701,331** | Broad distribution/category context only. Platform users are not all playing, unique purchasers, reachable prospects or Megdan TAM. One snapshot does not establish growth or migration from MOBAs |
@@ -125,6 +127,7 @@ Primary-source refresh: **3 November 2026**. This is a focused comparison, not a
 | M4: [Gloomhaven official listing](https://store.steampowered.com/app/780290/Gloomhaven/) | Card-driven tactical combat, solo or online co-op up to four; select two cards each turn. Listing showed **10,277 English reviews**, 81% positive | Adjacent evidence of engagement with card/hero tactics, not sales or demand for Megdan. Cooperative campaign and solo availability offer a different experience with fewer required humans |
 | M5: [Atlas Reactor official guide](https://webcdn.triongames.com/atlasreactor/AtlasReactor_Guide.pdf), p. 3 | 4v4, coordinated ability combinations and 20-second simultaneous turns | Historical precedent for multiplayer turn-based hero tactics; no claim of genre invention. Megdan proposes cards, lane/minion objectives and 3v3, with configurable timing |
 | M6: [Publisher closure announcement](https://www.trionworlds.com/en/news/2019/04/atlas-reactor-servers-shut-down/) | On 17 April 2019, publisher said the game could no longer sustain itself and planned service until 28 June | Sustainability warning, not proof that player count alone caused failure or that Megdan will fail |
+| M7: [Pantheon developer listing](https://store.steampowered.com/app/4929050/Pantheon_Tactics/) and [official news](https://steamcommunity.com/app/4929050/allnews/) | Close comparator; feature/patch claims and unknowns are recorded in the [focused comparison](SMART_START_COMPETITOR_COMPARISON.md) | First discovered in this discussion on 4 November 2026, per the applicant. Do not claim Atlas is the only precedent or infer absence of undocumented card/defense systems |
 
 ### Reachable audience and validation route
 

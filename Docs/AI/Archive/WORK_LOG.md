@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-173 Compare Megdan with Pantheon Tactics and Atlas Reactor
+
+Request: compare concrete systems and derive supportable grant-innovation wording. Recorded the applicant's first awareness of Pantheon in this discussion on 4 November 2026. Primary-source research distinguishes the inherited prototype's limited hand, initiative, reactive defense and lane economy from Atlas's documented phase-resolved arena, and records Pantheon's overlap and unresolved hand/defense details. Added a sourced comparison, updated the working application/source/readiness owners and preserved the remaining research in the backlog. Acceptance: explicit fact/claim/inference/unknown boundaries, all application word limits, T0 documentation/link/diff review and local commit. No original rule approval, runtime change, installation, playtest, contact, publication or submission; concurrent W-174 continues in its existing task.
+
+Historical evidence: immutable `work/W-173`; exact checks/results, review and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-173 | Sourced three-game comparison and bounded product-innovation argument | `work/W-173` |
+
 ### [x] W-174 Build the private six-hero Megdan Windows preview
 
 User requested the latest Windows build with only the six revamped heroes selectable. The package offers Brogan, Misa/Riki, Rowenna, Tigerclaw, Gydion and Tali through a shared build-scoped selection catalog; full internal registration and editor fixtures remain preserved. Includes the current cards, camera, board and standees. Acceptance: focused roster/selection checks, player interaction, Megdan board render, PvP host/two joiners, PvE one/two/three players, 184-file archive integrity and extracted launch, documentation validation and local commit. Use 2v2/3v3 or PvE; six unique heroes cannot fill larger teams. No remote publication.
