@@ -120,7 +120,7 @@ namespace GuardsDigital.Presentation.Interaction
                 if (mouse.middleButton.wasPressedThisFrame && !overHud) rotating = true;
                 if (!mouse.middleButton.isPressed) rotating = false;
                 if (rotating) orbit = mouse.delta.ReadValue() * 0.2f;
-                if (!overHud) zoom = mouse.scroll.ReadValue().y / 120f;
+                if (!overHud) zoom = mouse.scroll.ReadValue().y / 60f;
             }
             Navigate(pan, orbit, zoom, Time.unscaledDeltaTime,
                 keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed));

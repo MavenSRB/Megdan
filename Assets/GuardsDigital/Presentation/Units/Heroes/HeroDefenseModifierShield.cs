@@ -32,6 +32,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private MeshFilter meshFilter;
         private MeshRenderer meshRenderer;
         private TextMesh valueText;
+        private float radius, surface;
+        private Quaternion authoredRotation, authoredFrame;
 
         public int? Modifier { get; private set; }
         public bool IsVisible => gameObject.activeSelf && Modifier.HasValue;
@@ -85,7 +87,23 @@ namespace GuardsDigital.Presentation.Units.Heroes
             gameObject.SetActive(true);
             FitValue(pieceRadius);
             CenterValue();
+            radius = pieceRadius;
+            surface = surfaceY;
+            authoredRotation = transform.rotation;
+            authoredFrame = Quaternion.LookRotation(transform.TransformDirection(-localDown), transform.up);
         }
+
+        public void RefreshFacing(Camera camera)
+        {
+            if (!IsVisible || camera == null) return;
+            var origin = transform.parent == null ? Vector3.zero : transform.parent.position;
+            transform.position = origin + Vector3.up * (surface + SurfaceOffset) -
+                camera.transform.right * (radius * EdgeDistanceFactor);
+            transform.rotation = Quaternion.LookRotation(camera.transform.up, -camera.transform.forward) *
+                Quaternion.Inverse(authoredFrame) * authoredRotation;
+        }
+
+        private void LateUpdate() => RefreshFacing(Camera.main);
 
         private void FitValue(float pieceRadius)
         {

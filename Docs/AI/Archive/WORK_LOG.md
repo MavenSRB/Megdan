@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-175 Improve wheel zoom, shields and 2D token camera alignment
+
+User requested more sensitive mouse zoom, shields that follow the rotating camera, and camera-aligned 2D tokens. Doubled wheel response; Defense shields retain their screen-left anchor and readable face; flat hero/minion art follows camera heading with minion art above its thick base. Acceptance: live input/token/shield journey, camera bounds and shield geometry/resource regressions, inspected angled/flat captures, fresh player/board/multiplayer/archive/extracted checks, documentation validation and local commit. W174's six-hero selection remains. No rules or remote publication changes.
+
+Historical evidence: immutable `work/W-175`; exact checks/results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-175 | Camera controls and readable rotating shields/flat tokens; private Windows preview | `work/W-175` |
+
 ### [x] W-173 Compare Megdan with Pantheon Tactics and Atlas Reactor
 
 Request: compare concrete systems and derive supportable grant-innovation wording. Recorded the applicant's first awareness of Pantheon in this discussion on 4 November 2026. Primary-source research distinguishes the inherited prototype's limited hand, initiative, reactive defense and lane economy from Atlas's documented phase-resolved arena, and records Pantheon's overlap and unresolved hand/defense details. Added a sourced comparison, updated the working application/source/readiness owners and preserved the remaining research in the backlog. Acceptance: explicit fact/claim/inference/unknown boundaries, all application word limits, T0 documentation/link/diff review and local commit. No original rule approval, runtime change, installation, playtest, contact, publication or submission; concurrent W-174 continues in its existing task.

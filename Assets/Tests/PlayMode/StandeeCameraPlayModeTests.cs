@@ -85,12 +85,24 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
                 Assert.That(navigation.Elevation, Is.LessThan(79f), "Middle drag orbits into the standee range.");
                 Assert.That(heroes.All(h => h.Standee.IsStanding), Is.True);
+                foreach (var hero in heroes)
+                {
+                    hero.SetDefenseModifierShield(2);
+                    var shield = hero.DefenseModifierShield;
+                    shield.RefreshFacing(camera);
+                    var offset = shield.transform.position - hero.transform.position;
+                    Assert.That(Vector3.Dot(offset, camera.transform.right),
+                        Is.EqualTo(-hero.SelectionRadius * HeroDefenseModifierShield.EdgeDistanceFactor).Within(0.001f));
+                    Assert.That(Vector3.Dot(shield.ValueText.transform.forward, camera.transform.forward),
+                        Is.GreaterThan(0.999f), "Shield value stays facing the rotated camera.");
+                }
                 float size = camera.orthographicSize;
                 InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint, scroll = new Vector2(0, 120) });
                 yield return null; yield return null;
                 InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint });
                 yield return null;
-                Assert.That(camera.orthographicSize, Is.LessThan(size), "Wheel zoom works on the board.");
+                Assert.That(camera.orthographicSize, Is.EqualTo(size * 0.88f * 0.88f).Within(0.001f),
+                    "A wheel notch now applies twice the previous zoom response.");
                 var hudPoint = new Vector2(Screen.width * 0.5f, Screen.height - 8f);
                 Assert.That(root.Hud.BlocksPointerAt(hudPoint), Is.True);
                 size = camera.orthographicSize;
@@ -145,6 +157,20 @@ namespace GuardsDigital.Tests.PlayMode
                 navigation.ResetView();
                 yield return null; yield return null;
                 Assert.That(heroes.All(h => !h.Standee.IsStanding), Is.True);
+                navigation.Navigate(Vector2.zero, new Vector2(75f, 0), 0, 0);
+                yield return null; yield return null;
+                foreach (var hero in heroes)
+                    Assert.That(Vector3.Dot(hero.transform.forward, camera.transform.up), Is.GreaterThan(0.999f),
+                        "Flat hero artwork follows camera heading.");
+                foreach (var minion in minions)
+                {
+                    Assert.That(Vector3.Dot(minion.transform.up, camera.transform.up), Is.GreaterThan(0.999f),
+                        "Flat creep artwork follows camera heading.");
+                    Assert.That(Vector3.Dot(minion.transform.forward, Vector3.up), Is.GreaterThan(0.999f),
+                        "Creep artwork remains above its extruded base.");
+                }
+                navigation.ResetView();
+                yield return null; yield return null;
                 yield return UiPlayer.CaptureScreen("tmp/w165-top-down-live-match.png");
                 navigation.Navigate(Vector2.right, Vector2.zero, 0, 0.2f);
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Home));

@@ -1,9 +1,12 @@
-param()
+param(
+    [ValidatePattern('^W[0-9]+$')][string] $WorkId = 'W174',
+    [string] $BuildStamp = '1.0-W174-megdan-six-heroes+20261104-ee3a8f09'
+)
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $source = Join-Path $root 'Builds/Win64Smoke'
-$destination = Join-Path $root 'Builds/W174MegdanPackage/GuardsDigital'
-$archive = Join-Path $root 'Builds/Playtest-W174-megdan-six-heroes.zip'
+$destination = Join-Path $root "Builds/${WorkId}MegdanPackage/GuardsDigital"
+$archive = Join-Path $root "Builds/Playtest-${WorkId}-megdan-six-heroes.zip"
 if ((Test-Path -LiteralPath $destination) -or (Test-Path -LiteralPath $archive)) { throw 'Package already exists; preserve it.' }
 New-Item -ItemType Directory -Path $destination -Force | Out-Null
 Get-ChildItem -LiteralPath $source | Where-Object { $_.Name -notmatch 'DoNotShip|BackUpThisFolder|BurstDebug|^Logs$' } | Copy-Item -Destination $destination -Recurse
@@ -26,13 +29,14 @@ All players must use this same build and PveData. TCP port 45677 by default.
 Private local preview; no public distribution is authorized.
 Stamp: 1.0-W174-megdan-six-heroes+20261104-ee3a8f09
 '@
-[IO.File]::WriteAllText((Join-Path $destination 'README.txt'), $readme)
+[IO.File]::WriteAllText((Join-Path $destination 'README.txt'), $readme.Replace(
+    '1.0-W174-megdan-six-heroes+20261104-ee3a8f09', $BuildStamp).Replace('PREVIEW W174', "PREVIEW $WorkId"))
 $manifest = @(Get-ChildItem -LiteralPath $destination -Recurse -File | Sort-Object FullName | ForEach-Object {
     [pscustomobject]@{Path=$_.FullName.Substring($destination.Length+1);Bytes=$_.Length;SHA256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash}
 })
 $manifest | Export-Csv -LiteralPath (Join-Path $destination 'FILES.csv') -NoTypeInformation
 Compress-Archive -LiteralPath $destination -DestinationPath $archive -CompressionLevel Optimal
-$extracted = Join-Path $root 'tmp/w174-extracted'
+$extracted = Join-Path $root ("tmp/" + $WorkId.ToLowerInvariant() + '-extracted')
 if (Test-Path -LiteralPath $extracted) { throw 'Extraction evidence exists.' }
 Expand-Archive -LiteralPath $archive -DestinationPath $extracted
 foreach ($entry in $manifest) {

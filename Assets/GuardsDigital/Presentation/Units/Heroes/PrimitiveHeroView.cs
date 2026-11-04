@@ -477,6 +477,17 @@ namespace GuardsDigital.Presentation.Units.Heroes
         public bool CanWearATargetCue =>
             BoardTargetRing.CanFit(GetComponent<MeshRenderer>(), TargetFootprintKind());
 
+        public void RefreshTokenFacing(Camera camera)
+        {
+            if (!HasTokenVisual || camera == null || standee?.IsStanding == true) return;
+            var up = Vector3.ProjectOnPlane(camera.transform.up, Vector3.up);
+            if (up.sqrMagnitude > 0.0001f)
+                transform.rotation = Quaternion.LookRotation(up, Vector3.up);
+            defenseModifierShield?.RefreshFacing(camera);
+        }
+
+        private void LateUpdate() => RefreshTokenFacing(Camera.main);
+
         private float BoardPlaneWorldY() => transform.parent == null
             ? transform.position.y - verticalOffset
             : transform.parent.TransformPoint(Vector3.zero).y;

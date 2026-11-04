@@ -237,6 +237,16 @@ namespace GuardsDigital.Presentation.Units.Minions
             ? transform.position.y - DefaultVerticalOffset
             : transform.parent.TransformPoint(Vector3.zero).y;
 
+        public void RefreshTokenFacing(Camera camera)
+        {
+            if (camera == null) return;
+            var up = Vector3.ProjectOnPlane(camera.transform.up, Vector3.up);
+            if (up.sqrMagnitude > 0.0001f)
+                transform.rotation = Quaternion.LookRotation(Vector3.up, up);
+        }
+
+        private void LateUpdate() => RefreshTokenFacing(Camera.main);
+
         private void Awake()
         {
             EnsureTargetRing();

@@ -12,13 +12,13 @@ Independent root: `C:/Projects/Megdan`. [Smart Start](Project/SMART_START.md) an
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2 through 5v5, host-selected Waves/Lives and four maps including two large two-lane boards. Snapshot schema v60 persists lane identity/allocation; wire protocol /54 carries live per-lane Wave pools. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private Windows package: **W174 Megdan Six Heroes**, `Builds/Playtest-W174-megdan-six-heroes.zip`. `GuardsDigital.exe` opens Host/Join with the current cards, standees, camera and grass board. Only Brogan, Riki/Misa, Rowenna, Tigerclaw, Gydion and Tali are selectable; use 2v2, 3v3 or PvE because six unique heroes cannot fill larger teams. Full internal registration remains preserved. Stamp `1.0-W174-megdan-six-heroes+20261104-ee3a8f09`; SHA-256 `c7ae8e4e369d7ee69c03fe30b9eecca6b55e071d694a2978c881093a18196753`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private Windows package: **W175 Camera Controls**, `Builds/Playtest-W175-megdan-six-heroes.zip`. Doubled wheel zoom, camera-facing Defense shields and camera-aligned flat hero/minion artwork. Only Brogan, Riki/Misa, Rowenna, Tigerclaw, Gydion and Tali are selectable; use 2v2, 3v3 or PvE because six unique heroes cannot fill larger teams. Full internal registration remains preserved. Stamp `1.0-W175-camera-controls+20261104-ab3acad5-r3`; SHA-256 `576338e3ddf9e5ee59726530dcac57c6178aefa4a30216458702bb0c1ab713f2`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
 Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-173**.
+- Last completed work: **W-175**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
