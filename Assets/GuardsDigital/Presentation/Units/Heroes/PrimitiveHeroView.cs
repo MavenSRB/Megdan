@@ -1,4 +1,5 @@
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
@@ -210,7 +211,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
             teamSide = setupState.TeamSide;
             spawnPointId = setupState.SpawnPoint.SpawnPointId.Value;
             heroContentId = setupState.ContentId.Value;
-            heroDisplayName = setupState.DisplayName;
+            heroDisplayName = MegdanHeroPresentationCatalog.DisplayName(
+                setupState.ContentId, setupState.DisplayName);
             Configure(new HeroOccupancy(setupState.HeroId, setupState.Coordinate), radius);
             gameObject.name = $"{teamSide} {heroDisplayName} ({setupState.HeroId.Value})";
             // Milestone 8.11b: the content identity and the team this view was just given are exactly

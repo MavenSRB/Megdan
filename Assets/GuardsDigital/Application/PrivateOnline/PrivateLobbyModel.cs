@@ -496,7 +496,7 @@ namespace GuardsDigital.Application
         /// names for them would be presentation this milestone's non-goals rule out.
         /// </summary>
         public static string Identifier(string value) =>
-            (value ?? string.Empty).ToUpperInvariant();
+            MegdanHeroPresentationCatalog.LobbyIdentifier(value);
 
         /// <summary>
         /// Milestone 8.108. What a lobby calls a seat: its player's name when they gave one, else
@@ -1003,7 +1003,7 @@ namespace GuardsDigital.Application
                 var available = !taken.Contains(hero.HeroIdValue);
                 heroes.Add(new PrivateLobbyHeroOption(
                     hero.HeroIdValue,
-                    hero.DisplayName,
+                    MegdanHeroPresentationCatalog.DisplayName(hero.ContentId, hero.DisplayName),
                     hero.Complexity,
                     hero.Roles,
                     available,

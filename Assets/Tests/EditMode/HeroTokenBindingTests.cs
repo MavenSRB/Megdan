@@ -42,6 +42,7 @@ namespace GuardsDigital.Tests.EditMode
         public void BoardAndRail_UseTheAvailableFaceAndItsTeamRing(
             [Values("wasp", "arien", "brogan", "sabina", "tigerclaw", "xargatha",
                 "dodger", "misa", "silverarrow", "ursafar", "whisper",
+                "rowenna", "gydion", "tali",
                 // Milestone 8.75b. The twenty-second hero's standee, on the same terms every value
                 // above it is on: her two team faces are prepared as ignored private resources, and
                 // a source-only checkout proves the explicit fallback instead of skipping.
@@ -54,8 +55,12 @@ namespace GuardsDigital.Tests.EditMode
             // the explicit primitive/empty-portrait fallback rather than skipping the test.
             var baked = Resources.Load<Texture2D>(HeroTokenArtwork.ResourcePath(content, team));
             var neutral = Resources.Load<Texture2D>(HeroTokenArtwork.NeutralResourcePath(content));
-            var expected = baked != null ? baked : neutral;
-            var faceRadius = baked != null ? RuntimeTeamIdentity.TeamBakedFaceRadius :
+            var prefersMegdanPortrait = MegdanHeroPresentationCatalog.TryForContent(content, out _);
+            var expected = prefersMegdanPortrait && neutral != null
+                ? neutral
+                : baked != null ? baked : neutral;
+            var usesBaked = ReferenceEquals(expected, baked);
+            var faceRadius = usesBaked ? RuntimeTeamIdentity.TeamBakedFaceRadius :
                 RuntimeTeamIdentity.NeutralFaceRadius;
             var piece = new GameObject("Token binding regression");
             try
@@ -94,7 +99,7 @@ namespace GuardsDigital.Tests.EditMode
                     "every source-art kind has the same physical player-colour ring");
                 Assert.That(mesh.uv[1].x,
                     Is.EqualTo(0.5f + 0.5f * HeroTokenArtwork.SourceInsetFor(
-                        baked != null ? TokenFaceKind.TeamBaked : TokenFaceKind.TeamNeutral)).Within(0.0001f),
+                        usesBaked ? TokenFaceKind.TeamBaked : TokenFaceKind.TeamNeutral)).Within(0.0001f),
                     "the face UV excludes the source rim for team-baked artwork");
                 Assert.That(board.SelectionRadius, Is.EqualTo(HeroTokenArtwork.TokenOuterRadius));
                 board.EnsureVisual();

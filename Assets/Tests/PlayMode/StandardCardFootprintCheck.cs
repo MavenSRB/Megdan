@@ -56,6 +56,12 @@ namespace GuardsDigital.Tests.PlayMode
             "gd-card-history"
         };
 
+        private static readonly string[] MegdanBandsTopToBottom =
+        {
+            "gd-megdan-card-top",
+            "gd-card-rules"
+        };
+
         /// <summary>
         /// Measures every verified face of one hero against the standard footprint on the live HUD
         /// panel, and fails with every non-conforming face at once.
@@ -150,7 +156,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             var artwork = Descendants(face).OfType<Image>()
                 .SingleOrDefault(element => element.name == "gd-card-artwork");
-            var expectedHeight = artwork == null
+            var isMegdanSynthetic = Descendants(face).Any(element =>
+                element.name == "gd-megdan-card-frame");
+            var expectedHeight = artwork == null || isMegdanSynthetic
                 ? CardFootprint.Height
                 : CardFootprint.ArtworkHeight;
 
@@ -171,7 +179,7 @@ namespace GuardsDigital.Tests.PlayMode
                     $"{expectedHeight} - a difference of {box.height - expectedHeight}.";
             }
 
-            if (artwork != null)
+            if (artwork != null && !isMegdanSynthetic)
             {
                 foreach (var violation in InspectArtwork(name, face, artwork))
                 {
@@ -183,7 +191,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             var bounds = face.worldBound;
             var previousBottom = float.NegativeInfinity;
-            foreach (var bandName in BandsTopToBottom)
+            foreach (var bandName in isMegdanSynthetic
+                         ? MegdanBandsTopToBottom
+                         : BandsTopToBottom)
             {
                 var band = Descendants(face).FirstOrDefault(element => element.name == bandName);
                 if (band == null)
@@ -277,7 +287,9 @@ namespace GuardsDigital.Tests.PlayMode
                 : card.Face.EmptyTextLabel;
             var required = new[]
             {
-                card.DisplayName.ToUpperInvariant(),
+                Descendants(face).Any(element => element.name == "gd-megdan-card-frame")
+                    ? card.DisplayName
+                    : card.DisplayName.ToUpperInvariant(),
                 card.Face.PrimaryActionLabel,
                 card.HistoryLabel,
                 printed

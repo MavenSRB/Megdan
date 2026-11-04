@@ -1942,6 +1942,15 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            // W-161's Megdan face contains portrait artwork, but remains a generated, typed face.
+            // Its action/value regions therefore shine like every other synthetic card instead of
+            // looking for traced overlays belonging to the old complete-card scans.
+            if (faceElement.Q<VisualElement>("gd-megdan-card-frame") != null)
+            {
+                SetGeneratedChipShine(faceElement, slot, true, false);
+                return;
+            }
+
             if (faceElement.Q<Image>("gd-card-artwork") != null)
             {
                 if (ConfiguredCardShine.TryLoadTexture(card.DefinitionReference, slot, out var texture))
@@ -2212,6 +2221,408 @@ namespace GuardsDigital.Presentation.Match
             frame.Add(BuildRulesPanel(card, ink));
             frame.Add(BuildHistoryBand(card, ink));
             return frame;
+        }
+
+        /// <summary>
+        /// W-161's private Megdan skin over the existing synthetic card face. Every word and value
+        /// still comes from <paramref name="card"/>; the supplied hero portrait is presentation only.
+        /// </summary>
+        internal static VisualElement BuildMegdanCardFrame(
+            TrayCardViewModel card,
+            Texture2D portrait)
+        {
+            var dark = new Color(0.055f, 0.085f, 0.10f, 1f);
+            var cream = new Color(0.94f, 0.90f, 0.78f, 1f);
+            var creamInk = new Color(0.12f, 0.16f, 0.18f, 1f);
+            var edge = new Color(0.76f, 0.69f, 0.53f, 1f);
+            // The card's typed colour owns the entire accent family. Red stays red, Blue stays blue,
+            // and so on; neither the hero mapping nor the artwork filename participates.
+            var accent = MatchHudTheme.Face(card.Color);
+            var accentInk = MatchHudTheme.FaceText(card.Color);
+            var frame = new VisualElement { name = "gd-megdan-card-frame" };
+            frame.style.flexDirection = FlexDirection.Column;
+            frame.style.flexGrow = 1f;
+            frame.style.marginLeft = 3f;
+            frame.style.marginRight = 3f;
+            frame.style.marginTop = 3f;
+            frame.style.marginBottom = 3f;
+            frame.style.overflow = Overflow.Hidden;
+            frame.style.backgroundColor = dark;
+            HudElements.Padding(frame, 6f);
+            HudElements.Border(frame, edge, 2f, 12f);
+
+            var top = new VisualElement { name = "gd-megdan-card-top" };
+            top.style.flexDirection = FlexDirection.Row;
+            top.style.height = 204f;
+            top.style.flexShrink = 0f;
+
+            var rail = new VisualElement { name = "gd-megdan-value-rail" };
+            rail.style.width = 52f;
+            rail.style.flexShrink = 0f;
+            rail.style.marginRight = 6f;
+            rail.style.flexDirection = FlexDirection.Column;
+            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Initiative, "INIT", accent, accentInk));
+            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Defense, "DEF", accent, accentInk));
+            rail.Add(BuildMegdanStat(card, PrintedValueChannel.Movement, "MOVE", accent, accentInk));
+            top.Add(rail);
+
+            var main = new VisualElement { name = "gd-megdan-card-main" };
+            main.style.flexGrow = 1f;
+            main.style.flexDirection = FlexDirection.Column;
+
+            var title = HudElements.Text(card.DisplayName, 15f, creamInk, FontStyle.Bold);
+            title.name = "gd-card-name";
+            title.style.height = 38f;
+            title.style.flexShrink = 0f;
+            title.style.paddingLeft = 7f;
+            title.style.paddingRight = 7f;
+            title.style.unityTextAlign = TextAnchor.MiddleCenter;
+            title.style.backgroundColor = cream;
+            HudElements.Border(title, edge, 1f, 6f);
+            main.Add(title);
+
+            var hero = new VisualElement { name = "gd-megdan-card-hero" };
+            hero.style.position = Position.Relative;
+            hero.style.flexGrow = 1f;
+            hero.style.marginTop = 6f;
+            hero.style.overflow = Overflow.Hidden;
+            hero.style.backgroundColor = accent;
+            HudElements.Border(hero, accent, 1f, 2f);
+            if (portrait != null)
+            {
+                var art = new Image
+                {
+                    name = "gd-card-artwork",
+                    image = portrait,
+                    scaleMode = ScaleMode.ScaleToFit,
+                    tintColor = Color.white,
+                    pickingMode = PickingMode.Ignore,
+                    focusable = false,
+                    tooltip = card.AssistiveLabel,
+                    userData = card.DefinitionReference
+                };
+                art.style.position = Position.Absolute;
+                art.style.left = 0f;
+                art.style.top = 0f;
+                art.style.right = 0f;
+                art.style.bottom = 0f;
+                hero.Add(art);
+            }
+            main.Add(hero);
+            top.Add(main);
+            frame.Add(top);
+            frame.Add(BuildMegdanRulesPanel(card, cream, creamInk, accent));
+            return frame;
+        }
+
+        private static VisualElement BuildMegdanStat(
+            TrayCardViewModel card,
+            PrintedValueChannel channel,
+            string caption,
+            Color accent,
+            Color accentInk)
+        {
+            var value = channel == PrintedValueChannel.Initiative
+                ? card.Face.Initiative
+                : card.Face.SecondaryValues.FirstOrDefault(candidate => candidate.Channel == channel);
+            var cell = new VisualElement
+            {
+                name = channel == PrintedValueChannel.Initiative
+                    ? "gd-card-initiative"
+                    : channel == PrintedValueChannel.Defense
+                        ? "gd-card-secondary-defense"
+                        : "gd-card-secondary-movement"
+            };
+            cell.style.flexGrow = 1f;
+            cell.style.marginBottom = channel == PrintedValueChannel.Movement ? 0f : 6f;
+            cell.style.alignItems = Align.Center;
+            cell.style.justifyContent = Justify.Center;
+            var isInitiative = channel == PrintedValueChannel.Initiative;
+            cell.style.backgroundColor = Color.clear;
+
+            var amount = HudElements.Text(value?.AmountLabel ?? "-", 18f, accentInk, FontStyle.Bold);
+            amount.style.unityTextAlign = TextAnchor.MiddleCenter;
+            if (isInitiative)
+            {
+                cell.Add(BuildMegdanInitiativeClock(amount, accent));
+            }
+            else if (channel == PrintedValueChannel.Defense)
+            {
+                cell.Add(BuildMegdanDefenseShield(amount, accent));
+            }
+            else
+            {
+                cell.Add(BuildMegdanMovementArrow(amount, accent));
+            }
+
+            var label = HudElements.Text(
+                caption, 8f, new Color(0.94f, 0.90f, 0.78f, 1f), FontStyle.Bold);
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            cell.Add(label);
+            if (value != null)
+            {
+                CardValueOverlay.AddInline(cell, card.ValueBonuses, channel);
+                cell.tooltip = value.AssistiveLabel;
+            }
+            else
+            {
+                cell.tooltip = "Prints no " + caption;
+            }
+
+            return cell;
+        }
+
+        private static VisualElement BuildMegdanInitiativeClock(Label amount, Color accent)
+        {
+            const float diameter = 42f;
+            var cream = new Color(0.94f, 0.90f, 0.78f, 1f);
+            var clock = new VisualElement { name = "gd-card-initiative-clock" };
+            clock.style.position = Position.Relative;
+            clock.style.width = diameter;
+            clock.style.height = diameter;
+            clock.style.flexShrink = 0f;
+            clock.style.alignItems = Align.Center;
+            clock.style.justifyContent = Justify.Center;
+            clock.style.backgroundColor = accent;
+            HudElements.Border(clock, cream, 2f, diameter * 0.5f);
+
+            // Four compact hour marks keep the initiative badge legibly clock-shaped even on a
+            // hand-sized card. They are presentation only; the typed Initiative remains the number.
+            clock.Add(BuildMegdanClockMark(19f, 2f, 2f, 5f, cream));
+            clock.Add(BuildMegdanClockMark(19f, 33f, 2f, 5f, cream));
+            clock.Add(BuildMegdanClockMark(3f, 20f, 2f, 2f, cream));
+            clock.Add(BuildMegdanClockMark(37f, 20f, 2f, 2f, cream));
+            clock.Add(amount);
+            return clock;
+        }
+
+        private static VisualElement BuildMegdanDefenseShield(Label amount, Color accent)
+        {
+            var cream = new Color(0.94f, 0.90f, 0.78f, 1f);
+            var shield = BuildMegdanBadgeContainer("gd-card-defense-shield");
+            var body = new VisualElement { name = "gd-card-defense-shield-face" };
+            body.style.position = Position.Absolute;
+            body.style.left = 2f;
+            body.style.top = 1f;
+            body.style.width = 38f;
+            body.style.height = 35f;
+            body.style.backgroundColor = accent;
+            body.style.borderTopLeftRadius = 6f;
+            body.style.borderTopRightRadius = 6f;
+            body.style.borderBottomLeftRadius = 15f;
+            body.style.borderBottomRightRadius = 15f;
+            body.style.borderLeftWidth = 2f;
+            body.style.borderRightWidth = 2f;
+            body.style.borderTopWidth = 2f;
+            body.style.borderBottomWidth = 2f;
+            body.style.borderLeftColor = cream;
+            body.style.borderRightColor = cream;
+            body.style.borderTopColor = cream;
+            body.style.borderBottomColor = cream;
+            shield.Add(body);
+
+            shield.Add(BuildMegdanTriangle(
+                "gd-card-defense-shield-point", 14f, 33f, 7f, 7f, cream, true));
+            shield.Add(BuildMegdanTriangle(
+                "gd-card-defense-shield-point-fill", 16f, 33f, 5f, 5f, accent, true));
+            shield.Add(BuildMegdanBadgeAmount(amount, 42f));
+            return shield;
+        }
+
+        private static VisualElement BuildMegdanMovementArrow(Label amount, Color accent)
+        {
+            var cream = new Color(0.94f, 0.90f, 0.78f, 1f);
+            var arrow = BuildMegdanBadgeContainer("gd-card-movement-arrow");
+
+            var outerShaft = new VisualElement { name = "gd-card-movement-arrow-outline" };
+            outerShaft.style.position = Position.Absolute;
+            outerShaft.style.left = 0f;
+            outerShaft.style.top = 8f;
+            outerShaft.style.width = 28f;
+            outerShaft.style.height = 26f;
+            outerShaft.style.backgroundColor = cream;
+            arrow.Add(outerShaft);
+            arrow.Add(BuildMegdanTriangle(
+                "gd-card-movement-arrow-head-outline", 27f, 2f, 19f, 15f, cream, false));
+
+            var shaft = new VisualElement { name = "gd-card-movement-arrow-face" };
+            shaft.style.position = Position.Absolute;
+            shaft.style.left = 2f;
+            shaft.style.top = 10f;
+            shaft.style.width = 26f;
+            shaft.style.height = 22f;
+            shaft.style.backgroundColor = accent;
+            arrow.Add(shaft);
+            arrow.Add(BuildMegdanTriangle(
+                "gd-card-movement-arrow-head", 26f, 5f, 16f, 13f, accent, false));
+            arrow.Add(BuildMegdanBadgeAmount(amount, 32f));
+            return arrow;
+        }
+
+        private static VisualElement BuildMegdanBadgeContainer(string name)
+        {
+            var badge = new VisualElement { name = name };
+            badge.style.position = Position.Relative;
+            badge.style.width = 42f;
+            badge.style.height = 42f;
+            badge.style.flexShrink = 0f;
+            return badge;
+        }
+
+        private static VisualElement BuildMegdanBadgeAmount(Label amount, float width)
+        {
+            var overlay = new VisualElement { name = "gd-card-stat-value" };
+            overlay.pickingMode = PickingMode.Ignore;
+            overlay.style.position = Position.Absolute;
+            overlay.style.left = 0f;
+            overlay.style.top = 0f;
+            overlay.style.width = width;
+            overlay.style.height = 42f;
+            overlay.style.alignItems = Align.Center;
+            overlay.style.justifyContent = Justify.Center;
+            overlay.Add(amount);
+            return overlay;
+        }
+
+        private static VisualElement BuildMegdanTriangle(
+            string name,
+            float left,
+            float top,
+            float halfHeight,
+            float length,
+            Color color,
+            bool pointsDown)
+        {
+            var triangle = new VisualElement { name = name };
+            triangle.pickingMode = PickingMode.Ignore;
+            triangle.style.position = Position.Absolute;
+            triangle.style.left = left;
+            triangle.style.top = top;
+            triangle.style.width = 0f;
+            triangle.style.height = 0f;
+            var clear = Color.clear;
+            if (pointsDown)
+            {
+                triangle.style.borderLeftWidth = halfHeight;
+                triangle.style.borderRightWidth = halfHeight;
+                triangle.style.borderTopWidth = length;
+                triangle.style.borderLeftColor = clear;
+                triangle.style.borderRightColor = clear;
+                triangle.style.borderTopColor = color;
+            }
+            else
+            {
+                triangle.style.borderTopWidth = halfHeight;
+                triangle.style.borderBottomWidth = halfHeight;
+                triangle.style.borderLeftWidth = length;
+                triangle.style.borderTopColor = clear;
+                triangle.style.borderBottomColor = clear;
+                triangle.style.borderLeftColor = color;
+            }
+
+            return triangle;
+        }
+
+        private static VisualElement BuildMegdanClockMark(
+            float left,
+            float top,
+            float width,
+            float height,
+            Color color)
+        {
+            var mark = new VisualElement { name = "gd-card-initiative-clock-mark" };
+            mark.pickingMode = PickingMode.Ignore;
+            mark.style.position = Position.Absolute;
+            mark.style.left = left;
+            mark.style.top = top;
+            mark.style.width = width;
+            mark.style.height = height;
+            mark.style.backgroundColor = color;
+            return mark;
+        }
+
+        private static VisualElement BuildMegdanRulesPanel(
+            TrayCardViewModel card,
+            Color cream,
+            Color ink,
+            Color accent)
+        {
+            var panel = new VisualElement { name = "gd-card-rules" };
+            panel.style.flexGrow = 1f;
+            panel.style.flexDirection = FlexDirection.Column;
+            panel.style.marginTop = 6f;
+            panel.style.paddingLeft = 10f;
+            panel.style.paddingRight = 10f;
+            panel.style.paddingTop = 7f;
+            panel.style.paddingBottom = 5f;
+            panel.style.backgroundColor = cream;
+            HudElements.Border(panel, accent, 1f, 7f);
+
+            var action = new VisualElement { name = "gd-card-primary-action" };
+            action.style.flexDirection = FlexDirection.Row;
+            action.style.alignItems = Align.Center;
+            action.style.justifyContent = Justify.Center;
+            action.style.flexShrink = 0f;
+            action.style.minHeight = 26f;
+            var kind = HudElements.Text(card.Face.PrimaryActionLabel, 13f, ink, FontStyle.Bold);
+            kind.name = "gd-card-primary-kind";
+            action.Add(kind);
+            var primary = card.Face.PrimaryValue;
+            if (primary != null)
+            {
+                var value = HudElements.Text(primary.AmountLabel, 13f, ink, FontStyle.Bold);
+                value.name = "gd-card-primary-value";
+                value.style.marginLeft = 5f;
+                value.tooltip = primary.AssistiveLabel;
+                action.Add(value);
+                CardValueOverlay.AddInline(action, card.ValueBonuses, primary.Channel);
+            }
+            panel.Add(action);
+
+            var transcribed = card.Face.PrintedTextKind == CardSourceContentKind.Transcribed ||
+                card.Face.PrintedTextKind == CardSourceContentKind.Authored;
+            var words = HudElements.Text(
+                transcribed ? card.Face.PrintedText : card.Face.EmptyTextLabel,
+                transcribed ? 10.5f : 9.5f,
+                transcribed ? ink : MatchHudTheme.RulesPanelMutedText,
+                transcribed ? FontStyle.Normal : FontStyle.Italic);
+            words.name = "gd-card-printed-text";
+            words.style.flexGrow = 1f;
+            words.style.flexShrink = 1f;
+            words.style.unityTextAlign = TextAnchor.UpperLeft;
+            panel.Add(words);
+
+            var spatial = card.Face.SpatialValue;
+            if (spatial != null)
+            {
+                var badge = new VisualElement { name = "gd-card-spatial-value" };
+                badge.style.flexDirection = FlexDirection.Row;
+                badge.style.alignItems = Align.Center;
+                badge.style.alignSelf = Align.FlexStart;
+                badge.style.flexShrink = 0f;
+                badge.style.paddingLeft = 5f;
+                badge.style.paddingRight = 7f;
+                badge.style.paddingTop = 1f;
+                badge.style.paddingBottom = 1f;
+                badge.style.backgroundColor = accent;
+                HudElements.Border(badge, accent, 1f, 8f);
+                badge.Add(BuildSpatialMark(spatial.Channel));
+                var spatialLabel = HudElements.Text(
+                    spatial.Label, 8.5f, cream, FontStyle.Bold);
+                spatialLabel.style.marginLeft = 4f;
+                badge.Add(spatialLabel);
+                CardValueOverlay.AddInline(badge, card.ValueBonuses, spatial.Channel);
+                badge.tooltip = spatial.AssistiveLabel;
+                panel.Add(badge);
+            }
+
+            var history = HudElements.Text(card.HistoryLabel, 8f, ink, FontStyle.Bold);
+            history.name = "gd-card-history";
+            history.style.flexShrink = 0f;
+            history.style.marginTop = 3f;
+            history.style.unityTextAlign = TextAnchor.MiddleCenter;
+            panel.Add(history);
+            return panel;
         }
 
         /// <summary>

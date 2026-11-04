@@ -131,9 +131,15 @@ namespace GuardsDigital.Presentation.Units.Heroes
                     contentId, TeamSide.Red, false, false);
             }
 
-            var baked = Resources.Load<Texture2D>(
-                RuntimeTeamIdentity.TeamBakedResourcePath(contentId, teamSide));
-            var neutral = baked != null
+            var prefersMegdanPortrait = MegdanHeroPresentationCatalog.TryForContent(contentId, out _);
+            var neutral = prefersMegdanPortrait
+                ? Resources.Load<Texture2D>(RuntimeTeamIdentity.NeutralResourcePath(contentId))
+                : null;
+            var baked = neutral != null
+                ? null
+                : Resources.Load<Texture2D>(
+                    RuntimeTeamIdentity.TeamBakedResourcePath(contentId, teamSide));
+            neutral ??= baked != null
                 ? null
                 : Resources.Load<Texture2D>(RuntimeTeamIdentity.NeutralResourcePath(contentId));
 

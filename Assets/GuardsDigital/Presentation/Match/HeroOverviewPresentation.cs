@@ -1280,6 +1280,7 @@ namespace GuardsDigital.Presentation.Match
             HeroId viewedHeroId,
             bool worthRepresentsAssistCoinsOnly)
         {
+            displayName = MegdanHeroPresentationCatalog.DisplayName(contentId, displayName);
             var progression = projection.HeroProgression
                 .FirstOrDefault(entry => entry.HeroId.Equals(heroId));
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -107,6 +108,16 @@ namespace GuardsDigital.Presentation.Match
             return false;
         }
 
+        public static bool TryLoadTextureAtPath(string resourcePath, out Texture2D texture)
+        {
+            texture = null;
+            if (string.IsNullOrWhiteSpace(resourcePath)) return false;
+            texture = textureLoaderOverride != null
+                ? textureLoaderOverride(resourcePath)
+                : Resources.Load<Texture2D>(resourcePath);
+            return texture != null;
+        }
+
         private static void ReportOnce(string key, string message)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -185,7 +196,15 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Border(content, Color.clear, 0f, CornerRadius(CardFootprint.Width));
             surface.Add(content);
 
-            if (ConfiguredCardArtwork.TryLoadTexture(
+            if (MegdanHeroPresentationCatalog.TryForCard(
+                    card.DefinitionReference, out var megdanHero))
+            {
+                ConfiguredCardArtwork.TryLoadTextureAtPath(
+                    megdanHero.CardArtResourcePath, out var portrait);
+                BuildMegdanFallback(content, card, portrait);
+                HudElements.MarkSelectedWithoutResizing(surface, card.IsSelected);
+            }
+            else if (ConfiguredCardArtwork.TryLoadTexture(
                     card.DefinitionReference,
                     out var texture,
                     out _))
@@ -319,6 +338,17 @@ namespace GuardsDigital.Presentation.Match
             surface.style.backgroundColor = MatchHudTheme.Face(card.Color);
             HudElements.Border(surface, MatchHudTheme.PanelBorder, 3f, 8f);
             surface.Add(DirectorHandsUnityView.BuildGeneratedCardFrame(card));
+        }
+
+        private static void BuildMegdanFallback(
+            VisualElement surface,
+            TrayCardViewModel card,
+            Texture2D portrait)
+        {
+            CardFootprint.Apply(surface);
+            surface.style.backgroundColor = new Color(0.93f, 0.89f, 0.77f, 1f);
+            HudElements.Border(surface, MatchHudTheme.PanelBorder, 3f, 8f);
+            surface.Add(DirectorHandsUnityView.BuildMegdanCardFrame(card, portrait));
         }
     }
 }
