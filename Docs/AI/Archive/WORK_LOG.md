@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-177 Flat camera-rotating Defense shield
+
+Request: lay the Defense modifier shield flat on the hero base at a fixed offset relative to the rotating standee. Scope: presentation geometry and directly affected tests only; no rule/value changes or package. Accepted: horizontal shield/text above the base through camera pitch/yaw changes, fixed standee-left rim placement, focused T2 Edit/Play checks and rendered inspection, documentation validation, review and local commit.
+
+Historical evidence: immutable `work/W-177`; exact checks/results, review and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-177 | Defense shield lies flat at a fixed offset relative to the rotating standee | `work/W-177` |
+
 ### [x] W-176 Lower the flat-view switch to 70 degrees
 
 User requested the camera representation switch move from 80 to 70 degrees. Hero and grass standees now flatten at 70 and return below 69, retaining the one-degree hysteresis and prior camera controls. Acceptance: focused boundary/resource and live camera/vegetation regressions, inspected flat/angled views, fresh player/board/multiplayer/archive/extracted checks, documentation validation and local commit. Includes an updated private Windows preview; rules, identifiers and six-hero selection remain unchanged.

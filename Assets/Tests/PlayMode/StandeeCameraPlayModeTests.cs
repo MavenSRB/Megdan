@@ -93,8 +93,16 @@ namespace GuardsDigital.Tests.PlayMode
                     var offset = shield.transform.position - hero.transform.position;
                     Assert.That(Vector3.Dot(offset, camera.transform.right),
                         Is.EqualTo(-hero.SelectionRadius * HeroDefenseModifierShield.EdgeDistanceFactor).Within(0.001f));
-                    Assert.That(Vector3.Dot(shield.ValueText.transform.forward, camera.transform.forward),
-                        Is.GreaterThan(0.999f), "Shield value stays facing the rotated camera.");
+                    Assert.That(Vector3.Dot(shield.ValueText.transform.forward, Vector3.down),
+                        Is.GreaterThan(0.999f), "Shield value lies flat on the base as the camera rotates.");
+                    Assert.That(Vector3.Dot(shield.ValueText.transform.up,
+                        Vector3.ProjectOnPlane(camera.transform.up, Vector3.up).normalized),
+                        Is.GreaterThan(0.999f), "Flat shield text follows the camera heading.");
+                    var panel = hero.transform.Find("Illustrated standee panel");
+                    Assert.That(Vector3.Dot(offset, panel.right),
+                        Is.EqualTo(-hero.SelectionRadius * HeroDefenseModifierShield.EdgeDistanceFactor).Within(0.001f),
+                        "Shield retains its left-side position relative to the standee.");
+                    Assert.That(Vector3.Dot(shield.ValueText.transform.right, panel.right), Is.GreaterThan(0.999f));
                 }
                 float size = camera.orthographicSize;
                 InputSystem.QueueStateEvent(mouse, new MouseState { position = boardPoint, scroll = new Vector2(0, 120) });
@@ -147,7 +155,7 @@ namespace GuardsDigital.Tests.PlayMode
                 camera.transform.LookAt(focal + Vector3.up * 0.5f);
                 camera.orthographicSize = 4f;
                 yield return new WaitForSecondsRealtime(1f);
-                yield return UiPlayer.CaptureScreen("tmp/w165-standee-detail.png");
+                yield return UiPlayer.CaptureScreen("tmp/w177-flat-shield-detail.png");
                 focal = minions[0].transform.position;
                 camera.transform.position = focal + new Vector3(0, 3f, -6f);
                 camera.transform.LookAt(focal);

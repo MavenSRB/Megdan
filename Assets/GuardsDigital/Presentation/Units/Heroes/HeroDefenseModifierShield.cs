@@ -99,7 +99,9 @@ namespace GuardsDigital.Presentation.Units.Heroes
             var origin = transform.parent == null ? Vector3.zero : transform.parent.position;
             transform.position = origin + Vector3.up * (surface + SurfaceOffset) -
                 camera.transform.right * (radius * EdgeDistanceFactor);
-            transform.rotation = Quaternion.LookRotation(camera.transform.up, -camera.transform.forward) *
+            // Follow camera heading without lifting the shield off the horizontal base.
+            var screenUp = Vector3.ProjectOnPlane(camera.transform.up, Vector3.up).normalized;
+            transform.rotation = Quaternion.LookRotation(screenUp, Vector3.up) *
                 Quaternion.Inverse(authoredFrame) * authoredRotation;
         }
 

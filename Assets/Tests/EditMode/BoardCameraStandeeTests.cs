@@ -16,6 +16,42 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class BoardCameraStandeeTests
     {
+        [TestCase(20f, 0f)]
+        [TestCase(55f, 135f)]
+        [TestCase(70f, 270f)]
+        [TestCase(90f, 45f)]
+        public void DefenseShieldStaysFlatOnTheBaseAndFollowsCameraHeading(float pitch, float yaw)
+        {
+            var host = new GameObject("flat shield");
+            var cameraHost = new GameObject("view", typeof(Camera));
+            try
+            {
+                host.transform.SetPositionAndRotation(new Vector3(3f, 0.4f, -2f), Quaternion.Euler(0f, 37f, 0f));
+                var shield = HeroDefenseModifierShield.GetOrCreate(host.transform);
+                shield.SetVisible(-2, 0.81f, 0.16f);
+                var camera = cameraHost.GetComponent<Camera>();
+                camera.transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+                shield.RefreshFacing(camera);
+                var expected = host.transform.position + Vector3.up * (0.16f + HeroDefenseModifierShield.SurfaceOffset)
+                    - camera.transform.right * (0.81f * HeroDefenseModifierShield.EdgeDistanceFactor);
+                Assert.That(Vector3.Distance(shield.transform.position, expected), Is.LessThan(0.001f));
+                Assert.That(Vector3.Dot(shield.transform.up, Vector3.up), Is.GreaterThan(0.999f));
+                Assert.That(Vector3.Dot(shield.ValueText.transform.forward, Vector3.down), Is.GreaterThan(0.999f));
+                var screenUp = Vector3.ProjectOnPlane(camera.transform.up, Vector3.up).normalized;
+                Assert.That(Vector3.Dot(shield.ValueText.transform.up, screenUp), Is.GreaterThan(0.999f));
+                var mesh = shield.GetComponent<MeshFilter>().sharedMesh;
+                var heights = mesh.vertices.Select(v => shield.transform.TransformPoint(v).y).ToArray();
+                Assert.That(heights.Max() - heights.Min(), Is.LessThan(0.002f), "Only the outline/face lift separates shield vertex heights.");
+                Assert.That(heights.Min(), Is.GreaterThan(host.transform.position.y + 0.16f));
+                Assert.That(shield.ValueText.text, Is.EqualTo("-2"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+                Object.DestroyImmediate(cameraHost);
+            }
+        }
+
         [TestCase(TeamSide.Red)]
         [TestCase(TeamSide.Blue)]
         public void StandingAndFlatRepresentationsKeepIdentityBaseAndPicking(TeamSide team)
