@@ -18,6 +18,9 @@ namespace GuardsDigital.Presentation.Board
             new[] { R(44,43,234,152), R(354,43,468,112), R(18,258,83,309), R(267,342,403,469) }
         };
         private readonly List<GameObject> panels = new List<GameObject>();
+        private readonly List<GameObject> groundPatches = new List<GameObject>();
+        private readonly List<Bounds> pieceBounds = new List<Bounds>();
+        private PlaceholderTestGridView grid;
         private readonly List<Material> materials = new List<Material>();
         private Mesh uprightMesh, groundMesh;
         private GameObject layer;
@@ -30,6 +33,7 @@ namespace GuardsDigital.Presentation.Board
         public void Configure(IReadOnlyList<HexTileView> tiles, Camera camera)
         {
             Release();
+            grid = GetComponent<PlaceholderTestGridView>();
             viewCamera = camera;
             var shader = Resources.Load<Shader>("Rendering/GrassDecoration");
             if (shader == null) return;
@@ -74,6 +78,7 @@ namespace GuardsDigital.Presentation.Board
                     ground.transform.position = origin + new Vector3((crop.center.x*2-1)*radius,
                         .003f, (crop.center.y*2-1)*radius);
                     ground.transform.localScale = new Vector3(crop.width*2*radius, 1, crop.height*2*radius);
+                    groundPatches.Add(ground);
                 }
             }
             Refresh(camera);
@@ -96,6 +101,49 @@ namespace GuardsDigital.Presentation.Board
             if (direction.sqrMagnitude < .0001f) return;
             var rotation = Quaternion.LookRotation(direction, Vector3.up);
             foreach (var panel in panels) panel.transform.rotation = rotation;
+            if (grid != null)
+            {
+                pieceBounds.Clear();
+                foreach (var hero in grid.CurrentHeroViews)
+                {
+                    if (hero == null || !hero.gameObject.activeInHierarchy) continue;
+                    float radius = hero.SelectionRadius;
+                    pieceBounds.Add(new Bounds(hero.transform.position, new Vector3(radius*2, 0, radius*2)));
+                }
+                foreach (var minion in grid.CurrentMinionViews)
+                    AddBounds(minion == null ? null : minion.GetComponent<SpriteRenderer>());
+                foreach (var token in grid.CurrentTokenViews)
+                    AddBounds(token == null ? null : token.GetComponent<MeshRenderer>());
+                ApplyClearance(pieceBounds);
+            }
+        }
+        private void AddBounds(Renderer renderer)
+        {
+            if (renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy)
+                pieceBounds.Add(renderer.bounds);
+        }
+        /// <summary>Presentation bounds only: raised panels and their cleanup patches retire together.</summary>
+        public void ApplyClearance(IReadOnlyList<Bounds> footprints)
+        {
+            for (int i=0; i<panels.Count; i++)
+            {
+                var panel = panels[i].transform;
+                var patch = groundPatches[i].transform;
+                var bounds = new Bounds(patch.position, new Vector3(patch.lossyScale.x,0,patch.lossyScale.z));
+                var halfWidth = panel.right * (panel.lossyScale.x * .5f);
+                bounds.Encapsulate(panel.position - halfWidth);
+                bounds.Encapsulate(panel.position + halfWidth);
+                bool clear = true;
+                foreach (var footprint in footprints)
+                {
+                    const float margin = .10f;
+                    if (bounds.min.x <= footprint.max.x+margin && bounds.max.x >= footprint.min.x-margin &&
+                        bounds.min.z <= footprint.max.z+margin && bounds.max.z >= footprint.min.z-margin)
+                    { clear = false; break; }
+                }
+                panels[i].SetActive(clear);
+                groundPatches[i].SetActive(clear);
+            }
         }
         private void LateUpdate() => Refresh(viewCamera);
         private static Mesh Quad(bool ground)
@@ -111,7 +159,7 @@ namespace GuardsDigital.Presentation.Board
             if (layer != null) { layer.SetActive(false); Retire(layer); }
             Retire(uprightMesh); Retire(groundMesh);
             foreach (var material in materials) Retire(material);
-            panels.Clear(); materials.Clear(); layer = null;
+            panels.Clear(); groundPatches.Clear(); pieceBounds.Clear(); materials.Clear(); layer = null;
         }
         private static void Retire(Object value)
         {

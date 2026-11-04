@@ -1,5 +1,25 @@
 # Work completion index
 
+### [x] W-171 Keep grass standees clear of board pieces
+
+After W-170's close capture, user requested vegetation stop cutting through tokens. Intersecting upright decorations and their cleanup patches now restore the original flat artwork around visible hero, minion and placed-token footprints; they return when the piece moves away. Clearance uses current presentation bounds and preserves angle switching. Acceptance: exclusion, stable hidden bounds, reactivation and switch regressions; repeated actual-game low-angle capture and visual review; documentation/diff checks and local commit. Rules and existing packages remain unchanged.
+
+Historical evidence: immutable `work/W-171`; exact checks/results and limitations live in its commit body. The W-170 screenshots are refreshed by this corrective run.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-171 | Raised grass decorations give board pieces clearance | `work/W-171` |
+
+### [x] W-170 Capture the grass standees from a low in-game camera
+
+User requested a lower-angle view in the actual game. Added a repeatable configured-match capture at 25 degrees with normal HUD, plus a closer view of the same grass area. Inspected `tmp/w170-grass-low-angle-live-match.png` and `tmp/w170-grass-low-angle-detail.png`: bushes and mushrooms stand upright; the close view also exposes existing decoration overlap on minion token faces. Capture-only scope does not authorize a rendering repair. No runtime behavior, rules, package or publication changes.
+
+Historical evidence: immutable `work/W-170`; exact focused capture result and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-170 | Actual-match grass standees at 25 degrees and closer framing | `work/W-170` |
+
 ### [x] W-169 Clarify application origin, demonstration and funded outcome
 
 Request: adapt the application to the applicant-confirmed chronology: board-game play, Stefan's self-funded digital adaptation, positive friend-group response and improvements, then the standalone Megdan ambition. The replacement-art application demo retains inherited card text, map geometry and mechanics; the funded outcome remains an original six-hero 3v3 MVP. Updated English answers, canonical preparation context, founder-account provenance, delivery/video/readiness summaries and affected clearance-worklist distinctions. Acceptance: consistent origin/demo/grant boundaries, all English field limits, T0 documentation/diff review and local commit. No rules, budget, runtime, recording, publication or submission changes; unrelated work preserved.
@@ -19,6 +39,16 @@ Historical evidence: immutable `work/W-168`; exact checks/results, corrected ini
 | Work | Outcome | Commit |
 | --- | --- | --- |
 | W-168 | Approved card design integrated for all six mapped heroes | `work/W-168` |
+
+### [x] W-165 Illustrated standees, board camera and grass decorations
+
+User approved illustrated hero standees, movable board camera, solid creep tokens and temporary upright bushes/mushrooms from the four supplied grass tiles. Grass decoration panels sample the original private art, turn toward the camera, and switch to the untouched flat tiles at 80 degrees, returning below 79. They add no colliders or rules state. Acceptance: angle-band/rebuild/original-material/no-collider checks, affected configured-board and artwork regressions, inspected four-variant angled/top-down captures, documentation validation and local commit. Temporary colour-key extraction retains supplied edge crops; final environment artwork remains later work. No package or publication.
+
+Historical evidence: immutable `work/W-165-camera-standees` for camera/hero/creep work and `work/W-165` for grass decorations; exact results/limits live in their commit bodies.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-165 | Hero and grass standees, camera and creep depth | `work/W-165` |
 
 ### [x] W-167 Refine preview arrows and omit absent secondary Movement
 

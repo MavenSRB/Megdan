@@ -151,6 +151,7 @@ namespace GuardsDigital.Presentation.Board
         /// the end of the frame, so re-discovery can admit doomed objects into authoritative state.
         /// </summary>
         public IReadOnlyList<HexTileView> CurrentTiles => currentTiles;
+        public IReadOnlyList<PrimitiveHeroView> CurrentHeroViews => heroViews ?? System.Array.Empty<PrimitiveHeroView>();
         public IReadOnlyList<StandardMinionView> CurrentMinionViews => currentMinionViews;
         public IReadOnlyList<PlacedTokenView> CurrentTokenViews => currentTokenViews;
         public IReadOnlyList<PlaceholderObstacleView> CurrentObstacles => currentObstacles;

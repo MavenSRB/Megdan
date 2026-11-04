@@ -28,6 +28,8 @@ All decorations switch together at 80 degrees to the original flat tile, returni
 
 Four-variant runtime inspections: `tmp/grass-standees-restart-angled.png` and `tmp/grass-standees-restart-top-down.png`. The abandoned raster-extraction script/output remains private historical work and is not consumed by runtime.
 
+W-170 captures the actual configured match at 25 degrees with the normal HUD: `tmp/w170-grass-low-angle-live-match.png` and the closer `tmp/w170-grass-low-angle-detail.png`. Initial inspection exposed decoration overlap on minion faces. W-171 refreshes these captures after adding clearance: panels and cleanup patches fall back together to the original flat artwork whenever their board-plane extent intersects a visible hero, minion or placed-token footprint, including a small margin. The check follows current piece positions each frame and restores upright decorations after a piece moves away; inactive panel bounds are calculated from transforms so hiding cannot invalidate clearance. This remains presentation-only.
+
 ## Creeps and evidence
 
 Standard creeps keep their existing sprite faces and board rotation. A circular team-colour body extends 0.16 world units beneath the face, staying above the board and retaining the same footprint, identity and selection path. Removal/respawn follows the existing parent view lifecycle.

@@ -16,6 +16,36 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class StandeeCameraPlayModeTests
     {
         [UnityTest]
+        public IEnumerator CaptureLowAngleGrassInConfiguredMatch()
+        {
+            var roster = RegisteredHeroRoster.ForThisBuild;
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                new[] { "brogan", "misa", "rowenna" }.Select(id => roster.Single(h => h.ContentId.Value == id)),
+                new[] { "tigerclaw", "gydion", "tali" }.Select(id => roster.Single(h => h.ContentId.Value == id)));
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            UiPlayer.SetPlayerViewport(1920, 1080, "W-170 low angle grass in the actual match");
+            yield return new WaitForSecondsRealtime(2f);
+            var root = BroganUiJourneyPlayModeTests.Root();
+            var camera = Camera.main;
+            var grass = root.MapView.CurrentTiles.Where(tile =>
+                tile.GetComponent<MeshRenderer>().sharedMaterial.mainTexture != null &&
+                tile.GetComponent<MeshRenderer>().sharedMaterial.mainTexture.name == "grass-2")
+                .OrderBy(tile => tile.transform.position.sqrMagnitude).First();
+            var rotation = Quaternion.Euler(25f, 15f, 0f);
+            var focus = grass.transform.position + Vector3.up * .3f;
+            camera.transform.SetPositionAndRotation(focus - rotation * Vector3.forward * 18f, rotation);
+            camera.orthographicSize = 3.6f;
+            yield return new WaitForSecondsRealtime(1f);
+            Assert.That(root.MapView.GetComponent<GuardsDigital.Presentation.Board.GrassDecorationStandees>().IsStanding, Is.True);
+            yield return UiPlayer.CaptureScreen("tmp/w170-grass-low-angle-live-match.png");
+            camera.orthographicSize = 2.1f;
+            yield return null;
+            yield return UiPlayer.CaptureScreen("tmp/w170-grass-low-angle-detail.png");
+        }
+
+        [UnityTest]
         public IEnumerator PlayerCanPanOrbitZoomResetAndSwitchRepresentationsInTheLiveMatch()
         {
             var addedKeyboard = Keyboard.current == null;

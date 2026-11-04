@@ -38,6 +38,8 @@ W-154: Five supplied WhatsApp JPEGs are preserved in Art/Inputs/Grass (originals
 
 ## Latest artifacts
 
+W-165 grass decorations: the four original grass textures now supply temporary upright bush/mushroom cutouts in angled runtime views, with grass patches beneath the lifted drawings. At 80 degrees the layer switches off to restore the unchanged flat tile, returning below 79 degrees. Source images remain unchanged; colour-keyed sampling retains their existing edge crops. Inspected runtime stills: `tmp/grass-standees-restart-angled.png` and `tmp/grass-standees-restart-top-down.png`. Private source only; no package or publication.
+
 - [Initiative clock-badge card still](../../../Creative/gameplay-mockup-cutout/three-heroes-cards-v10.png) — W-159; four native-aspect verified prototype faces with prominent initiative dials. Still only; not integrated into the existing video.
 - [Six minimally altered concept portraits](../../../Art/ConceptPortraits/README.txt) — W-158; transparent square PNGs preserving the six supplied characters' existing orientations. Private concept assets only; no runtime or publication.
 - [Initiative sequence video](../../../Creative/gameplay-mockup-cutout/Megdan-initiative-sequence-v10.mp4) — W-157, 44 seconds, 1920x1200/24fps, silent concept animation. Renderer: render-initiative.py; focused staging/timeline checks: check-initiative.py.

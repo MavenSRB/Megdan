@@ -45,6 +45,18 @@ namespace GuardsDigital.Tests.PlayMode
                 decoration.Configure(tiles, camera);
                 Assert.That(decoration.DecorationCount, Is.EqualTo(14));
                 Assert.That(decoration.IsStanding, Is.True);
+                var firstPanel = root.transform.Find("Grass decoration standees").GetChild(0);
+                var firstPatch = root.transform.Find("Grass decoration standees").GetChild(1);
+                var blocker = new Bounds(firstPanel.position, Vector3.one * .1f);
+                decoration.ApplyClearance(new[] { blocker });
+                Assert.That(firstPanel.gameObject.activeSelf, Is.False, "A piece excludes an intersecting standee.");
+                Assert.That(firstPatch.gameObject.activeSelf, Is.False, "Its flat original must return together with it.");
+                decoration.Refresh(camera);
+                decoration.ApplyClearance(new[] { blocker });
+                Assert.That(firstPanel.gameObject.activeSelf, Is.False, "Inactive panels must keep stable clearance bounds.");
+                decoration.ApplyClearance(System.Array.Empty<Bounds>());
+                Assert.That(firstPanel.gameObject.activeSelf, Is.True, "Moving/removing a piece restores the decoration.");
+                Assert.That(firstPatch.gameObject.activeSelf, Is.True);
                 Assert.That(root.GetComponentsInChildren<Collider>(true), Is.Empty);
                 yield return null;
                 Capture(camera,"tmp/grass-standees-restart-angled.png");
