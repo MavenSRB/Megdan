@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-179 Package both presentation fixes for Windows
+
+Request: create a new private Windows build containing W-177 flat standee-relative Defense shields and W-178 precise bush clearance. Scope: one fresh candidate, same-artifact player/board/multiplayer smokes, archive/hash/extracted launch checks; reuse unaffected focused source evidence. Acceptance: both committed fixes included, six-hero roster preserved, exact package identity and local delivery, documentation validation and local commit. No remote publication or Mac build.
+
+Historical evidence: immutable `work/W-179`; exact checks/results, package identity, review and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-179 | Private Windows package includes flat shields and precise bush clearance | `work/W-179` |
+
 ### [x] W-178 Keep nearby bushes visible around pieces
 
 Request: investigate and repair missing middle-board bushes attributed to token clearance. Scope: vegetation presentation only. Acceptance: only panels physically intersecting a piece footprint plus the existing small margin disappear; ground-cleanup patch overlap and rotated bounding-box corners do not hide nearby panels; movement restores hidden plants. Closing checks: failing/passing focused vegetation regressions, live configured-board capture, T2 affected tests, documentation validation and local commit. No rules, package or publication changes.
