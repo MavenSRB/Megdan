@@ -1,5 +1,11 @@
 # Work completion index
 
+### [x] W-164 Preview illustrated standees with circular team bases
+
+User requested standees from the new tokens and selected a concept still first. Created a six-character product still with upright illustrated panels, visible edge thickness, three circular red and three circular blue raised bases, and contact shadows. Retained source identities, poses and defining props; ram/goblin remain bust/head cutouts. Output and exact prompt/provenance are preserved privately in Creative/standees. Acceptance: source/output visual inspection, all six present, correct team bases, documentation validation and local commit. Generated reconstruction has minor art/base variation. No runtime, rules, video, package or publication change.
+
+Historical evidence: immutable `work/W-164`; exact checks/results and limitations live in its commit body.
+
 ### [x] W-163 Capture the six mapped heroes in a live match
 
 User requested a game screenshot with all six mapped heroes selected. Captured the live local 3v3 scene at 1920x1080 with Brogan/Riki/Rowenna on Red and Tigerclaw/Gydion/Tali on Blue, all six board tokens and side panels visible, and Riki's ordinary hand open. The reproducible capture fixture verifies the exact active roster and token visuals. Output: `tmp/w163-six-heroes-live-match.png`. Acceptance: focused capture and visual inspection. No production behavior, package or publication change.
@@ -64,6 +70,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-164 | Six illustrated standee concept still with raised circular team-colour bases. | `work/W-164` |
 | W-163 | Captured a live 3v3 game with all six mapped heroes and Riki's updated card hand. | `work/W-163` |
 | W-162 | Redrew clock/shield/arrow stat icons as consistent vectors with readable overlaid numbers. | `work/W-162` |
 | W-161 | Temporarily mapped six Megdan portraits into tokens/selectors and restyled their 108 unchanged synthetic card faces with original Veljko art, typed card-colour accents and clock/shield/arrow value badges. | `work/W-161` |

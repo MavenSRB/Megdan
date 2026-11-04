@@ -4,6 +4,8 @@ Return to [project context](../PROJECT_CONTEXT.md). Private presentation studies
 
 ## Current decisions
 
+W-164 concept still: [six illustrated standees](../../../Creative/standees/six-team-standees-v1.png), with upright thin cutout panels, raised circular bases (ram/cat/knight Red; goblin/grandmother/frog Blue) and soft contact shadows. Ram and goblin retain the supplied bust/head crops. Built-in image generation reconstructs the art with minor variation; prompt/provenance is beside the output. Still only, awaiting visual feedback; no runtime integration or 3D models.
+
 Latest six-hero game screenshot: `tmp/w163-six-heroes-live-match.png` (1920x1080, W-163). The ordinary local 3v3 camera/HUD shows Brogan, Riki and Rowenna against Tigerclaw, Gydion and Tali, with Riki's hand open.
 
 Work only in the independent Megdan folder. User wants small visual iterations: show a still of the requested change before another video. Do not automatically regenerate videos.
