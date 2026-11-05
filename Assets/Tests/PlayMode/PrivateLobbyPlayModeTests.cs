@@ -76,11 +76,23 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(wordmark.text, Is.EqualTo("MEGDAN"));
             Assert.That(panel.worldBound.center.x, Is.GreaterThan(root.worldBound.center.x + 200f),
                 "The compact landing menu belongs inside the large cloud on the right.");
+            Assert.That(panel.worldBound.width, Is.EqualTo(540f).Within(1f),
+                "W-183 enlarges the complete landing box by 50 percent, from 360 to 540.");
+            Assert.That(wordmark.worldBound.center.x,
+                Is.EqualTo(panel.worldBound.center.x).Within(1f),
+                "MEGDAN must be centered on the same axis as its button box.");
+            Assert.That(panel.worldBound.xMax, Is.LessThan(root.worldBound.xMax * 0.84f),
+                "The enlarged box moves left, away from the rising hill on the right.");
             Assert.That(panel.worldBound.yMax, Is.LessThan(root.worldBound.center.y + 80f),
                 "The whole menu should sit above the dark foreground hill, inside the bright cloud.");
             Assert.That(panel.resolvedStyle.backgroundColor,
                 Is.EqualTo(PrivateLobbyUnityView.LandingPanelBackground));
             Assert.That(buttons, Has.Length.EqualTo(2));
+            Assert.That(buttons.All(button =>
+                    Mathf.Abs(button.worldBound.width - 390f) <= 1f &&
+                    Mathf.Abs(button.worldBound.height - 84f) <= 1f),
+                Is.True,
+                "Both landing controls grow proportionally with their box.");
             Assert.That(buttons[1].worldBound.yMin, Is.GreaterThan(buttons[0].worldBound.yMax),
                 "HOST and JOIN must form one vertical stack.");
             Assert.That(buttons.All(button =>
@@ -89,7 +101,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True,
                 "Both landing controls use the background-derived purple treatment.");
 
-            yield return UiPlayer.CaptureScreen("tmp/w182-main-menu-layout.png");
+            yield return UiPlayer.CaptureScreen("tmp/w183-main-menu-layout.png");
         }
 
         /// <summary>One ordered in-memory wire between the scene's authority and real clients.</summary>

@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-183 Enlarge and realign the main-menu panel
+
+User requested a 50% larger landing button box, farther left so it does not touch the hill, with MEGDAN centered above it. The panel now measures 540 px instead of 360, its buttons scale from 260x56 to 390x84 with proportionate labels, and the shared title/panel composition moves 460 px from the right and higher into the cloud. Acceptance: focused non-batch geometry/handoff checks, inspected Game View capture, living-document validation and local commit. No artwork, rules, networking, other lobby pages, package, publication or remote operation.
+
+Historical evidence: immutable `work/W-183`; exact failing/passing checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-183 | Landing panel is 50% larger, clear of the hill, with its title centered | `work/W-183` |
+
 ### [x] W-182 Recompose and recolour the main menu
 
 User corrected the inherited title and directed the landing composition: the wordmark now reads MEGDAN; the compact landing group sits wholly inside the large right-hand cloud; HOST and JOIN stack vertically; and the panel/buttons use deep burgundy, coral, muted purple and warm cream sampled from the supplied scene. Longer host/join and in-session lobby pages retain their centered functional layout. Acceptance: focused non-batch layout/handoff checks, inspected Game View capture, living-document validation and local commit. No artwork, game rules, networking, match HUD, package, publication or remote operation.

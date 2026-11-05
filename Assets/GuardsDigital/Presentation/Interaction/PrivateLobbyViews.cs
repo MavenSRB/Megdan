@@ -977,7 +977,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// The panel's width on the entry pages: the landing's two buttons, or a menu's 620-wide
         /// fields, plus the panel's padding and border.
         /// </summary>
-        public const float LandingPanelWidth = 360f;
+        public const float LandingPanelWidth = 540f;
 
         public const float MenuPanelWidth = 720f;
 
@@ -1001,10 +1001,9 @@ namespace GuardsDigital.Presentation.Interaction
         }
 
         /// <summary>
-        /// Milestone 8.108, the user on 8.107's landing: "Why is that box for host/join that big.
-        /// Make it fit the required size, and center it." The entry pages hold two buttons or one
-        /// short menu, so the panel is sized to them and everything in it is centred. A session's
-        /// lobby keeps the wide panel its seat table and hero picker need.
+        /// The entry pages hold two buttons or one short menu, so the panel is sized to them. W-183
+        /// enlarges and offsets only the landing composition; longer forms and a session's wide seat
+        /// table/hero picker retain their established centered layout.
         /// </summary>
         private void FitPanelTo(bool isEntry)
         {
@@ -1013,10 +1012,9 @@ namespace GuardsDigital.Presentation.Interaction
                 ? new StyleLength(new Length(72f, LengthUnit.Percent))
                 : new StyleLength(landing ? LandingPanelWidth : MenuPanelWidth);
             Root.style.alignItems = landing ? Align.FlexEnd : Align.Center;
-            Root.style.paddingRight = landing
-                ? new StyleLength(new Length(11f, LengthUnit.Percent))
-                : 0f;
-            Root.style.paddingBottom = landing ? 150f : 0f;
+            Root.style.paddingRight = 0f;
+            Root.style.paddingBottom = landing ? 270f : 0f;
+            panel.style.marginRight = landing ? 460f : 0f;
             panel.style.backgroundColor = landing ? LandingPanelBackground : PanelBackground;
             HudElements.Border(
                 panel, landing ? LandingPanelEdge : PanelEdge, 2f,
@@ -1032,6 +1030,13 @@ namespace GuardsDigital.Presentation.Interaction
             controls.style.justifyContent = isEntry ? Justify.Center : Justify.FlexStart;
             controls.style.alignItems = landing ? Align.Center : Align.Auto;
             wordmark.style.fontSize = landing ? 58f : 40f;
+            wordmark.style.width = landing
+                ? new StyleLength(LandingPanelWidth)
+                : new StyleLength(StyleKeyword.Auto);
+            wordmark.style.marginRight = landing ? 460f : 0f;
+            wordmark.style.unityTextAlign = landing
+                ? TextAnchor.MiddleCenter
+                : TextAnchor.UpperLeft;
             wordmark.style.color = landing ? LandingWordmark : MatchHudTheme.CoinFace;
             wordmark.style.unityTextOutlineColor = landing
                 ? LandingText
@@ -1051,11 +1056,11 @@ namespace GuardsDigital.Presentation.Interaction
                 text = text
             };
             button.style.minWidth = 220f;
-            button.style.width = 260f;
-            button.style.height = 56f;
+            button.style.width = 390f;
+            button.style.height = 84f;
             button.style.marginRight = 0f;
-            button.style.marginBottom = 10f;
-            button.style.fontSize = 20f;
+            button.style.marginBottom = 15f;
+            button.style.fontSize = 28f;
             ApplyLandingButtonChrome(button);
             return button;
         }
