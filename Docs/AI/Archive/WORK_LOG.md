@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-182 Recompose and recolour the main menu
+
+User corrected the inherited title and directed the landing composition: the wordmark now reads MEGDAN; the compact landing group sits wholly inside the large right-hand cloud; HOST and JOIN stack vertically; and the panel/buttons use deep burgundy, coral, muted purple and warm cream sampled from the supplied scene. Longer host/join and in-session lobby pages retain their centered functional layout. Acceptance: focused non-batch layout/handoff checks, inspected Game View capture, living-document validation and local commit. No artwork, game rules, networking, match HUD, package, publication or remote operation.
+
+Historical evidence: immutable `work/W-182`; exact checks/results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-182 | MEGDAN landing menu is vertically stacked and composed inside the right cloud | `work/W-182` |
+
 ### [x] W-181 Use the supplied main-menu background
 
 User supplied a 1280x720 sword landscape as the new main-menu background. The private-session landing and every pre-match lobby state now render the byte-identical artwork centered with cover scaling, retain the opaque control panel and outlined gold wordmark for legibility, and clear the artwork at match handoff. Acceptance: exact source hash/import review, focused non-batch lobby presentation and handoff checks, inspected Game View capture, living-document validation and local commit. No game rules, networking, match HUD, package, publication or remote operation.

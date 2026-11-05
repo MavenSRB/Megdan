@@ -102,6 +102,11 @@ namespace GuardsDigital.Presentation.Interaction
 
         private static readonly Color PanelBackground = new Color(0.06f, 0.07f, 0.09f, 0.97f);
         private static readonly Color PanelText = new Color(0.93f, 0.94f, 0.96f, 1f);
+        public static readonly Color LandingPanelBackground = new Color(0.34f, 0.035f, 0.12f, 0.90f);
+        public static readonly Color LandingPanelEdge = new Color(1f, 0.43f, 0.34f, 1f);
+        public static readonly Color LandingButtonBackground = new Color(0.29f, 0.22f, 0.43f, 0.98f);
+        public static readonly Color LandingText = new Color(1f, 0.91f, 0.84f, 1f);
+        public static readonly Color LandingWordmark = new Color(0.34f, 0.035f, 0.12f, 1f);
 
         /// <summary>
         /// Milestone 8.35z58: this used to be its own literal, numerically identical to
@@ -220,8 +225,8 @@ namespace GuardsDigital.Presentation.Interaction
                 new BackgroundPosition(BackgroundPositionKeyword.Center));
             menuBackground = Resources.Load<Texture2D>(MenuBackgroundResourcePath);
 
-            wordmark = Caption("GUARDS OF ATLANTIS II", 40, WordmarkName);
-            wordmark.style.color = MatchHudTheme.CoinFace;
+            wordmark = Caption("MEGDAN", 40, WordmarkName);
+            wordmark.style.color = LandingWordmark;
             wordmark.style.unityTextOutlineColor = new Color(0.015f, 0.02f, 0.025f, 0.9f);
             wordmark.style.unityTextOutlineWidth = 1.5f;
             wordmark.style.marginBottom = 16f;
@@ -972,7 +977,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// The panel's width on the entry pages: the landing's two buttons, or a menu's 620-wide
         /// fields, plus the panel's padding and border.
         /// </summary>
-        public const float LandingPanelWidth = 540f;
+        public const float LandingPanelWidth = 360f;
 
         public const float MenuPanelWidth = 720f;
 
@@ -1003,16 +1008,35 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         private void FitPanelTo(bool isEntry)
         {
+            var landing = isEntry && page == PrivateLobbyEntryPage.Landing;
             panel.style.width = !isEntry
                 ? new StyleLength(new Length(72f, LengthUnit.Percent))
-                : new StyleLength(page == PrivateLobbyEntryPage.Landing ? LandingPanelWidth : MenuPanelWidth);
+                : new StyleLength(landing ? LandingPanelWidth : MenuPanelWidth);
+            Root.style.alignItems = landing ? Align.FlexEnd : Align.Center;
+            Root.style.paddingRight = landing
+                ? new StyleLength(new Length(11f, LengthUnit.Percent))
+                : 0f;
+            Root.style.paddingBottom = landing ? 150f : 0f;
+            panel.style.backgroundColor = landing ? LandingPanelBackground : PanelBackground;
+            HudElements.Border(
+                panel, landing ? LandingPanelEdge : PanelEdge, 2f,
+                landing ? 12f : 0f);
             var align = isEntry ? Align.Center : Align.Stretch;
             panel.contentContainer.style.alignItems = align;
             entry.style.alignItems = align;
             hostMenu.style.alignItems = align;
             joinMenu.style.alignItems = align;
             formatChoices.style.justifyContent = isEntry ? Justify.Center : Justify.FlexStart;
+            controls.style.flexDirection = landing ? FlexDirection.Column : FlexDirection.Row;
+            controls.style.flexWrap = landing ? Wrap.NoWrap : Wrap.Wrap;
             controls.style.justifyContent = isEntry ? Justify.Center : Justify.FlexStart;
+            controls.style.alignItems = landing ? Align.Center : Align.Auto;
+            wordmark.style.fontSize = landing ? 58f : 40f;
+            wordmark.style.color = landing ? LandingWordmark : MatchHudTheme.CoinFace;
+            wordmark.style.unityTextOutlineColor = landing
+                ? LandingText
+                : new Color(0.015f, 0.02f, 0.025f, 0.9f);
+            wordmark.style.unityTextOutlineWidth = landing ? 1f : 1.5f;
             var text = isEntry ? TextAnchor.MiddleCenter : TextAnchor.UpperLeft;
             title.style.unityTextAlign = text;
             mode.style.unityTextAlign = text;
@@ -1027,11 +1051,21 @@ namespace GuardsDigital.Presentation.Interaction
                 text = text
             };
             button.style.minWidth = 220f;
+            button.style.width = 260f;
             button.style.height = 56f;
-            button.style.marginRight = 10f;
+            button.style.marginRight = 0f;
+            button.style.marginBottom = 10f;
             button.style.fontSize = 20f;
-            ApplyButtonChrome(button);
+            ApplyLandingButtonChrome(button);
             return button;
+        }
+
+        private static void ApplyLandingButtonChrome(VisualElement button)
+        {
+            button.style.color = LandingText;
+            button.style.backgroundColor = LandingButtonBackground;
+            HudElements.Border(button, LandingPanelEdge, 2f, MatchHudTheme.ButtonCornerRadius);
+            HudElements.ApplyButtonMotion(button, tintBackground: true);
         }
 
         private static bool IsFormatChoice(PrivateLobbyControl control) =>

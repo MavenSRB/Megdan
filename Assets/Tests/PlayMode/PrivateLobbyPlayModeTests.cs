@@ -67,7 +67,29 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(root.resolvedStyle.backgroundPositionY.keyword,
                 Is.EqualTo(BackgroundPositionKeyword.Center));
 
-            yield return UiPlayer.CaptureScreen("tmp/w181-main-menu-background.png");
+            var panel = Element(Driver(), PrivateLobbyUnityView.PanelName);
+            var wordmark = (Label)Element(Driver(), PrivateLobbyUnityView.WordmarkName);
+            var buttons = Named(Driver(), PrivateLobbyUnityView.ControlName)
+                .OfType<Button>()
+                .Where(UiPlayer.IsShown)
+                .ToArray();
+            Assert.That(wordmark.text, Is.EqualTo("MEGDAN"));
+            Assert.That(panel.worldBound.center.x, Is.GreaterThan(root.worldBound.center.x + 200f),
+                "The compact landing menu belongs inside the large cloud on the right.");
+            Assert.That(panel.worldBound.yMax, Is.LessThan(root.worldBound.center.y + 80f),
+                "The whole menu should sit above the dark foreground hill, inside the bright cloud.");
+            Assert.That(panel.resolvedStyle.backgroundColor,
+                Is.EqualTo(PrivateLobbyUnityView.LandingPanelBackground));
+            Assert.That(buttons, Has.Length.EqualTo(2));
+            Assert.That(buttons[1].worldBound.yMin, Is.GreaterThan(buttons[0].worldBound.yMax),
+                "HOST and JOIN must form one vertical stack.");
+            Assert.That(buttons.All(button =>
+                    button.resolvedStyle.backgroundColor ==
+                    PrivateLobbyUnityView.LandingButtonBackground),
+                Is.True,
+                "Both landing controls use the background-derived purple treatment.");
+
+            yield return UiPlayer.CaptureScreen("tmp/w182-main-menu-layout.png");
         }
 
         /// <summary>One ordered in-memory wire between the scene's authority and real clients.</summary>
