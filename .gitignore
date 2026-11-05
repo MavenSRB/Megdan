@@ -22,6 +22,11 @@
 # Prepared runtime artwork is published to the private project remote through Git LFS.
 # Keep the parent deny rule so any new category remains excluded until explicitly reviewed.
 /Assets/Resources/Private/*
+!/Assets/Resources/Private/Megdan/
+!/Assets/Resources/Private/Megdan.meta
+/Assets/Resources/Private/Megdan/*
+!/Assets/Resources/Private/Megdan/main-menu-background.jpg
+!/Assets/Resources/Private/Megdan/main-menu-background.jpg.meta
 !/Assets/Resources/Private/Cards/
 !/Assets/Resources/Private/Cards.meta
 !/Assets/Resources/Private/CardBacks/

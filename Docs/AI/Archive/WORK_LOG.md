@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-181 Use the supplied main-menu background
+
+User supplied a 1280x720 sword landscape as the new main-menu background. The private-session landing and every pre-match lobby state now render the byte-identical artwork centered with cover scaling, retain the opaque control panel and outlined gold wordmark for legibility, and clear the artwork at match handoff. Acceptance: exact source hash/import review, focused non-batch lobby presentation and handoff checks, inspected Game View capture, living-document validation and local commit. No game rules, networking, match HUD, package, publication or remote operation.
+
+Historical evidence: immutable `work/W-181`; exact checks/results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-181 | Supplied artwork fills the pre-match main-menu/lobby backdrop | `work/W-181` |
+
 ### [x] W-180 Animate Fast Travel along an ordinary movement route
 
 Request: make Fast Travel follow a step-by-step legal route instead of flying directly over intervening spaces. Outcome: presentation derives a deterministic adjacent route through playable unoccupied spaces and feeds it to the existing kinetic slide for replacement-action and card-text Fast Travel; pathless rules authority and destination eligibility remain unchanged, with direct endpoint playback only when no ordinary empty route exists.

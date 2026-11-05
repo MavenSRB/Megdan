@@ -48,6 +48,28 @@ namespace GuardsDigital.Tests.PlayMode
             new Vector2(3440f, 1440f)
         };
 
+        [UnityTest]
+        public IEnumerator TheLandingScreen_UsesTheSuppliedArtworkAsACoveringBackground()
+        {
+            yield return LoadTheLobby();
+            var root = Driver().View.Root;
+            var background = Resources.Load<Texture2D>(
+                PrivateLobbyUnityView.MenuBackgroundResourcePath);
+
+            Assert.That(background, Is.Not.Null,
+                "The supplied main-menu artwork must be available to the player build.");
+            Assert.That(root.resolvedStyle.backgroundImage.texture, Is.SameAs(background));
+            Assert.That(root.resolvedStyle.backgroundSize.sizeType,
+                Is.EqualTo(BackgroundSizeType.Cover),
+                "The 16:9 artwork must cover other supported desktop aspect ratios without stretching.");
+            Assert.That(root.resolvedStyle.backgroundPositionX.keyword,
+                Is.EqualTo(BackgroundPositionKeyword.Center));
+            Assert.That(root.resolvedStyle.backgroundPositionY.keyword,
+                Is.EqualTo(BackgroundPositionKeyword.Center));
+
+            yield return UiPlayer.CaptureScreen("tmp/w181-main-menu-background.png");
+        }
+
         /// <summary>One ordered in-memory wire between the scene's authority and real clients.</summary>
         private sealed class LobbyWire
         {
@@ -393,6 +415,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(mine.HasMatchStarted, Is.True);
             Assert.That(UiPlayer.IsShown(driver.View.Root), Is.False,
                 "The lobby hands off to the match surface rather than sitting over it.");
+            Assert.That(driver.View.Root.resolvedStyle.backgroundImage.texture, Is.Null,
+                "The menu artwork must not remain behind or over the started match.");
             Assert.That(ShownButtons(driver), Is.Empty,
                 "A lobby that stood aside must leave no control a player could still press; it " +
                 "still draws " + string.Join(", ", ControlLabels(driver)) + ".");
@@ -1392,6 +1416,16 @@ namespace GuardsDigital.Tests.PlayMode
                 "8.76: the label is the hero's name alone; the ring says it is selected.");
             Assert.That(driver.View.Root.resolvedStyle.backgroundColor.a, Is.EqualTo(1f),
                 "No part of the provisional map should show through the pre-match screen.");
+            var menuBackground = Resources.Load<Texture2D>(
+                PrivateLobbyUnityView.MenuBackgroundResourcePath);
+            Assert.That(menuBackground, Is.Not.Null,
+                "The supplied main-menu artwork must be available to the player build.");
+            Assert.That(driver.View.Root.resolvedStyle.backgroundImage.texture,
+                Is.SameAs(menuBackground),
+                "The pre-match lobby must fill its backdrop with the supplied artwork.");
+            Assert.That(driver.View.Root.resolvedStyle.backgroundSize.sizeType,
+                Is.EqualTo(BackgroundSizeType.Cover),
+                "The 16:9 artwork must cover other supported desktop aspect ratios without stretching.");
             Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.WordmarkName)), Is.True);
             foreach (var option in HeroOptions(driver))
             {

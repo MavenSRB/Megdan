@@ -16,7 +16,7 @@ The entry presenter retains its known match-format label when a return/error cal
 
 A clicked hero receives an immediate gold border (no text suffix since 8.76; a taken hero is greyed with no reason text anywhere, its hover still opening the pick card), retained across refresh while the choice remains legal and it is the player's turn. PICK HERO confirms that candidate through the existing authorized protocol. Losing the pick turn or availability clears the provisional highlight. Seat rows name only heroes whose roster entry has an actual confirmed pick, never composition placeholders.
 
-The pre-match lobby uses an opaque dark backdrop and a gold game-title wordmark rather than showing the map. After the match starts the backdrop/title disappear and normal match handoff/reconnect presentation applies. Its cloned panel settings use width-based scaling before the match, restoring the shared match-HUD scaling afterward. The lobby frame scrolls vertically within the viewport; short windows must not miniaturize the controls or hide the confirmation path.
+The pre-match lobby uses the user-supplied Megdan sword landscape as a centered, cover-scaled full-screen backdrop rather than showing the map. The opaque dark control panel and outlined gold game-title wordmark remain legible over it. After the match starts the backdrop/title disappear and normal match handoff/reconnect presentation applies. Its cloned panel settings use width-based scaling before the match, restoring the shared match-HUD scaling afterward. The lobby frame scrolls vertically within the viewport; short windows must not miniaturize the controls or hide the confirmation path.
 
 ## Source overview cards
 

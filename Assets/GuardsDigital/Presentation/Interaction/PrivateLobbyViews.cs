@@ -95,6 +95,7 @@ namespace GuardsDigital.Presentation.Interaction
         public const string HeroFilterEmptyName = "gd-lobby-hero-filter-empty";
         public const string HeroOverviewName = "gd-lobby-hero-overview";
         public const string WordmarkName = "gd-lobby-wordmark";
+        public const string MenuBackgroundResourcePath = "Private/Megdan/main-menu-background";
 
         /// <summary>The default invitation: this machine, on the protocol's own port.</summary>
         public const string DefaultAddress = "127.0.0.1";
@@ -173,6 +174,7 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly Label emptyHeroFilters;
         private readonly Image heroOverview;
         private readonly Label wordmark;
+        private readonly Texture2D menuBackground;
         private readonly ScrollView panel;
         private SeatId picked;
 
@@ -210,9 +212,18 @@ namespace GuardsDigital.Presentation.Interaction
             Root.style.bottom = 0f;
             Root.style.alignItems = Align.Center;
             Root.style.justifyContent = Justify.Center;
+            Root.style.backgroundSize =
+                new StyleBackgroundSize(new BackgroundSize(BackgroundSizeType.Cover));
+            Root.style.backgroundPositionX = new StyleBackgroundPosition(
+                new BackgroundPosition(BackgroundPositionKeyword.Center));
+            Root.style.backgroundPositionY = new StyleBackgroundPosition(
+                new BackgroundPosition(BackgroundPositionKeyword.Center));
+            menuBackground = Resources.Load<Texture2D>(MenuBackgroundResourcePath);
 
             wordmark = Caption("GUARDS OF ATLANTIS II", 40, WordmarkName);
             wordmark.style.color = MatchHudTheme.CoinFace;
+            wordmark.style.unityTextOutlineColor = new Color(0.015f, 0.02f, 0.025f, 0.9f);
+            wordmark.style.unityTextOutlineWidth = 1.5f;
             wordmark.style.marginBottom = 16f;
             wordmark.pickingMode = PickingMode.Ignore;
             Root.Add(wordmark);
@@ -806,6 +817,9 @@ namespace GuardsDigital.Presentation.Interaction
             Root.style.display = model.IsShown ? DisplayStyle.Flex : DisplayStyle.None;
             Root.pickingMode = model.IsShown ? PickingMode.Position : PickingMode.Ignore;
             Root.style.backgroundColor = coversScreen ? new Color(0.025f, 0.04f, 0.05f, 1f) : Color.clear;
+            Root.style.backgroundImage = coversScreen && menuBackground != null
+                ? new StyleBackground(menuBackground)
+                : new StyleBackground(StyleKeyword.None);
             wordmark.style.display = coversScreen ? DisplayStyle.Flex : DisplayStyle.None;
             title.text = !isEntry ? "PRIVATE LOBBY"
                 : page == PrivateLobbyEntryPage.Host ? "HOST A GAME"
