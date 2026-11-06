@@ -48,13 +48,15 @@ def prepare_card_art(content_id: str, portrait: Image.Image) -> None:
 
 
 def prepare(content_id: str, portrait_filename: str, original_filename: str) -> None:
+    with Image.open(SOURCE / portrait_filename) as opened:
+        selection_source = ImageOps.exif_transpose(opened).convert("RGBA")
     supplied = ROOT / "Art/Supplied20261106/Portraits" / (content_id + ".jpg")
     with Image.open(supplied if supplied.exists() else SOURCE / portrait_filename) as opened:
         portrait = ImageOps.exif_transpose(opened).convert("RGBA")
 
-    prepare_card_art(content_id, portrait)
+    prepare_card_source(content_id, portrait_filename)
     selection = ImageOps.fit(
-        portrait,
+        selection_source,
         (372, 260),
         method=Image.Resampling.LANCZOS,
         centering=(0.5, 0.40),
@@ -77,6 +79,12 @@ def prepare(content_id: str, portrait_filename: str, original_filename: str) -> 
     save_png(token, TOKEN_OUTPUT / f"{content_id}.png")
 
 
+def prepare_card_source(content_id: str, portrait_filename: str) -> None:
+    illustration = ROOT / "Art/Supplied20261106/Standees" / (content_id + ".png")
+    with Image.open(illustration if illustration.exists() else SOURCE / portrait_filename) as opened:
+        prepare_card_art(content_id, ImageOps.exif_transpose(opened).convert("RGBA"))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cards-only", action="store_true",
@@ -84,9 +92,7 @@ def main() -> None:
     args = parser.parse_args()
     for content_id, (portrait_filename, original_filename) in MAPPINGS.items():
         if args.cards_only:
-            supplied = ROOT / "Art/Supplied20261106/Portraits" / (content_id + ".jpg")
-            with Image.open(supplied if supplied.exists() else SOURCE / portrait_filename) as opened:
-                prepare_card_art(content_id, ImageOps.exif_transpose(opened).convert("RGBA"))
+            prepare_card_source(content_id, portrait_filename)
         else:
             prepare(content_id, portrait_filename, original_filename)
     print(f"Prepared {len(MAPPINGS)} hero mappings.")

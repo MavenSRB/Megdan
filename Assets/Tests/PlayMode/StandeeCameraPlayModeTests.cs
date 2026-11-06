@@ -50,6 +50,21 @@ namespace GuardsDigital.Tests.PlayMode
             camera.orthographicSize = 7f;
             yield return new WaitForSecondsRealtime(1f);
             yield return UiPlayer.CaptureScreen("tmp/w178-middle-board-clearance.png");
+            foreach (var id in new[] { "brogan", "misa", "rowenna" })
+            {
+                var hero = heroes.Single(h => h.HeroContentId.Value.Value == id);
+                FocusStandee(camera, hero.transform.position);
+                yield return new WaitForSecondsRealtime(0.5f);
+                Assert.That(hero.Standee.IsStanding, Is.True, id + " must use the illustrated standee");
+                yield return UiPlayer.CaptureScreen("tmp/w185-standee-" + id + ".png");
+            }
+        }
+
+        private static void FocusStandee(Camera camera, Vector3 position)
+        {
+            camera.transform.position = position + new Vector3(0f, 4f, -7f);
+            camera.transform.LookAt(position + Vector3.up * 0.7f);
+            camera.orthographicSize = 1.65f;
         }
 
         [UnityTest]

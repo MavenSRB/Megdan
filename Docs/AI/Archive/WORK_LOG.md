@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-185 Correct artwork roles and show standee close-ups
+
+User clarified square portraits belong to tokens and hero-tray icons and requested visible evidence of the sheep standee. Preparation now routes square JPGs only to token/icon resources, large transparent illustrations to cards and standees, and retains the previous selector composition. Captured and inspected all three standees close up in the live match; Brogan retains the supplied bust crop. Acceptance: focused card checks, non-batch live portrait/standee captures, source/runtime cutout parity, living-document validation and local commit. No package or publication.
+
+Historical evidence: immutable `work/W-185`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-185 | Correct portrait roles; live sheep, cat and knight standee close-ups | `work/W-185` |
+
 ### [x] W-184 Integrate the supplied Megdan menu and hero artwork
 
 User authorized the animated menu, supplied logo/buttons, matching pre-match form/lobby styling, and Brogan/Riki/Rowenna portraits and standees. Main opens Play/Options, Play opens Host/Join/Back, and functional forms retain the existing session path. Options is a labelled coming-soon page pending settings design. Acceptance: focused form/navigation and hero regressions, non-batch menu/handoff/card/angled-board captures, private preview video, living-document validation and local commit. Image-generation cutouts are approximate background removals; the original bust crop is retained. No package or remote publication.
