@@ -21,7 +21,8 @@ OUTPUT = ROOT / "Assets/Resources/Private/Megdan/Standees"
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     for identity, (filename, _) in heroes.MAPPINGS.items():
-        source = ROOT / "Art/ConceptPortraits" / filename
+        replacement = ROOT / "Art/Supplied20261106/Standees" / (identity + ".png")
+        source = replacement if replacement.exists() else ROOT / "Art/ConceptPortraits" / filename
         shutil.copyfile(source, OUTPUT / (identity + ".png"))
         with Image.open(source) as image:
             alpha = image.convert("RGBA").getchannel("A")

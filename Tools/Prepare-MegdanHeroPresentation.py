@@ -48,7 +48,8 @@ def prepare_card_art(content_id: str, portrait: Image.Image) -> None:
 
 
 def prepare(content_id: str, portrait_filename: str, original_filename: str) -> None:
-    with Image.open(SOURCE / portrait_filename) as opened:
+    supplied = ROOT / "Art/Supplied20261106/Portraits" / (content_id + ".jpg")
+    with Image.open(supplied if supplied.exists() else SOURCE / portrait_filename) as opened:
         portrait = ImageOps.exif_transpose(opened).convert("RGBA")
 
     prepare_card_art(content_id, portrait)
@@ -83,7 +84,8 @@ def main() -> None:
     args = parser.parse_args()
     for content_id, (portrait_filename, original_filename) in MAPPINGS.items():
         if args.cards_only:
-            with Image.open(SOURCE / portrait_filename) as opened:
+            supplied = ROOT / "Art/Supplied20261106/Portraits" / (content_id + ".jpg")
+            with Image.open(supplied if supplied.exists() else SOURCE / portrait_filename) as opened:
                 prepare_card_art(content_id, ImageOps.exif_transpose(opened).convert("RGBA"))
         else:
             prepare(content_id, portrait_filename, original_filename)

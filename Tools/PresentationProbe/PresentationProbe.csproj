@@ -104,6 +104,7 @@
     <Reference Include="UnityEngine.ScreenCaptureModule"><HintPath>$(UnityManaged)/UnityEngine.ScreenCaptureModule.dll</HintPath></Reference>
     <Reference Include="UnityEngine.AnimationModule"><HintPath>$(UnityManaged)/UnityEngine.AnimationModule.dll</HintPath></Reference>
     <Reference Include="UnityEngine.ParticleSystemModule"><HintPath>$(UnityManaged)/UnityEngine.ParticleSystemModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.VideoModule"><HintPath>$(UnityManaged)/UnityEngine.VideoModule.dll</HintPath></Reference>
     <Reference Include="Unity.Scripting"><HintPath>$(UnityManaged)/Unity.Scripting.dll</HintPath></Reference>
     <Reference Include="UnityEditor.CoreModule"><HintPath>$(UnityManaged)/UnityEditor.CoreModule.dll</HintPath></Reference>
 

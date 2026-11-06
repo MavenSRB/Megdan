@@ -4,6 +4,8 @@ Return to [project context](../PROJECT_CONTEXT.md). Private presentation studies
 
 ## Current decisions
 
+The November 6 supplied handoff replaces Brogan, Riki/Misa and Rowenna portrait surfaces with the three square JPGs. Their large illustrations supply new standees, extracted with built-in image generation into `Art/Supplied20261106/Standees`; these are AI-assisted background removals with possible minor edge/art variation, not pixel-exact masks. The ram retains its original bust crop. `Prepare-MegdanHeroPresentation.py` prefers the supplied portraits when present; `Prepare-MegdanStandees.py` independently prefers the extracted standees. Other three heroes retain their prior resources. Source originals and generated outputs remain private. The menu implementation is owned by [lobby presentation](LOBBY_PRESENTATION.md).
+
 W-176 moves the hero/vegetation flat-view threshold to 70 degrees, returning to upright standees below 69 degrees. The one-degree hysteresis prevents flickering. W-175's camera-relative shields, flat token alignment and zoom response remain.
 
 W-175 doubles mouse-wheel zoom response. Defense modifier shields track the camera at each token's screen-left edge, keeping their face and signed value readable as the view orbits. Flat 2D hero and minion artwork follows camera heading while remaining on the board plane; minion artwork stays above its extruded base. Projected values and resource ownership are unchanged. The private Windows preview retains W-174's six selectable heroes. Inspected captures: `tmp/w175-shield-camera-detail.png` and `tmp/w175-flat-tokens.png`.

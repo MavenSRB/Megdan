@@ -21,6 +21,8 @@ namespace GuardsDigital.Presentation.Interaction
     {
         /// <summary>The first screen: HOST and JOIN, nothing else.</summary>
         Landing = 0,
+        Main = 3,
+        Options = 4,
 
         /// <summary>The host menu: setup, port, session ID, HOST and CANCEL.</summary>
         Host = 1,
@@ -100,8 +102,8 @@ namespace GuardsDigital.Presentation.Interaction
         /// <summary>The default invitation: this machine, on the protocol's own port.</summary>
         public const string DefaultAddress = "127.0.0.1";
 
-        private static readonly Color PanelBackground = new Color(0.06f, 0.07f, 0.09f, 0.97f);
-        private static readonly Color PanelText = new Color(0.93f, 0.94f, 0.96f, 1f);
+        private static readonly Color PanelBackground = new Color(0.10f, 0.075f, 0.065f, 0.96f);
+        private static readonly Color PanelText = new Color(1f, 0.94f, 0.85f, 1f);
         public static readonly Color LandingPanelBackground = new Color(0.34f, 0.035f, 0.12f, 0.90f);
         public static readonly Color LandingPanelEdge = new Color(1f, 0.43f, 0.34f, 1f);
         public static readonly Color LandingButtonBackground = new Color(0.29f, 0.22f, 0.43f, 0.98f);
@@ -142,7 +144,7 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly Label invitationSession;
         private readonly Label invitationAddress;
         private PrivateLobbyInvitation invitation = PrivateLobbyInvitation.None;
-        private PrivateLobbyEntryPage page = PrivateLobbyEntryPage.Landing;
+        private PrivateLobbyEntryPage page = PrivateLobbyEntryPage.Main;
         private Toggle coordinationToggle;
         private Toggle enemyInfoToggle;
         private Toggle minionBattleCapToggle;
@@ -181,6 +183,16 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly Label wordmark;
         private readonly Texture2D menuBackground;
         private readonly ScrollView panel;
+        private readonly Image menuLogo;
+        private Texture videoBackground;
+        public event Action<bool> BackgroundVisibilityChanged;
+        public void SetVideoBackground(Texture texture)
+        {
+            videoBackground = texture;
+            if (renderedModel != null && (!renderedModel.HasMatchStarted || renderedModel.IsHostConsole))
+                Root.style.backgroundImage = texture is RenderTexture video
+                    ? new StyleBackground(Background.FromRenderTexture(video)) : new StyleBackground(menuBackground);
+        }
         private SeatId picked;
 
         /// <summary>
@@ -224,6 +236,7 @@ namespace GuardsDigital.Presentation.Interaction
             Root.style.backgroundPositionY = new StyleBackgroundPosition(
                 new BackgroundPosition(BackgroundPositionKeyword.Center));
             menuBackground = Resources.Load<Texture2D>(MenuBackgroundResourcePath);
+            menuBackground = Resources.Load<Texture2D>("Private/Megdan/MainMenu/still") ?? menuBackground;
 
             wordmark = Caption("MEGDAN", 40, WordmarkName);
             wordmark.style.color = LandingWordmark;
@@ -232,6 +245,12 @@ namespace GuardsDigital.Presentation.Interaction
             wordmark.style.marginBottom = 16f;
             wordmark.pickingMode = PickingMode.Ignore;
             Root.Add(wordmark);
+            menuLogo = new Image { name = "megdan-menu-logo", image = Resources.Load<Texture2D>("Private/Megdan/MainMenu/logo"), scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore };
+            menuLogo.style.position = Position.Absolute;
+            Root.Add(menuLogo);
+            Root.RegisterCallback<GeometryChangedEvent>(_ => LayoutMenuArtwork());
+            var menuStyle = Resources.Load<StyleSheet>("Private/Megdan/MainMenu/Menu");
+            if (menuStyle != null) Root.styleSheets.Add(menuStyle);
 
             var frame = new ScrollView(ScrollViewMode.Vertical) { name = PanelName };
             panel = frame;
@@ -819,17 +838,26 @@ namespace GuardsDigital.Presentation.Interaction
 
             // A non-playing host's console (8.107) is a whole screen, not an overlay on a match HUD.
             var coversScreen = !model.HasMatchStarted || model.IsHostConsole;
+            BackgroundVisibilityChanged?.Invoke(coversScreen && model.IsShown);
             Root.style.display = model.IsShown ? DisplayStyle.Flex : DisplayStyle.None;
             Root.pickingMode = model.IsShown ? PickingMode.Position : PickingMode.Ignore;
             Root.style.backgroundColor = coversScreen ? new Color(0.025f, 0.04f, 0.05f, 1f) : Color.clear;
             Root.style.backgroundImage = coversScreen && menuBackground != null
                 ? new StyleBackground(menuBackground)
                 : new StyleBackground(StyleKeyword.None);
-            wordmark.style.display = coversScreen ? DisplayStyle.Flex : DisplayStyle.None;
+            if (coversScreen && videoBackground is RenderTexture video)
+                Root.style.backgroundImage = new StyleBackground(Background.FromRenderTexture(video));
+            var front = isEntry && (page == PrivateLobbyEntryPage.Main || page == PrivateLobbyEntryPage.Landing || page == PrivateLobbyEntryPage.Options);
+            menuLogo.style.display = coversScreen ? DisplayStyle.Flex : DisplayStyle.None;
+            menuLogo.style.width = front ? 615f : 360f;
+            menuLogo.style.height = front ? 229f : 134f;
+            menuLogo.style.left = front ? new StyleLength(new Length(57.3f, LengthUnit.Percent)) : new StyleLength(24f);
+            menuLogo.style.top = front ? new StyleLength(new Length(21.5f, LengthUnit.Percent)) : new StyleLength(16f);
+            wordmark.style.display = DisplayStyle.None;
             title.text = !isEntry ? "PRIVATE LOBBY"
                 : page == PrivateLobbyEntryPage.Host ? "HOST A GAME"
                 : page == PrivateLobbyEntryPage.Join ? "JOIN A GAME"
-                : string.Empty;
+                : page == PrivateLobbyEntryPage.Options ? "Options — coming soon" : string.Empty;
             title.style.display = title.text.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             status.text = model.StatusLabel;
             selectedMapLabel.style.display = model.Role == PrivateLobbyRole.None ? DisplayStyle.None : DisplayStyle.Flex;
@@ -848,7 +876,7 @@ namespace GuardsDigital.Presentation.Interaction
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
 
-            entry.style.display = isEntry && page != PrivateLobbyEntryPage.Landing
+            entry.style.display = isEntry && (page == PrivateLobbyEntryPage.Host || page == PrivateLobbyEntryPage.Join)
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             hostMenu.style.display = page == PrivateLobbyEntryPage.Host ? DisplayStyle.Flex : DisplayStyle.None;
@@ -876,6 +904,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (isEntry)
             {
                 RenderEntryControls(model);
+                LayoutMenuArtwork();
                 return;
             }
 
@@ -894,6 +923,13 @@ namespace GuardsDigital.Presentation.Interaction
         {
             switch (page)
             {
+                case PrivateLobbyEntryPage.Main:
+                    controls.Add(BuildPageButton("PLAY", PrivateLobbyEntryPage.Landing));
+                    controls.Add(BuildPageButton("OPTIONS", PrivateLobbyEntryPage.Options));
+                    break;
+                case PrivateLobbyEntryPage.Options:
+                    controls.Add(BuildPageButton("BACK", PrivateLobbyEntryPage.Main));
+                    break;
                 case PrivateLobbyEntryPage.Landing:
                     if (model.Offers(PrivateLobbyControl.Host))
                     {
@@ -909,6 +945,7 @@ namespace GuardsDigital.Presentation.Interaction
                             PrivateLobbyEntryPage.Join));
                     }
 
+                    controls.Add(BuildPageButton("BACK", PrivateLobbyEntryPage.Main));
                     break;
 
                 case PrivateLobbyEntryPage.Host:
@@ -1007,17 +1044,25 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         private void FitPanelTo(bool isEntry)
         {
-            var landing = isEntry && page == PrivateLobbyEntryPage.Landing;
+            var landing = isEntry && page != PrivateLobbyEntryPage.Host && page != PrivateLobbyEntryPage.Join;
+            panel.style.position = landing ? Position.Absolute : Position.Relative;
+            if (!landing)
+            {
+                panel.style.paddingLeft = panel.style.paddingRight = 24f;
+                panel.style.paddingTop = panel.style.paddingBottom = 20f;
+            }
+            panel.style.left = StyleKeyword.Auto;
+            panel.style.top = StyleKeyword.Auto;
             panel.style.width = !isEntry
                 ? new StyleLength(new Length(72f, LengthUnit.Percent))
                 : new StyleLength(landing ? LandingPanelWidth : MenuPanelWidth);
             Root.style.alignItems = landing ? Align.FlexEnd : Align.Center;
             Root.style.paddingRight = 0f;
-            Root.style.paddingBottom = landing ? 270f : 0f;
-            panel.style.marginRight = landing ? 460f : 0f;
-            panel.style.backgroundColor = landing ? LandingPanelBackground : PanelBackground;
+            Root.style.paddingBottom = landing ? 340f : 0f;
+            panel.style.marginRight = landing ? 245f : 0f;
+            panel.style.backgroundColor = landing ? Color.clear : PanelBackground;
             HudElements.Border(
-                panel, landing ? LandingPanelEdge : PanelEdge, 2f,
+                panel, landing ? Color.clear : new Color(0.45f, 0.29f, 0.18f), landing ? 0f : 2f,
                 landing ? 12f : 0f);
             var align = isEntry ? Align.Center : Align.Stretch;
             panel.contentContainer.style.alignItems = align;
@@ -1062,7 +1107,50 @@ namespace GuardsDigital.Presentation.Interaction
             button.style.marginBottom = 15f;
             button.style.fontSize = 28f;
             ApplyLandingButtonChrome(button);
+            ApplyArtworkButton(button, text);
             return button;
+        }
+
+        private void LayoutMenuArtwork()
+        {
+            if (renderedModel == null || renderedModel.Role != PrivateLobbyRole.None ||
+                (page != PrivateLobbyEntryPage.Main && page != PrivateLobbyEntryPage.Landing)) return;
+            var width = Root.resolvedStyle.width; var height = Root.resolvedStyle.height;
+            if (float.IsNaN(width) || width <= 0f || height <= 0f) return;
+            var scale = Mathf.Max(width / 1920f, height / 1080f);
+            var x = (width - 1920f * scale) / 2f; var y = (height - 1080f * scale) / 2f;
+            menuLogo.style.left = x + 1100f * scale; menuLogo.style.top = y + 230f * scale;
+            menuLogo.style.width = 615f * scale; menuLogo.style.height = 190f * scale;
+            panel.style.left = x + 1315f * scale; panel.style.top = y + 500f * scale;
+            panel.style.width = 190f * scale; panel.style.marginRight = 0f;
+            panel.style.paddingLeft = panel.style.paddingRight = panel.style.paddingTop = panel.style.paddingBottom = 0f;
+            foreach (var button in controls.Children())
+            {
+                button.style.width = 190f * scale; button.style.minWidth = 190f * scale;
+                button.style.height = 90f * scale; button.style.flexShrink = 0f;
+                button.style.marginLeft = button.style.marginRight = 0f;
+                button.style.marginBottom = 24f * scale;
+            }
+        }
+
+        private static void ApplyArtworkButton(Button button, string label)
+        {
+            var key = label == CancelLabel ? "back" : label.ToLowerInvariant();
+            var normal = Resources.Load<Texture2D>("Private/Megdan/MainMenu/" + key);
+            var hover = Resources.Load<Texture2D>("Private/Megdan/MainMenu/" + key + "-hover");
+            if (normal == null) return;
+            button.AddToClassList("megdan-art-button");
+            button.style.backgroundImage = new StyleBackground(normal);
+            button.style.width = 190f; button.style.minWidth = 190f; button.style.height = 90f;
+            button.style.color = Color.clear;
+            button.style.backgroundColor = Color.clear;
+            HudElements.Border(button, Color.clear, 0f, 0f);
+            button.style.backgroundSize = new StyleBackgroundSize(new BackgroundSize(BackgroundSizeType.Contain));
+            void Set(bool active) { button.style.backgroundImage = new StyleBackground(active && hover != null ? hover : normal); }
+            button.RegisterCallback<PointerEnterEvent>(_ => Set(true));
+            button.RegisterCallback<PointerLeaveEvent>(_ => Set(false));
+            button.RegisterCallback<FocusInEvent>(_ => Set(true));
+            button.RegisterCallback<FocusOutEvent>(_ => Set(false));
         }
 
         private static void ApplyLandingButtonChrome(VisualElement button)
@@ -1210,6 +1298,7 @@ namespace GuardsDigital.Presentation.Interaction
             button.style.paddingRight = 10f;
             button.style.minHeight = 34f;
             ApplyButtonChrome(button);
+            ApplyArtworkButton(button, button.text);
             return button;
         }
 
@@ -1405,6 +1494,7 @@ namespace GuardsDigital.Presentation.Interaction
             button.style.marginRight = 10f;
             button.style.fontSize = 20f;
             ApplyButtonChrome(button);
+            ApplyArtworkButton(button, button.text);
             return button;
         }
 
@@ -1434,6 +1524,7 @@ namespace GuardsDigital.Presentation.Interaction
         {
             button.style.color = PanelText;
             button.style.backgroundColor = MatchHudTheme.ButtonIdleBackground;
+            button.style.backgroundColor = new Color(0.28f, 0.17f, 0.10f, 1f);
             HudElements.Border(button, PanelEdge, 1f, MatchHudTheme.ButtonCornerRadius);
             HudElements.ApplyButtonMotion(button, tintBackground: true);
         }
@@ -1784,6 +1875,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             BuildPanel();
             view = new PrivateLobbyUnityView();
+            gameObject.AddComponent<MegdanMenuVideo>().Configure(view);
             document.rootVisualElement?.Add(view.Root);
             // Item 3 of the 2026-09-06 log drop-down refinements. This notice used to be a 30%-wide,
             // 18pt slab pinned at top:92 in a mixed percent/reference geometry - which put it across

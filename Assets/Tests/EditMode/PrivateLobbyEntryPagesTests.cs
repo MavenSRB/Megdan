@@ -21,8 +21,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var view = EntryView();
 
-            Assert.That(view.Page, Is.EqualTo(PrivateLobbyEntryPage.Landing));
-            Assert.That(ShownControlLabels(view), Is.EqualTo(new[] { "HOST", "JOIN" }));
+            Assert.That(view.Page, Is.EqualTo(PrivateLobbyEntryPage.Main));
+            Assert.That(ShownControlLabels(view), Is.EqualTo(new[] { "PLAY", "OPTIONS" }));
             Assert.That(ShownFields(view), Is.Empty);
             Assert.That(Shown(Named(view, PrivateLobbyUnityView.SeatsName)), Is.False,
                 "The landing is two buttons; the seat table belongs to a session.");
@@ -56,7 +56,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(ShownControlLabels(view), Is.EqualTo(new[]
             {
-                "2V2", "3V3", "HOST", PrivateLobbyUnityView.CancelLabel
+                "2V2", "3V3", "4V4", "5V5", "HOST", PrivateLobbyUnityView.CancelLabel
             }));
             Assert.That(Shown(view.Root.Q<Button>("experimental-button")), Is.True);
             var experimentalPopup = view.Root.Q<VisualElement>("experimental-menu-popup");
@@ -106,11 +106,11 @@ namespace GuardsDigital.Tests.EditMode
                 PrivateLobbyUnityView.FormatSizeGroupName
             }));
             Assert.That(Named(view, PrivateLobbyUnityView.FormatSizeGroupName).Children()
-                .OfType<Button>().Select(button => button.text), Is.EqualTo(new[] { "2V2", "3V3" }));
+                .OfType<Button>().Select(button => button.text), Is.EqualTo(new[] { "2V2", "3V3", "4V4", "5V5" }));
             Assert.That(Named(view, PrivateLobbyUnityView.FormatSizeGroupName).style.borderTopWidth.value,
                 Is.GreaterThan(0f), "Each group draws its own box.");
             // Each box: two buttons with 3 px side margins, 4 px padding, 1 px border, 5 px outer margins.
-            var boxWidth = 2f * (PrivateLobbyUnityView.FormatChoiceWidth + 6f) + 8f + 2f + 10f;
+            var boxWidth = 4f * (PrivateLobbyUnityView.FormatChoiceWidth + 6f) + 8f + 2f + 10f;
             Assert.That(boxWidth, Is.LessThanOrEqualTo(PrivateLobbyUnityView.MenuPanelWidth - 52f),
                 "The team-size box fits inside the menu panel's padding and border.");
 
@@ -156,7 +156,7 @@ namespace GuardsDigital.Tests.EditMode
             Field(view, PrivateLobbyUnityView.PortFieldName).value = "5000";
 
             view.ShowPage(PrivateLobbyEntryPage.Landing);
-            Assert.That(ShownControlLabels(view), Is.EqualTo(new[] { "HOST", "JOIN" }));
+            Assert.That(ShownControlLabels(view), Is.EqualTo(new[] { "HOST", "JOIN", "BACK" }));
 
             view.ShowPage(PrivateLobbyEntryPage.Join);
             Assert.That(Field(view, PrivateLobbyUnityView.AddressFieldName).value, Is.EqualTo("81.2.69.160"));
@@ -220,7 +220,7 @@ namespace GuardsDigital.Tests.EditMode
             view.Render(PrivateLobbyModel.Entry(harness.Session.Roster, string.Empty, Format));
 
             Assert.That(view.Page, Is.EqualTo(PrivateLobbyEntryPage.Landing));
-            Assert.That(ShownControlLabels(view), Is.EqualTo(new[] { "HOST", "JOIN" }));
+            Assert.That(ShownControlLabels(view), Is.EqualTo(new[] { "HOST", "JOIN", "BACK" }));
         }
 
         [Test]

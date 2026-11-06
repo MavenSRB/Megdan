@@ -52,56 +52,32 @@ namespace GuardsDigital.Tests.PlayMode
         public IEnumerator TheLandingScreen_UsesTheSuppliedArtworkAsACoveringBackground()
         {
             yield return LoadTheLobby();
-            var root = Driver().View.Root;
-            var background = Resources.Load<Texture2D>(
-                PrivateLobbyUnityView.MenuBackgroundResourcePath);
-
-            Assert.That(background, Is.Not.Null,
-                "The supplied main-menu artwork must be available to the player build.");
-            Assert.That(root.resolvedStyle.backgroundImage.texture, Is.SameAs(background));
-            Assert.That(root.resolvedStyle.backgroundSize.sizeType,
-                Is.EqualTo(BackgroundSizeType.Cover),
-                "The 16:9 artwork must cover other supported desktop aspect ratios without stretching.");
-            Assert.That(root.resolvedStyle.backgroundPositionX.keyword,
-                Is.EqualTo(BackgroundPositionKeyword.Center));
-            Assert.That(root.resolvedStyle.backgroundPositionY.keyword,
-                Is.EqualTo(BackgroundPositionKeyword.Center));
-
-            var panel = Element(Driver(), PrivateLobbyUnityView.PanelName);
-            var wordmark = (Label)Element(Driver(), PrivateLobbyUnityView.WordmarkName);
-            var buttons = Named(Driver(), PrivateLobbyUnityView.ControlName)
-                .OfType<Button>()
-                .Where(UiPlayer.IsShown)
-                .ToArray();
-            Assert.That(wordmark.text, Is.EqualTo("MEGDAN"));
-            Assert.That(panel.worldBound.center.x, Is.GreaterThan(root.worldBound.center.x + 200f),
-                "The compact landing menu belongs inside the large cloud on the right.");
-            Assert.That(panel.worldBound.width, Is.EqualTo(540f).Within(1f),
-                "W-183 enlarges the complete landing box by 50 percent, from 360 to 540.");
-            Assert.That(wordmark.worldBound.center.x,
-                Is.EqualTo(panel.worldBound.center.x).Within(1f),
-                "MEGDAN must be centered on the same axis as its button box.");
-            Assert.That(panel.worldBound.xMax, Is.LessThan(root.worldBound.xMax * 0.84f),
-                "The enlarged box moves left, away from the rising hill on the right.");
-            Assert.That(panel.worldBound.yMax, Is.LessThan(root.worldBound.center.y + 80f),
-                "The whole menu should sit above the dark foreground hill, inside the bright cloud.");
-            Assert.That(panel.resolvedStyle.backgroundColor,
-                Is.EqualTo(PrivateLobbyUnityView.LandingPanelBackground));
-            Assert.That(buttons, Has.Length.EqualTo(2));
-            Assert.That(buttons.All(button =>
-                    Mathf.Abs(button.worldBound.width - 390f) <= 1f &&
-                    Mathf.Abs(button.worldBound.height - 84f) <= 1f),
-                Is.True,
-                "Both landing controls grow proportionally with their box.");
-            Assert.That(buttons[1].worldBound.yMin, Is.GreaterThan(buttons[0].worldBound.yMax),
-                "HOST and JOIN must form one vertical stack.");
-            Assert.That(buttons.All(button =>
-                    button.resolvedStyle.backgroundColor ==
-                    PrivateLobbyUnityView.LandingButtonBackground),
-                Is.True,
-                "Both landing controls use the background-derived purple treatment.");
-
-            yield return UiPlayer.CaptureScreen("tmp/w183-main-menu-layout.png");
+            var driver = Driver();
+            Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Main));
+            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "OPTIONS", "PLAY" }));
+            var logo = driver.View.Root.Q<Image>("megdan-menu-logo");
+            Assert.That(logo.image, Is.Not.Null);
+            yield return new WaitForSeconds(2f);
+            yield return UiPlayer.CaptureScreen("tmp/w184-main.png");
+            for (var i = 0; i < 48; i++)
+            {
+                yield return UiPlayer.CaptureScreen("tmp/w184-menu-frame-" + i.ToString("D3") + ".png");
+                yield return new WaitForSeconds(1f / 12f);
+            }
+            UiPlayer.Click(Control(driver, "OPTIONS"));
+            yield return null;
+            Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Options));
+            UiPlayer.Click(Control(driver, "BACK")); yield return null;
+            UiPlayer.Click(Control(driver, "PLAY")); yield return null;
+            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "BACK", "HOST", "JOIN" }));
+            yield return UiPlayer.CaptureScreen("tmp/w184-play.png");
+            UiPlayer.Click(Control(driver, "HOST")); yield return null;
+            Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Host));
+            yield return UiPlayer.CaptureScreen("tmp/w184-host.png");
+            UiPlayer.Click(Control(driver, "CANCEL")); yield return null; yield return null;
+            UiPlayer.Click(Control(driver, "JOIN")); yield return null;
+            Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Join));
+            yield return UiPlayer.CaptureScreen("tmp/w184-join.png");
         }
 
         /// <summary>One ordered in-memory wire between the scene's authority and real clients.</summary>
@@ -3260,7 +3236,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>Milestone 8.107. The first screen's two buttons, sorted as ControlLabels sorts.</summary>
-        private static readonly string[] LandingControls = { "HOST", "JOIN" };
+        private static readonly string[] LandingControls = { "BACK", "HOST", "JOIN" };
 
         [UnityTest]
         public IEnumerator EscapeUsesCancelOnHostAndJoinEntryMenusOnly()
@@ -3315,6 +3291,11 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator OpenMenu(
             PrivateLobbyDriver driver, string label, PrivateLobbyEntryPage page)
         {
+            if (driver.View.Page == PrivateLobbyEntryPage.Main)
+            {
+                UiPlayer.Click(Control(driver, "PLAY"));
+                yield return null;
+            }
             Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Landing),
                 "A menu opens from the first screen.");
             // The landing's buttons are rebuilt on every render; give a fresh one a layout pass.

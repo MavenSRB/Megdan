@@ -1,0 +1,12 @@
+.unity-base-field__input {
+    background-color: rgb(49, 36, 28);
+    color: rgb(255, 240, 217);
+    border-color: rgb(143, 99, 57);
+    border-width: 1px;
+    border-radius: 4px;
+    min-height: 30px;
+}
+.unity-base-field__input:focus { border-color: rgb(255, 204, 115); }
+.unity-button:disabled { opacity: 0.45; }
+.unity-button:focus { border-color: rgb(255, 204, 115); }
+.megdan-art-button:hover { -unity-background-image-tint-color: rgb(240, 230, 214); }

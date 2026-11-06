@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-184 Integrate the supplied Megdan menu and hero artwork
+
+User authorized the animated menu, supplied logo/buttons, matching pre-match form/lobby styling, and Brogan/Riki/Rowenna portraits and standees. Main opens Play/Options, Play opens Host/Join/Back, and functional forms retain the existing session path. Options is a labelled coming-soon page pending settings design. Acceptance: focused form/navigation and hero regressions, non-batch menu/handoff/card/angled-board captures, private preview video, living-document validation and local commit. Image-generation cutouts are approximate background removals; the original bust crop is retained. No package or remote publication.
+
+Historical evidence: immutable `work/W-184`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-184 | Animated artist-supplied menu, warm pre-match forms and three refreshed hero presentations | `work/W-184` |
+
 ### [x] W-183 Enlarge and realign the main-menu panel
 
 User requested a 50% larger landing button box, farther left so it does not touch the hill, with MEGDAN centered above it. The panel now measures 540 px instead of 360, its buttons scale from 260x56 to 390x84 with proportionate labels, and the shared title/panel composition moves 460 px from the right and higher into the cloud. Acceptance: focused non-batch geometry/handoff checks, inspected Game View capture, living-document validation and local commit. No artwork, rules, networking, other lobby pages, package, publication or remote operation.
