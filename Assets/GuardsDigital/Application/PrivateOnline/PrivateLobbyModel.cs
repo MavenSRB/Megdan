@@ -661,6 +661,9 @@ namespace GuardsDigital.Application
                 controls.Insert(2, PrivateLobbyControl.ChooseFourVsFour);
                 controls.Insert(3, PrivateLobbyControl.ChooseFiveVsFive);
             }
+            if (MegdanSelectionRoster.IsDemo)
+                controls.RemoveAll(control => control == PrivateLobbyControl.ChooseTwoVsTwo ||
+                    control == PrivateLobbyControl.ChooseFourVsFour || control == PrivateLobbyControl.ChooseFiveVsFive);
 
             return new PrivateLobbyModel(
                 PrivateLobbyRole.None,
@@ -998,7 +1001,10 @@ namespace GuardsDigital.Application
             }
 
             var heroes = new List<PrivateLobbyHeroOption>();
-            foreach (var hero in MegdanSelectionRoster.Current)
+            var offered = MegdanSelectionRoster.ForSeats(seats.Select(s => s.TeamSide));
+            var pickingSide = seats.First(s => s.Seat.Equals(picking)).TeamSide;
+            foreach (var hero in offered.Where(h => !ReferenceEquals(offered, MegdanSelectionRoster.DemoHeroes) ||
+                MegdanSelectionRoster.AllowsDemoTeam(h, pickingSide)))
             {
                 var available = !taken.Contains(hero.HeroIdValue);
                 heroes.Add(new PrivateLobbyHeroOption(

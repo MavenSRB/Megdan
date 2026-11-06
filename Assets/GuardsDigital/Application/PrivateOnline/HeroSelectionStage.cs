@@ -264,7 +264,7 @@ namespace GuardsDigital.Application
             this.seats = Array.AsReadOnly(seatArray);
             this.firstPickingTeam = firstPickingTeam;
             Method = method;
-            registered = registeredHeroes ?? MegdanSelectionRoster.Current;
+            registered = registeredHeroes ?? MegdanSelectionRoster.ForSeats(seatArray.Select(s => s.TeamSide));
         }
 
         public HeroSelectionMethod Method { get; }
@@ -493,6 +493,13 @@ namespace GuardsDigital.Application
                 return false;
             }
 
+            if (ReferenceEquals(registered, MegdanSelectionRoster.DemoHeroes) &&
+                !MegdanSelectionRoster.AllowsDemoTeam(hero, row.TeamSide))
+            {
+                refusal = HeroSelectionRefusal.UnregisteredHero;
+                return false;
+            }
+
             if (!seat.Equals(PickingSeat))
             {
                 refusal = HeroSelectionRefusal.NotThisSeatsTurn;
@@ -546,11 +553,13 @@ namespace GuardsDigital.Application
                 return false;
             }
 
-            var available = AvailableHeroes;
+            var side = seats.First(s => s.Seat.Equals(seat)).TeamSide;
+            var available = AvailableHeroes.Where(h => !ReferenceEquals(registered, MegdanSelectionRoster.DemoHeroes) ||
+                MegdanSelectionRoster.AllowsDemoTeam(h, side)).ToArray();
             RegisteredHero hero;
             if (string.IsNullOrWhiteSpace(preferred))
             {
-                if (available.Count == 0)
+                if (available.Length == 0)
                 {
                     refusal = HeroSelectionRefusal.HeroAlreadyTaken;
                     return false;
@@ -561,6 +570,12 @@ namespace GuardsDigital.Application
             else
             {
                 if (!TryFindRegistered(preferred, out hero))
+                {
+                    refusal = HeroSelectionRefusal.UnregisteredHero;
+                    return false;
+                }
+                if (ReferenceEquals(registered, MegdanSelectionRoster.DemoHeroes) &&
+                    !MegdanSelectionRoster.AllowsDemoTeam(hero, side))
                 {
                     refusal = HeroSelectionRefusal.UnregisteredHero;
                     return false;

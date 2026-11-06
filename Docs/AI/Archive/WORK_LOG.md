@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-186 Three-hero demo and supplied Tali artwork
+
+User requested Riki, Rowenna and Tali on each demo team and supplied separate full-body/portrait photos for Tali with blue background removed. Private demo selection now offers three team-bound instances per side; original content IDs remain unchanged and Blue copies receive separate instance IDs. Shared dealing selects content independently from instance ownership. Transparent Tali standee/card and token/tray portrait resources are prepared, with originals/provenance preserved privately. Acceptance: selection/ownership/client/composition regressions, non-batch mirrored-lineup and Tali captures, documentation validation and local commit. DEV-012 isolates the user-approved demo uniqueness departure. No new package or publication.
+
+Historical evidence: immutable `work/W-186`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-186 | Riki/Rowenna/Tali demo teams with independent hands and refreshed Tali cutouts | `work/W-186` |
+
 ### [x] W-185 Correct artwork roles and show standee close-ups
 
 User clarified square portraits belong to tokens and hero-tray icons and requested visible evidence of the sheep standee. Preparation now routes square JPGs only to token/icon resources, large transparent illustrations to cards and standees, and retains the previous selector composition. Captured and inspected all three standees close up in the live match; Brogan retains the supplied bust crop. Acceptance: focused card checks, non-batch live portrait/standee captures, source/runtime cutout parity, living-document validation and local commit. No package or publication.

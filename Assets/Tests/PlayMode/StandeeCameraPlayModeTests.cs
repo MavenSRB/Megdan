@@ -16,6 +16,32 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class StandeeCameraPlayModeTests
     {
         [UnityTest]
+        public IEnumerator CaptureThreeHeroMirrorDemo()
+        {
+            var roster = GuardsDigital.Application.MegdanSelectionRoster.DemoHeroes;
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(roster.Take(3), roster.Skip(3));
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            UiPlayer.SetPlayerViewport(1920, 1080, "Three-hero mirrored demo");
+            yield return new WaitForSecondsRealtime(2f);
+            var root = BroganUiJourneyPlayModeTests.Root();
+            var heroes = root.Runtime.BoardView.HeroViews.Where(h => h.gameObject.activeInHierarchy).ToArray();
+            Assert.That(heroes.Length, Is.EqualTo(6));
+            foreach (var id in new[] { "misa", "rowenna", "tali" })
+                Assert.That(heroes.Count(h => h.HeroContentId.Value.Value == id), Is.EqualTo(2));
+            var camera = Camera.main;
+            var rotation = Quaternion.Euler(40f, 0f, 0f);
+            camera.transform.SetPositionAndRotation(-(rotation * Vector3.forward * 18f), rotation);
+            camera.orthographicSize = 15f;
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return UiPlayer.CaptureScreen("tmp/w186-demo-lineup.png");
+            FocusStandee(camera, heroes.First(h => h.HeroContentId.Value.Value == "tali").transform.position);
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return UiPlayer.CaptureScreen("tmp/w186-tali-standee.png");
+        }
+
+        [UnityTest]
         public IEnumerator CaptureLowAngleGrassInConfiguredMatch()
         {
             var roster = RegisteredHeroRoster.ForThisBuild;

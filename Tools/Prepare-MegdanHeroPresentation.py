@@ -51,8 +51,13 @@ def prepare(content_id: str, portrait_filename: str, original_filename: str) -> 
     with Image.open(SOURCE / portrait_filename) as opened:
         selection_source = ImageOps.exif_transpose(opened).convert("RGBA")
     supplied = ROOT / "Art/Supplied20261106/Portraits" / (content_id + ".jpg")
+    transparent_portrait = supplied.with_suffix(".png")
+    if transparent_portrait.exists():
+        supplied = transparent_portrait
     with Image.open(supplied if supplied.exists() else SOURCE / portrait_filename) as opened:
         portrait = ImageOps.exif_transpose(opened).convert("RGBA")
+        if transparent_portrait.exists():
+            portrait = portrait.crop(portrait.getbbox())
 
     prepare_card_source(content_id, portrait_filename)
     selection = ImageOps.fit(

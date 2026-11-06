@@ -71,6 +71,8 @@ namespace GuardsDigital.Application
 
         public static bool TryForHeroId(string heroIdValue, out MegdanHeroPresentation entry)
         {
+            if (heroIdValue != null && heroIdValue.EndsWith("-demo-blue", StringComparison.Ordinal))
+                heroIdValue = heroIdValue.Substring(0, heroIdValue.Length - "-demo-blue".Length);
             entry = Declared.FirstOrDefault(candidate =>
                 string.Equals(candidate.HeroIdValue, heroIdValue, StringComparison.Ordinal));
             return entry != null;

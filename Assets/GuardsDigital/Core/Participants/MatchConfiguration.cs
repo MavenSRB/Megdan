@@ -460,7 +460,8 @@ namespace GuardsDigital.Core.Participants
                 {
                     hands.Add(CreateVerifiedHand(
                         selected[index].HeroIdValue,
-                        stem + (index + 1).ToString(CultureInfo.InvariantCulture)));
+                        stem + (index + 1).ToString(CultureInfo.InvariantCulture),
+                        "hero-" + selected[index].ContentId.Value));
                 }
             }
 
@@ -547,10 +548,10 @@ namespace GuardsDigital.Core.Participants
                 contentCatalogs: additionalCapabilities == null ? null :
                     MatchContentCatalogs.ForThisBuild().WithAdditionalCapabilities(additionalCapabilities));
 
-        private static ConfiguredHand CreateVerifiedHand(string heroIdValue, string instancePrefix)
+        private static ConfiguredHand CreateVerifiedHand(string heroIdValue, string instancePrefix, string contentHeroId = null)
         {
             var heroId = new HeroId(heroIdValue);
-            switch (heroIdValue)
+            switch (contentHeroId ?? heroIdValue)
             {
                 case OfficialSixPlayerParticipants.WaspHeroIdValue:
                     return WaspCardContent.CreateHand(heroId, instancePrefix);

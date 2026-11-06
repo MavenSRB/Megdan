@@ -1459,7 +1459,7 @@ namespace GuardsDigital.Application
             var blue = new List<RegisteredHero>();
             foreach (var entry in roster)
             {
-                if (!RegisteredHeroRoster.TryFind(entry.Hero.Value, out var hero))
+                if (!MegdanSelectionRoster.TryResolve(entry.Hero.Value, out var hero))
                 {
                     return null;
                 }
