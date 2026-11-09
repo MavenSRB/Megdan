@@ -25,8 +25,24 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private Mesh mesh;
         private Material face, edge;
         private string resource;
+        private Vector3 attackLean;
         public bool IsStanding => panel != null && panel.activeSelf;
         public bool HasArtwork => panel != null;
+        public Renderer PanelRenderer => panel == null ? null : panel.GetComponent<MeshRenderer>();
+
+        public void SetAttackLean(Vector3 lean, Camera camera)
+        {
+            attackLean = Vector3.ClampMagnitude(Vector3.ProjectOnPlane(lean, Vector3.up), 1f);
+            Refresh(camera);
+        }
+
+        // Tilt around the panel's feet in world space, preserving its camera-facing front.
+        public static Quaternion AttackFacing(Vector3 facing, Vector3 lean)
+        {
+            var tilt = lean.sqrMagnitude < 0.0001f ? Quaternion.identity :
+                Quaternion.AngleAxis(14f * Mathf.Clamp01(lean.magnitude), Vector3.Cross(Vector3.up, lean.normalized));
+            return tilt * Quaternion.LookRotation(-facing, Vector3.up);
+        }
 
         public void Configure(PrimitiveHeroView hero, string contentId)
         {
@@ -74,7 +90,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
             // Upright yaw-only facing keeps the art readable as the viewer circles the board.
             var facing = Vector3.ProjectOnPlane(-camera.transform.forward, Vector3.up);
             if (facing.sqrMagnitude > 0.0001f)
-                panel.transform.rotation = Quaternion.LookRotation(-facing, Vector3.up);
+                panel.transform.rotation = AttackFacing(facing, attackLean);
         }
 
         private void LateUpdate() => Refresh(Camera.main);

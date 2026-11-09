@@ -193,7 +193,8 @@ namespace GuardsDigital.Presentation.Match
                 screenUp,
                 camera.aspect > 0.01f ? camera.aspect : 16f / 9f,
                 PieceRadius(),
-                restOrthographic ? restOrthographicSize : 0f);
+                restOrthographic ? restOrthographicSize : 0f,
+                illustratedStandees: HasIllustratedStandee(model.Scene.Attacker) || HasIllustratedStandee(model.Scene.Defender));
 
             var targetRotation = Quaternion.LookRotation(frame.ViewDirection, frame.ViewUp);
             var targetPosition = AttackSpotlightFraming.PositionFor(frame);
@@ -444,6 +445,18 @@ namespace GuardsDigital.Presentation.Match
             var local = HexWorldLayout.ToWorld(coordinate, outerRadius) + (Vector3.up * verticalOffset);
             var parent = pieceTransform == null ? null : pieceTransform.parent;
             return parent == null ? local : parent.TransformPoint(local);
+        }
+
+        private bool HasIllustratedStandee(KineticSubject subject)
+        {
+            foreach (var hero in board.HeroViews)
+                if (hero != null && subject.Kind == KineticSubjectKind.Hero && hero.Occupancy.HeroId.Equals(subject.HeroId))
+                    return hero.Standee != null && hero.Standee.HasArtwork;
+            foreach (var minion in board.MinionViews)
+                if (minion != null && minion.Occupancy != null && subject.Kind == KineticSubjectKind.Minion &&
+                    minion.Occupancy.MinionId.Equals(subject.MinionId))
+                    return minion.Standee != null && minion.Standee.HasArtwork;
+            return false;
         }
 
         private float PieceRadius()

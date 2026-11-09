@@ -517,7 +517,7 @@ namespace GuardsDigital.Presentation.Match
                     continue;
                 }
 
-                Append(scenes, entry, projection);
+                Append(scenes, entry, projection, DefendedWithCard(log, index));
             }
 
             observedSequence = highest;
@@ -666,8 +666,25 @@ namespace GuardsDigital.Presentation.Match
         /// contract; a kind with no kinetic meaning writes nothing, which is why the log's other
         /// twenty-odd kinds pass through here silently rather than needing a case each.
         /// </summary>
+        private static bool DefendedWithCard(IReadOnlyList<MatchLogEntry> log, int attackIndex)
+        {
+            var attack = log[attackIndex];
+            if (attack.Kind != MatchLogEntryKind.Attack || attack.Outcome != MatchLogOutcome.AttackSuccessfullyDefended)
+                return false;
+            for (int index = attackIndex - 1; index >= 0; index--)
+            {
+                var candidate = log[index];
+                if (candidate == null) continue;
+                if (candidate.Kind == MatchLogEntryKind.Attack) break;
+                if (candidate.Kind == MatchLogEntryKind.Defense && candidate.SubjectHeroId.Equals(attack.TargetHeroId) &&
+                    candidate.TargetHeroId.Equals(attack.SubjectHeroId))
+                    return candidate.Outcome == MatchLogOutcome.DefenseCardDiscarded;
+            }
+            return false;
+        }
+
         private static void Append(
-            List<KineticScene> scenes, MatchLogEntry entry, IMatchReadModel projection)
+            List<KineticScene> scenes, MatchLogEntry entry, IMatchReadModel projection, bool defendedWithCard)
         {
             switch (entry.Kind)
             {
@@ -796,7 +813,7 @@ namespace GuardsDigital.Presentation.Match
                             targetSpace: entry.HasDestination ? (HexCoordinate?)entry.Destination : null)
                     };
 
-                    if (landed)
+                    if (landed || defendedWithCard)
                     {
                         strike.Add(new KineticCue(
                             entry.Sequence,

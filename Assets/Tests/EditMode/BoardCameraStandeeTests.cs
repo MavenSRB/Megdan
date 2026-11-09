@@ -5,6 +5,7 @@ using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
@@ -16,6 +17,80 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class BoardCameraStandeeTests
     {
+        [TestCase(1f)]
+        [TestCase(8f)]
+        public void IllustratedAttackFramingKeepsStandeesUprightAcrossDistances(float separation)
+        {
+            var frame = AttackSpotlightFraming.Frame(Vector3.zero, Vector3.right * separation,
+                Vector3.right, Vector3.forward, 16f / 9f, 1f, 20f, illustratedStandees: true);
+            var elevation = Mathf.Asin(-frame.ViewDirection.y) * Mathf.Rad2Deg;
+            Assert.That(elevation, Is.LessThan(IllustratedStandeeView.StandeeAngle));
+            Assert.That(elevation, Is.EqualTo(55f).Within(0.01f));
+            Assert.That(frame.Focus.y, Is.EqualTo(0.75f));
+        }
+        [TestCase(true, true, 0f)]
+        [TestCase(true, true, 135f)]
+        [TestCase(true, false, 270f)]
+        [TestCase(false, true, 45f)]
+        public void AttackLeansAndBumpsOnlyStandingLandedHits_AndRestoresOnCancel(bool standing, bool landed, float yaw)
+        {
+            var attackerHost = new GameObject("attacker");
+            var defenderHost = new GameObject("defender");
+            var cameraHost = new GameObject("camera", typeof(Camera));
+            try
+            {
+                var camera = cameraHost.GetComponent<Camera>();
+                camera.transform.rotation = Quaternion.Euler(standing ? 40f : 90f, yaw, 0f);
+                var attacker = attackerHost.AddComponent<PrimitiveHeroView>();
+                var defender = defenderHost.AddComponent<PrimitiveHeroView>();
+                attacker.Configure(new HeroOccupancy(new HeroId("attacker"), new HexCoordinate(0, 0)), 1f);
+                defender.Configure(new HeroOccupancy(new HeroId("defender"), new HexCoordinate(1, 0)), 1f);
+                SetIdentity(attacker, "misa", TeamSide.Red);
+                SetIdentity(defender, "rowenna", TeamSide.Blue);
+                attacker.Standee.Refresh(camera); defender.Standee.Refresh(camera);
+                Assert.That(attacker.Standee.IsStanding, Is.EqualTo(standing));
+                var attackStart = attacker.transform.localPosition;
+                var defendStart = defender.transform.localPosition;
+                var attackerSubject = KineticSubject.ForHero(attacker.Occupancy.HeroId);
+                var defenderSubject = KineticSubject.ForHero(defender.Occupancy.HeroId);
+                var board = new BoardInteractionUnityView(new[] { attacker, defender }, new HexTileView[0], null);
+                var view = new KineticCueUnityView(board, cameraSource: () => camera);
+                var lunge = new KineticCue(1, KineticCueKind.Lunge, attackerSubject, defenderSubject,
+                    subjectSpace: attacker.Coordinate, targetSpace: defender.Coordinate);
+                var flash = new KineticCue(1, KineticCueKind.Flash, defenderSubject, subjectSpace: defender.Coordinate);
+                view.Playback.Begin(landed ? new[] { lunge, flash } : new[] { lunge });
+                view.Tick(0.10f);
+                var offset = attacker.transform.localPosition - attackStart;
+                Assert.That(offset.x, Is.GreaterThan(0f));
+                Assert.That(offset.magnitude, Is.LessThanOrEqualTo(standing ? 0.301f : 0.601f));
+                Assert.That(attacker.transform.rotation, Is.EqualTo(Quaternion.identity), "Base stays level.");
+                if (standing)
+                {
+                    Assert.That(attacker.Standee.PanelRenderer.transform.up.x, Is.GreaterThan(0.05f));
+                    Assert.That(Vector3.Distance(defender.transform.localPosition, defendStart) > 0.01f, Is.EqualTo(landed));
+                    Assert.That(defender.transform.localScale, Is.EqualTo(Vector3.one), "No standee ballooning.");
+                }
+                else Assert.That(defender.transform.localPosition, Is.EqualTo(defendStart));
+
+                view.Render(new KineticCueViewModel(new KineticCue[0], false, new HeroId[0], snapToAuthoritative: true));
+                view.Tick(0.01f);
+                attacker.Standee.Refresh(camera); defender.Standee.Refresh(camera);
+                Assert.That(attacker.transform.localPosition, Is.EqualTo(attackStart));
+                Assert.That(defender.transform.localPosition, Is.EqualTo(defendStart));
+                if (standing)
+                    Assert.That(Vector3.Dot(attacker.Standee.PanelRenderer.transform.up, Vector3.up), Is.GreaterThan(0.999f));
+
+                // A discarded Defense card has its own flash; it must never invent an impact bump.
+                view.Playback.Begin(new[] { flash });
+                view.Tick(0.10f);
+                Assert.That(defender.transform.localPosition, Is.EqualTo(defendStart));
+            }
+            finally
+            {
+                Object.DestroyImmediate(attackerHost); Object.DestroyImmediate(defenderHost); Object.DestroyImmediate(cameraHost);
+            }
+        }
+
         [TestCase(20f, 0f)]
         [TestCase(55f, 135f)]
         [TestCase(70f, 270f)]

@@ -34,6 +34,79 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class DefeatFadeGhostTests
     {
+        [TestCase(false)]
+        [TestCase(true)]
+        public void StandingRemovalCopiesTheFigure_FallsWithoutPicking_AndReusesAsAFlatGhost(bool minion)
+        {
+            var objects = new List<GameObject>();
+            var cameraHost = new GameObject("standee camera", typeof(Camera));
+            var priorCamera = Camera.main;
+            if (priorCamera != null) priorCamera.enabled = false;
+            cameraHost.tag = "MainCamera";
+            objects.Add(cameraHost);
+            BoardInteractionUnityView board = null;
+            try
+            {
+                var camera = cameraHost.GetComponent<Camera>();
+                camera.transform.rotation = Quaternion.Euler(40f, 35f, 0f);
+                var at = new HexCoordinate(1, 0);
+                var occupancy = new HeroOccupancy(new HeroId("falling"), at);
+                var state = MinionState("falling-minion", at);
+                PrimitiveHeroView hero = null;
+                StandardMinionView creep = null;
+                Renderer panel;
+                if (minion)
+                {
+                    var host = new GameObject("falling creep"); objects.Add(host);
+                    creep = host.AddComponent<StandardMinionView>(); creep.Configure(state, 1f);
+                    creep.Standee.Refresh(camera); panel = creep.Standee.PanelRenderer;
+                    board = new BoardInteractionUnityView(new PrimitiveHeroView[0], new HexTileView[0], null, new[] { creep });
+                }
+                else
+                {
+                    hero = CreateHero(objects, occupancy);
+                    var serialized = new UnityEditor.SerializedObject(hero);
+                    serialized.FindProperty("heroContentId").stringValue = "misa";
+                    serialized.ApplyModifiedPropertiesWithoutUndo(); hero.EnsureVisual();
+                    hero.Standee.Refresh(camera); panel = hero.Standee.PanelRenderer;
+                    board = new BoardInteractionUnityView(new[] { hero }, new HexTileView[0], null);
+                }
+                var drawn = BoardModel(1, minion ? new HeroOccupancy[0] : new[] { occupancy },
+                    minion ? new[] { state } : new MinionOccupancy[0]);
+                board.Render(drawn);
+                Assert.That(panel, Is.Not.Null);
+                var panelPose = panel.transform.rotation;
+                board.Render(BoardModel(2, new HeroOccupancy[0], new MinionOccupancy[0]));
+                var ghost = minion ? board.MinionDefeatGhostFor(creep) : board.HeroDefeatGhostFor(hero);
+                objects.Add(ghost.gameObject);
+                Assert.That(ghost.StandeePanel, Is.Not.Null);
+                Assert.That(Quaternion.Angle(ghost.StandeePanel.rotation, panelPose), Is.LessThan(0.01f));
+                Assert.That(ghost.GetComponentsInChildren<Collider>(), Is.Empty);
+                Assert.That(ghost.GetComponentsInChildren<PrimitiveHeroView>(), Is.Empty);
+                Assert.That(ghost.GetComponentsInChildren<StandardMinionView>(), Is.Empty);
+                Assert.That((minion ? creep.gameObject : hero.gameObject).activeSelf, Is.False);
+                var scale = ghost.transform.localScale;
+                board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds * 0.5f);
+                Assert.That(Quaternion.Angle(ghost.StandeePanel.rotation, panelPose), Is.GreaterThan(35f));
+                Assert.That(ghost.transform.localScale, Is.EqualTo(scale), "The readable fall precedes the shrink.");
+                board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds);
+                Assert.That(ghost.gameObject.activeSelf, Is.False);
+                board.Render(drawn);
+                camera.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                if (minion) creep.Standee.Refresh(camera); else hero.Standee.Refresh(camera);
+                board.Render(BoardModel(3, new HeroOccupancy[0], new MinionOccupancy[0]));
+                var reused = minion ? board.MinionDefeatGhostFor(creep) : board.HeroDefeatGhostFor(hero);
+                Assert.That(reused, Is.SameAs(ghost));
+                Assert.That(reused.StandeePanel, Is.Null, "Pooled flat echoes must not retain an earlier figure.");
+                if (minion) Assert.That(reused.GetComponent<SpriteRenderer>().enabled, Is.True);
+            }
+            finally
+            {
+                DestroyAll(objects);
+                if (priorCamera != null) priorCamera.enabled = true;
+            }
+        }
+
         [Test]
         public void HeroDefeat_SpawnsANonPooledGhost_WhileTheRealHeroDeactivatesSynchronously()
         {

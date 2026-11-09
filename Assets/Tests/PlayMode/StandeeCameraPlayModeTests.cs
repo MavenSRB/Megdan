@@ -3,8 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
@@ -18,6 +22,89 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class StandeeCameraPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator CaptureRealStandeeAttackOutcomes()
+        {
+            var roster = RegisteredHeroRoster.ForThisBuild;
+            var red = new[] { "brogan", "rowenna", "tali" }.Select(id => roster.Single(h => h.ContentId.Value == id)).ToArray();
+            var blue = new[] { "misa", "tigerclaw", "gydion" }.Select(id => roster.Single(h => h.ContentId.Value == id)).ToArray();
+            var attackerId = new HeroId(red[0].HeroIdValue);
+            var defenderId = new HeroId(blue[0].HeroIdValue);
+            var attackAt = new HexCoordinate(-3, 1);
+            var defendAt = new HexCoordinate(-2, 1);
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(red, blue);
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            var initial = BroganUiJourneyPlayModeTests.Root().Runtime;
+            var removed = initial.BoardView.Model.Minions.Select(m => m.MinionId).ToArray();
+            foreach (var outcome in new[] { "bumped", "defeated" })
+            {
+                MatchSceneCompositionRoot.NextComposedSeat = null;
+                MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
+                MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(red, blue);
+                MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                    heroes: new[] { new SandboxHeroStaging(attackerId, attackAt), new SandboxHeroStaging(defenderId, defendAt) },
+                    removedMinions: removed);
+                yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+                UiPlayer.SetPlayerViewport(1280, 720, "W-189 real resolved attack: " + outcome);
+                yield return null;
+                var runtime = BroganUiJourneyPlayModeTests.Root().Runtime;
+                var attackView = runtime.BoardView.HeroViews.Single(h => h.Occupancy.HeroId.Equals(attackerId));
+                Assert.That(attackView.Standee != null && attackView.Standee.HasArtwork, Is.True,
+                    "Configured attack artwork: " + attackView.HeroContentId);
+                foreach (var driver in Object.FindObjectsByType<KineticCueDriver>(FindObjectsSortMode.None)) driver.enabled = false;
+                foreach (var driver in Object.FindObjectsByType<AttackSpotlightDriver>(FindObjectsSortMode.None)) driver.enabled = false;
+                foreach (var driver in Object.FindObjectsByType<BoardDefeatFadeDriver>(FindObjectsSortMode.None)) driver.enabled = false;
+                BroganEngagedUiJourneyPlayModeTests.CommitSoTheNamedSeatActs(runtime, attackerId,
+                    GuardsDigital.Core.Cards.Verified.BroganCardContent.Onslaught);
+                Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(attackerId));
+                for (var drain = 0; drain < 600 && (runtime.KineticView.Conductor.PendingSceneCount > 0 ||
+                    runtime.KineticView.Conductor.ActiveScene != null); drain++)
+                    runtime.KineticView.Tick(1f / 60f);
+                Assert.That(runtime.SubmitAction(BroganEngagedUiJourneyPlayModeTests.PrimaryActionOf(runtime)), Is.True);
+                Assert.That(runtime.SubmitProjectedCommand(GuardsDigital.Core.Replay.DirectorCommand.ChooseAttackTarget(defenderId)), Is.True);
+                Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
+                var defender = runtime.BoardView.HeroViews.Single(h => h.Occupancy.HeroId.Equals(defenderId));
+                var startPosition = defender.transform.position;
+                if (outcome == "bumped")
+                {
+                    var card = runtime.Cards.Single(c => c.OwnerId.Equals(defenderId) && c.DefinitionReference.DefinitionId.Equals(
+                        GuardsDigital.Core.Cards.Verified.MisaCardContent.ChallengeAccepted));
+                    Assert.That(runtime.SubmitDefenseCard(card.Id), Is.True);
+                }
+                else Assert.That(runtime.DeclineDefense(), Is.True);
+                var resolved = runtime.ReadModel.MatchLog.Last(e => e.Kind == GuardsDigital.Core.Diagnostics.MatchLogEntryKind.Attack);
+                Assert.That(resolved.Outcome, Is.EqualTo(outcome == "defeated" ?
+                    GuardsDigital.Core.Diagnostics.MatchLogOutcome.AttackSuccessful : GuardsDigital.Core.Diagnostics.MatchLogOutcome.AttackSuccessfullyDefended));
+                Assert.That(runtime.Heroes.Any(h => h.HeroId.Equals(defenderId)), Is.EqualTo(outcome != "defeated"));
+                var directory = Path.GetFullPath("tmp/w189-real-" + outcome + "-frames");
+                Directory.CreateDirectory(directory);
+                bool sawLean = false, sawBump = false, sawFall = false;
+                for (var frame = 0; frame < 180; frame++)
+                {
+                    const float delta = 1f / 60f; // half-speed export, same production clocks and curves
+                    runtime.SpotlightPresenter.Tick(delta);
+                    runtime.KineticView.Tick(delta);
+                    runtime.SpotlightView.ApplyFrame(delta);
+                    runtime.BoardView.AdvanceDefeatFades(delta);
+                    var actor = runtime.BoardView.HeroViews.Single(h => h.Occupancy.HeroId.Equals(attackerId));
+                    actor.Standee.Refresh(Camera.main); defender.Standee.Refresh(Camera.main);
+                    sawLean |= actor.Standee.IsStanding && Vector3.Dot(actor.Standee.PanelRenderer.transform.up, Vector3.up) < 0.995f;
+                    sawBump |= Vector3.Distance(defender.transform.position, startPosition) > 0.01f;
+                    var ghost = runtime.BoardView.HeroDefeatGhostFor(defender);
+                    sawFall |= ghost != null && ghost.StandeePanel != null && ghost.Progress01 > 0.2f;
+                    yield return null;
+                    CaptureRuntimeCameraFrame(Camera.main, directory, frame);
+                }
+                Assert.That(sawLean, Is.True, "The resolved attack must visibly lean in its production spotlight.");
+                if (outcome == "bumped") Assert.That(sawBump, Is.True);
+                if (outcome == "planted") Assert.That(sawBump, Is.False);
+                if (outcome == "defeated") Assert.That(sawFall, Is.True);
+                Assert.That(Directory.GetFiles(directory, "frame-*.jpg"), Has.Length.EqualTo(180));
+            }
+        }
+
         [UnityTest]
         public IEnumerator CapturePhoneFriendlyMinionStandeeOrbitFrames()
         {
@@ -93,6 +180,28 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(minions.All(value => !value.Standee.IsStanding), Is.True,
                 "The final top-down shot shows the old token icons.");
             Assert.That(Directory.GetFiles(frameDirectory, "frame-*.jpg"), Has.Length.EqualTo(frame));
+        }
+
+        private static void CaptureRuntimeCameraFrame(Camera camera, string directory, int frame)
+        {
+            var target = new RenderTexture(1280, 720, 24);
+            var previousTarget = camera.targetTexture;
+            var previousActive = RenderTexture.active;
+            var capture = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            try
+            {
+                camera.targetTexture = target;
+                camera.Render();
+                RenderTexture.active = target;
+                capture.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+                capture.Apply();
+                File.WriteAllBytes(Path.Combine(directory, $"frame-{frame:0000}.jpg"), capture.EncodeToJPG(88));
+            }
+            finally
+            {
+                camera.targetTexture = previousTarget; RenderTexture.active = previousActive;
+                target.Release(); Object.DestroyImmediate(target); Object.DestroyImmediate(capture);
+            }
         }
 
         private static IEnumerator CaptureFrame(string directory, int frame)

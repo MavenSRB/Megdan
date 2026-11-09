@@ -51,6 +51,38 @@ namespace GuardsDigital.Presentation.Board
         private Vector3 baseScale = Vector3.one;
         private float elapsed;
         private float duration = DefaultFadeSeconds;
+        private Transform standeePanel;
+        private Quaternion panelRotation;
+        private bool hasStandee;
+
+        public Transform StandeePanel => standeePanel != null && standeePanel.gameObject.activeSelf ? standeePanel : null;
+
+        /// <summary>Copy only visible geometry. The echo has no identity, scripts or picking surfaces.</summary>
+        public void ConfigureStandee(Renderer source)
+        {
+            if (source == null) return;
+            var filter = source.GetComponent<MeshFilter>();
+            if (filter == null || filter.sharedMesh == null) return;
+            if (standeePanel == null)
+            {
+                standeePanel = new GameObject("Falling illustrated panel", typeof(MeshFilter), typeof(MeshRenderer)).transform;
+                standeePanel.SetParent(transform, false);
+            }
+            hasStandee = true;
+            standeePanel.gameObject.SetActive(source.gameObject.activeSelf);
+            standeePanel.position = source.transform.position;
+            standeePanel.rotation = source.transform.rotation;
+            standeePanel.localScale = source.transform.localScale;
+            panelRotation = standeePanel.localRotation;
+            standeePanel.GetComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
+            var renderer = standeePanel.GetComponent<MeshRenderer>();
+            renderer.sharedMaterials = source.sharedMaterials;
+            renderer.shadowCastingMode = source.shadowCastingMode;
+            renderer.receiveShadows = source.receiveShadows;
+            // Keep the geometry even if the source was a top-down token at removal. The attack
+            // spotlight can turn to an angled view after the authoritative removal has completed.
+            RefreshRepresentation();
+        }
 
         /// <summary>Whether this ghost is currently fading. False for a freshly created or a released
         /// (pooled, inactive) instance.</summary>
@@ -120,6 +152,10 @@ namespace GuardsDigital.Presentation.Board
 
         private void ApplyTransform(Transform source)
         {
+            if (standeePanel != null) standeePanel.gameObject.SetActive(false);
+            if (spriteRenderer != null) spriteRenderer.enabled = true;
+            if (meshRenderer != null) meshRenderer.enabled = true;
+            hasStandee = false;
             transform.SetPositionAndRotation(source.position, source.rotation);
             baseScale = source.localScale;
             transform.localScale = baseScale;
@@ -172,9 +208,37 @@ namespace GuardsDigital.Presentation.Board
             gameObject.SetActive(false);
         }
 
+        private void RefreshRepresentation()
+        {
+            var standing = hasStandee && standeePanel != null && standeePanel.gameObject.activeSelf;
+            var camera = Camera.main;
+            if (hasStandee && camera != null)
+            {
+                var elevation = Mathf.Asin(Mathf.Clamp(-camera.transform.forward.y, -1f, 1f)) * Mathf.Rad2Deg;
+                standing = elevation < (standing ? 70f : 69f);
+            }
+            if (standeePanel != null) standeePanel.gameObject.SetActive(standing);
+            if (spriteRenderer != null) spriteRenderer.enabled = !standing;
+            if (meshRenderer != null) meshRenderer.enabled = !standing;
+        }
+
         private void Apply(float t)
         {
-            transform.localScale = Vector3.Lerp(baseScale, baseScale * ShrinkToScale, t);
+            RefreshRepresentation();
+            var standing = StandeePanel != null;
+            var shrink = standing ? Mathf.Clamp01((t - 0.55f) / 0.45f) : t;
+            transform.localScale = Vector3.Lerp(baseScale, baseScale * ShrinkToScale, shrink);
+            if (standing)
+            {
+                var camera = Camera.main;
+                if (camera != null)
+                {
+                    var facing = Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up);
+                    if (facing.sqrMagnitude > 0.0001f)
+                        panelRotation = Quaternion.Inverse(transform.rotation) * Quaternion.LookRotation(facing, Vector3.up);
+                }
+                standeePanel.localRotation = panelRotation * Quaternion.Euler(85f * Mathf.SmoothStep(0f, 1f, t), 0f, 0f);
+            }
             if (spriteRenderer != null)
             {
                 var opacity = 1f - t;

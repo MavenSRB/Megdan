@@ -78,20 +78,28 @@ namespace GuardsDigital.Presentation.Match
             float aspect,
             float pieceRadius,
             float restingOrthographicSize,
-            float tiltDegrees = AttackSpotlightTiming.TiltDegrees)
+            float tiltDegrees = AttackSpotlightTiming.TiltDegrees,
+            bool illustratedStandees = false)
         {
             var right = screenRight.sqrMagnitude > 0f ? screenRight.normalized : Vector3.right;
             var up = screenUp.sqrMagnitude > 0f ? screenUp.normalized : Vector3.forward;
+            if (illustratedStandees)
+            {
+                right = Vector3.ProjectOnPlane(right, Vector3.up).normalized;
+                up = Vector3.Cross(right, Vector3.up).normalized;
+                if (up.sqrMagnitude < 0.01f) { right = Vector3.right; up = Vector3.forward; }
+            }
             var safeAspect = aspect > 0.01f ? aspect : 16f / 9f;
             var radius = pieceRadius > 0f ? pieceRadius : 1f;
 
             var focus = (attackerPosition + defenderPosition) * 0.5f;
+            if (illustratedStandees) focus += Vector3.up * 0.75f;
             var separation = defenderPosition - attackerPosition;
 
             // The tilt is a function of how far apart the pair stands, not a constant, and the
             // caller's own value is the CLOSE-RANGE tilt this tapers down from. See
             // AttackSpotlightTiming.TiltTaperEndSeparation for why a wide shot flattens.
-            var tilt = TiltForSeparation(separation.magnitude, tiltDegrees);
+            var tilt = illustratedStandees ? 35f : TiltForSeparation(separation.magnitude, tiltDegrees);
 
             // The span the two pieces need in each of the camera's own axes: the distance between
             // their centres projected onto that axis, plus a whole piece at each end.

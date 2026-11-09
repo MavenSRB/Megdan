@@ -255,6 +255,17 @@ namespace GuardsDigital.Presentation.Match
             return KineticSubject.None;
         }
 
+        /// <summary>The live strike aimed at this subject; defense-only flashes have no strike.</summary>
+        public KineticCue IncomingLungeFor(KineticSubject subject)
+        {
+            for (var index = 0; index < running.Count; index++)
+            {
+                var cue = running[index].Cue;
+                if (cue.Kind == KineticCueKind.Lunge && cue.Target.Equals(subject)) return cue;
+            }
+            return null;
+        }
+
         public GuardsDigital.Core.Board.HexCoordinate? LungeTargetSpaceFor(KineticSubject subject)
         {
             for (var index = 0; index < running.Count; index++)

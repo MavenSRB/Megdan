@@ -31,6 +31,8 @@ namespace GuardsDigital.Presentation.Match
     {
         /// <summary>The furthest a lunge displaces a piece, in board units. About half a hex.</summary>
         public const float MaxLungeWorldDistance = 0.60f;
+        public const float StandeeLungeWorldDistance = 0.30f;
+        public const float StandeeHitBumpWorldDistance = 0.12f;
 
         /// <summary>How much a struck piece swells at the peak of its flash.</summary>
         public const float FlashScalePunch = 0.14f;
@@ -191,6 +193,9 @@ namespace GuardsDigital.Presentation.Match
 
             var subject = KineticSubject.ForHero(hero.Occupancy.HeroId);
             var motion = WithoutStaleFlash(subject, hero.Coordinate, playback.MotionFor(subject));
+            var standing = hero.Standee != null && hero.Standee.IsStanding;
+            var reaction = StandeeReaction(subject, motion, AuthoritativeHeroPosition(hero), hero.OuterRadius);
+            hero.Standee?.SetAttackLean(WorldDirection(hero.transform, reaction), cameraSource());
             if (motion.IsStill)
             {
                 Restore(hero.transform);
@@ -200,8 +205,10 @@ namespace GuardsDigital.Presentation.Match
             Remember(hero.transform, hero.gameObject, null);
             var origin = AuthoritativeHeroPosition(hero);
             hero.transform.localPosition =
-                origin + Displacement(subject, motion, origin, hero.OuterRadius, hero.Coordinate);
-            ApplyScaleAndVisibility(hero.transform, hero.gameObject, motion);
+                origin + Displacement(subject, motion, origin, hero.OuterRadius, hero.Coordinate,
+                    standing ? StandeeLungeWorldDistance : MaxLungeWorldDistance) +
+                (standing ? HitBump(subject, motion, origin, hero.OuterRadius) : Vector3.zero);
+            ApplyScaleAndVisibility(hero.transform, hero.gameObject, motion, standing);
             ApplyHeroTint(hero, motion);
             return true;
         }
@@ -216,6 +223,9 @@ namespace GuardsDigital.Presentation.Match
             var subject = KineticSubject.ForMinion(minion.Occupancy.MinionId);
             var motion = WithoutStaleFlash(
                 subject, minion.Occupancy.Coordinate, playback.MotionFor(subject));
+            var standing = minion.Standee != null && minion.Standee.IsStanding;
+            var reaction = StandeeReaction(subject, motion, AuthoritativeMinionPosition(minion), minion.OuterRadius);
+            minion.Standee?.SetAttackLean(WorldDirection(minion.transform, reaction), cameraSource());
             if (motion.IsStill)
             {
                 Restore(minion.transform);
@@ -227,8 +237,10 @@ namespace GuardsDigital.Presentation.Match
             var origin = AuthoritativeMinionPosition(minion);
             minion.transform.localPosition =
                 origin + Displacement(
-                    subject, motion, origin, minion.OuterRadius, minion.Occupancy.Coordinate);
-            ApplyScaleAndVisibility(minion.transform, minion.gameObject, motion);
+                    subject, motion, origin, minion.OuterRadius, minion.Occupancy.Coordinate,
+                    standing ? StandeeLungeWorldDistance : MaxLungeWorldDistance) +
+                (standing ? HitBump(subject, motion, origin, minion.OuterRadius) : Vector3.zero);
+            ApplyScaleAndVisibility(minion.transform, minion.gameObject, motion, standing);
             if (renderer != null)
             {
                 var baseColor = BaseColorOf(minion.transform, renderer);
@@ -246,7 +258,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private Vector3 Displacement(
             KineticSubject subject, KineticPieceMotion motion, Vector3 authoritative, float radius,
-            HexCoordinate current)
+            HexCoordinate current, float maxLunge)
         {
             var displacement = Vector3.zero;
 
@@ -279,6 +291,9 @@ namespace GuardsDigital.Presentation.Match
 
             if (motion.LungeLean > 0f)
             {
+                var recordedOrigin = playback.SubjectSpaceFor(subject, KineticCueKind.Lunge);
+                var strikeOrigin = recordedOrigin.HasValue ? HexWorldLayout.ToWorld(recordedOrigin.Value, radius) : authoritative;
+                strikeOrigin.y = authoritative.y;
                 var target = playback.LungeTargetFor(subject);
                 var recordedTarget = playback.LungeTargetSpaceFor(subject);
                 var struck = recordedTarget.HasValue
@@ -286,18 +301,49 @@ namespace GuardsDigital.Presentation.Match
                     : Vector3.zero;
                 if (recordedTarget.HasValue || TryWorldPositionOf(target, out struck))
                 {
-                    var toward = struck - authoritative;
+                    var toward = Vector3.ProjectOnPlane(struck - strikeOrigin, Vector3.up);
                     var distance = toward.magnitude;
                     if (distance > 0.0001f)
                     {
                         var reach = Mathf.Min(
-                            distance * KineticPlayback.LungeReachFraction, MaxLungeWorldDistance);
-                        displacement += (toward / distance) * reach * motion.LungeLean;
+                            distance * KineticPlayback.LungeReachFraction, maxLunge);
+                        displacement += strikeOrigin - authoritative + (toward / distance) * reach * motion.LungeLean;
                     }
                 }
             }
 
             return displacement;
+        }
+
+        private static Vector3 WorldDirection(Transform piece, Vector3 direction) =>
+            piece.parent == null ? direction : piece.parent.TransformDirection(direction);
+
+        private Vector3 StandeeReaction(KineticSubject subject, KineticPieceMotion motion, Vector3 origin, float radius)
+        {
+            var recordedOrigin = playback.SubjectSpaceFor(subject, KineticCueKind.Lunge);
+            if (recordedOrigin.HasValue) origin = HexWorldLayout.ToWorld(recordedOrigin.Value, radius);
+            var target = playback.LungeTargetSpaceFor(subject);
+            var struck = Vector3.zero;
+            if (motion.LungeLean > 0f &&
+                (target.HasValue || TryWorldPositionOf(playback.LungeTargetFor(subject), out struck)))
+            {
+                if (target.HasValue) struck = HexWorldLayout.ToWorld(target.Value, radius);
+                return Vector3.ProjectOnPlane(struck - origin, Vector3.up).normalized * motion.LungeLean;
+            }
+            return HitBump(subject, motion, origin, radius) / StandeeHitBumpWorldDistance * 0.5f;
+        }
+
+        private Vector3 HitBump(KineticSubject subject, KineticPieceMotion motion, Vector3 origin, float radius)
+        {
+            if (motion.FlashStrength <= 0f) return Vector3.zero;
+            var incoming = playback.IncomingLungeFor(subject);
+            if (incoming == null) return Vector3.zero;
+            var attacker = Vector3.zero;
+            if (incoming.SubjectSpace.HasValue)
+                attacker = HexWorldLayout.ToWorld(incoming.SubjectSpace.Value, radius);
+            else if (!TryWorldPositionOf(incoming.Subject, out attacker)) return Vector3.zero;
+            return Vector3.ProjectOnPlane(origin - attacker, Vector3.up).normalized *
+                (StandeeHitBumpWorldDistance * motion.FlashStrength);
         }
 
         private KineticPieceMotion WithoutStaleFlash(
@@ -396,10 +442,10 @@ namespace GuardsDigital.Presentation.Match
         }
 
         private void ApplyScaleAndVisibility(
-            Transform transform, GameObject host, KineticPieceMotion motion)
+            Transform transform, GameObject host, KineticPieceMotion motion, bool standing)
         {
             var baseScale = BaseScaleOf(transform);
-            var swell = 1f + (FlashScalePunch * motion.FlashStrength);
+            var swell = standing ? 1f : 1f + (FlashScalePunch * motion.FlashStrength);
             transform.localScale = baseScale * (motion.Scale * swell);
 
             // THE DEFEAT HOLD IS DELIBERATELY NOT IMPLEMENTED HERE, and the reason is the discipline
@@ -536,6 +582,13 @@ namespace GuardsDigital.Presentation.Match
             }
 
             restore.Transform.localScale = restore.Scale;
+            var hero = restore.Transform.GetComponent<PrimitiveHeroView>();
+            var minion = restore.Transform.GetComponent<StandardMinionView>();
+            if (hero != null) restore.Transform.localPosition = AuthoritativeHeroPosition(hero);
+            else if (minion != null && minion.Occupancy != null)
+                restore.Transform.localPosition = AuthoritativeMinionPosition(minion);
+            restore.Transform.GetComponent<IllustratedStandeeView>()?.SetAttackLean(Vector3.zero, Camera.main);
+            restore.Transform.GetComponent<IllustratedMinionStandeeView>()?.SetAttackLean(Vector3.zero, Camera.main);
             if (restore.HadColor && restore.Renderer != null)
             {
                 restore.Renderer.color = restore.Color;

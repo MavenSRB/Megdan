@@ -209,6 +209,22 @@ namespace GuardsDigital.Tests.EditMode
                 "The piece that was hit is the piece that flashes.");
         }
 
+        [TestCase(MatchLogOutcome.DefenseCardDiscarded, true)]
+        [TestCase(MatchLogOutcome.DefenseDeclined, false)]
+        public void ADefendedStrikeBumpsOnlyWhenItsOwnDefenderSpentACard(MatchLogOutcome defense, bool bump)
+        {
+            var cues = CuesFor(
+                Row(8, MatchLogEntryKind.Defense, subjectHero: Defender, targetHero: Attacker, outcome: defense),
+                Row(9, MatchLogEntryKind.Attack, subjectHero: Attacker, targetHero: Defender,
+                    outcome: MatchLogOutcome.AttackSuccessfullyDefended));
+            Assert.That(cues.Count(cue => cue.Sequence == 9 && cue.Kind == KineticCueKind.Flash), Is.EqualTo(bump ? 1 : 0));
+            var unrelated = CuesFor(
+                Row(8, MatchLogEntryKind.Defense, subjectHero: Attacker, targetHero: Defender, outcome: defense),
+                Row(9, MatchLogEntryKind.Attack, subjectHero: Attacker, targetHero: Defender,
+                    outcome: MatchLogOutcome.AttackSuccessfullyDefended));
+            Assert.That(unrelated.Any(cue => cue.Sequence == 9 && cue.Kind == KineticCueKind.Flash), Is.False);
+        }
+
         [Test]
         public void AnAttackOnAMinion_LungesAtTheMinion()
         {

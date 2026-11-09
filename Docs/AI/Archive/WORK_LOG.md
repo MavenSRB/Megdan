@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-189 Standee attacks and real outcome videos
+
+User requested adapting attacks to the supplied standees with a lean, small lunge and outcome reactions, then MP4s of real implementation rather than mockups. Illustrated attackers now lean and lunge with level bases; successful card defenses recoil, other defended outcomes stay planted, and removed figures fall on decorative echoes. The attack close-up keeps illustrations upright; historical strike coordinates and interruption restoration are retained. Two private half-speed MP4s record actual resolved defense and defeat commands in a seeded local match. Acceptance: focused motion/standee/ghost/spotlight Edit Mode and real-HUD Play Mode regressions, rendered frame inspection, exact MP4 decoding/metadata checks, documentation validation and local commit. No rules, wire/schema, package or publication changes.
+
+Historical evidence: immutable `work/W-189`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-189 | Standee attack lean/lunge, outcome reactions and two real-game MP4s | `work/W-189` |
+
 ### [x] W-188 Phone-friendly minion standee orbit video
 
 User requested an in-chat video while on a phone. A deterministic non-batch live-game capture starts with whole-board context, moves through Red and Blue Heavy/Melee/Ranged close passes, widens to an angled orbit, and finishes top-down on the unchanged old token icons. The private MP4 is 11.8 seconds, 1280x720 H.264 at 15 fps and 8.1 MB. Acceptance: 177-frame capture passed, representative frames and the top-down transition were inspected, the MP4 decoded with the expected frame count/dimensions, documentation validation and local commit. No runtime behavior, rules, package or publication.

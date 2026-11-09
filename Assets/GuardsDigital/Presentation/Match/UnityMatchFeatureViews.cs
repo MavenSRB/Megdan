@@ -1679,6 +1679,7 @@ namespace GuardsDigital.Presentation.Match
                 meshRenderer.sharedMaterials,
                 meshRenderer.shadowCastingMode,
                 meshRenderer.receiveShadows);
+            ghost.ConfigureStandee(hero.Standee?.PanelRenderer);
             ghost.Begin(DefeatFadeGhostView.DefaultFadeSeconds);
             heroDefeatGhosts[hero] = ghost;
         }
@@ -1711,6 +1712,7 @@ namespace GuardsDigital.Presentation.Match
             var ghost = Pop(freeMinionDefeatGhosts) ?? DefeatFadeGhostView.CreateMinionGhost();
             ghost.ConfigureMinion(
                 minion.transform, spriteRenderer.sprite, spriteRenderer.color, spriteRenderer.sortingOrder);
+            ghost.ConfigureStandee(minion.Standee?.PanelRenderer);
             ghost.Begin(DefeatFadeGhostView.DefaultFadeSeconds);
             minionDefeatGhosts[minion] = ghost;
         }
