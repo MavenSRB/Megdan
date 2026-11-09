@@ -54,6 +54,9 @@ namespace GuardsDigital.Presentation.Board
         private Transform standeePanel;
         private Quaternion panelRotation;
         private bool hasStandee;
+        private Material[] flatBaseMaterials;
+        private Material[] standingBaseMaterials;
+        private bool baseIsStanding;
 
         public Transform StandeePanel => standeePanel != null && standeePanel.gameObject.activeSelf ? standeePanel : null;
 
@@ -130,6 +133,10 @@ namespace GuardsDigital.Presentation.Board
             if (source == null) throw new System.ArgumentNullException(nameof(source));
             GetComponent<MeshFilter>().sharedMesh = mesh;
             meshRenderer.sharedMaterials = materials;
+            flatBaseMaterials = materials;
+            standingBaseMaterials = new Material[materials.Length];
+            for (var index = 0; index < materials.Length; index++) standingBaseMaterials[index] = materials[0];
+            baseIsStanding = false;
             meshRenderer.shadowCastingMode = shadowCastingMode;
             meshRenderer.receiveShadows = receiveShadows;
             ApplyTransform(source);
@@ -219,14 +226,22 @@ namespace GuardsDigital.Presentation.Board
             }
             if (standeePanel != null) standeePanel.gameObject.SetActive(standing);
             if (spriteRenderer != null) spriteRenderer.enabled = !standing;
-            if (meshRenderer != null) meshRenderer.enabled = !standing;
+            if (meshRenderer != null)
+            {
+                meshRenderer.enabled = true;
+                if (baseIsStanding != standing)
+                {
+                    meshRenderer.sharedMaterials = standing ? standingBaseMaterials : flatBaseMaterials;
+                    baseIsStanding = standing;
+                }
+            }
         }
 
         private void Apply(float t)
         {
             RefreshRepresentation();
             var standing = StandeePanel != null;
-            var shrink = standing ? Mathf.Clamp01((t - 0.55f) / 0.45f) : t;
+            var shrink = standing ? Mathf.Clamp01((t - 0.75f) / 0.25f) : t;
             transform.localScale = Vector3.Lerp(baseScale, baseScale * ShrinkToScale, shrink);
             if (standing)
             {
@@ -237,7 +252,11 @@ namespace GuardsDigital.Presentation.Board
                     if (facing.sqrMagnitude > 0.0001f)
                         panelRotation = Quaternion.Inverse(transform.rotation) * Quaternion.LookRotation(facing, Vector3.up);
                 }
-                standeePanel.localRotation = panelRotation * Quaternion.Euler(85f * Mathf.SmoothStep(0f, 1f, t), 0f, 0f);
+                // Tip the unchanged rigid panel toward the viewer, feet fixed at the base. Complete
+                // the fall at full size before the brief removal shrink; an away-facing fall made
+                // the figure travel up-screen and read as levitation.
+                var fall = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.70f));
+                standeePanel.localRotation = panelRotation * Quaternion.Euler(-85f * fall, 0f, 0f);
             }
             if (spriteRenderer != null)
             {

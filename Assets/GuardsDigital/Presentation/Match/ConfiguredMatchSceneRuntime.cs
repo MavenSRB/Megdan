@@ -308,6 +308,20 @@ namespace GuardsDigital.Presentation.Match
             KineticPresenter.DeferWhile(() => SpotlightPresenter.DefersCues);
             AttackSpotlightScene fadingAttack = null;
             var strikeStarted = false;
+            KineticView.WaitingStrikeOrigin = (subject, current) =>
+            {
+                var scene = SpotlightPresenter.Stage.Current;
+                if (scene == null || !scene.Attacker.Equals(subject) || !scene.AttackerSpace.HasValue ||
+                    (ReferenceEquals(scene, fadingAttack) && strikeStarted)) return null;
+                var origin = scene.AttackerSpace.Value;
+                if (current.Equals(origin)) return origin;
+                // Direct after-attack effects can already have put the actor in the vacated target
+                // space without an ordinary Movement log row. Only stage the unambiguous single
+                // body; never pull another same-hero body into the acting body's origin.
+                if (!scene.WasDefended && scene.DefenderSpace.HasValue && scene.DefenderSpace.Value.Equals(current) &&
+                    client.Projection.Heroes.Count(hero => hero.HeroId.Equals(subject.HeroId)) == 1) return origin;
+                return null;
+            };
             BoardView.DeferDefeatFades = () =>
             {
                 var scene = SpotlightPresenter.Stage.Current;

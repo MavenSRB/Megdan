@@ -99,7 +99,7 @@ namespace GuardsDigital.Presentation.Match
             // The tilt is a function of how far apart the pair stands, not a constant, and the
             // caller's own value is the CLOSE-RANGE tilt this tapers down from. See
             // AttackSpotlightTiming.TiltTaperEndSeparation for why a wide shot flattens.
-            var tilt = illustratedStandees ? 35f : TiltForSeparation(separation.magnitude, tiltDegrees);
+            var tilt = illustratedStandees ? 45f : TiltForSeparation(separation.magnitude, tiltDegrees);
 
             // The span the two pieces need in each of the camera's own axes: the distance between
             // their centres projected onto that axis, plus a whole piece at each end.

@@ -25,7 +25,7 @@ namespace GuardsDigital.Tests.EditMode
                 Vector3.right, Vector3.forward, 16f / 9f, 1f, 20f, illustratedStandees: true);
             var elevation = Mathf.Asin(-frame.ViewDirection.y) * Mathf.Rad2Deg;
             Assert.That(elevation, Is.LessThan(IllustratedStandeeView.StandeeAngle));
-            Assert.That(elevation, Is.EqualTo(55f).Within(0.01f));
+            Assert.That(elevation, Is.EqualTo(45f).Within(0.01f));
             Assert.That(frame.Focus.y, Is.EqualTo(0.75f));
         }
         [TestCase(true, true, 0f)]

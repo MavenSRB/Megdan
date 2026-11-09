@@ -25,6 +25,23 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly HeroId Hero = new HeroId("hero-a");
         private static readonly HeroId Other = new HeroId("hero-b");
 
+        [Test]
+        public void QueuedTravelKeepsOnlyItsCurrentSubjectAtTheRouteOrigin_AndCancelReleasesIt()
+        {
+            var conductor = new KineticConductor();
+            var subject = KineticSubject.ForHero(Hero);
+            var from = new HexCoordinate(0, 0);
+            var to = new HexCoordinate(1, 0);
+            conductor.Enqueue(new[] { new KineticScene(1, KineticSceneKind.Board,
+                new[] { new KineticCue(1, KineticCueKind.Slide, subject, route: new[] { from, to }) }) });
+            Assert.That(conductor.WaitingTravelOriginFor(subject, to), Is.EqualTo(from));
+            Assert.That(conductor.WaitingTravelOriginFor(subject, new HexCoordinate(2, 0)), Is.Null,
+                "A stale route must not displace a piece that has since moved elsewhere.");
+            Assert.That(conductor.WaitingTravelOriginFor(KineticSubject.ForHero(Other), to), Is.Null);
+            conductor.CancelAll();
+            Assert.That(conductor.WaitingTravelOriginFor(subject, to), Is.Null);
+        }
+
         private static KineticScene Scene(
             int order,
             KineticSceneKind kind = KineticSceneKind.Board,

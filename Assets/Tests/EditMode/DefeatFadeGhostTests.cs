@@ -34,9 +34,11 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class DefeatFadeGhostTests
     {
-        [TestCase(false)]
-        [TestCase(true)]
-        public void StandingRemovalCopiesTheFigure_FallsWithoutPicking_AndReusesAsAFlatGhost(bool minion)
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        [TestCase(true, true)]
+        public void StandingRemovalCopiesTheFigure_FallsWithoutPicking_AndReusesAsAFlatGhost(bool minion, bool initiallyTopDown)
         {
             var objects = new List<GameObject>();
             var cameraHost = new GameObject("standee camera", typeof(Camera));
@@ -76,19 +78,49 @@ namespace GuardsDigital.Tests.EditMode
                 board.Render(drawn);
                 Assert.That(panel, Is.Not.Null);
                 var panelPose = panel.transform.rotation;
+                bool held = initiallyTopDown;
+                board.DeferDefeatFades = () => held;
+                if (initiallyTopDown)
+                {
+                    camera.transform.rotation = Quaternion.Euler(90f, 35f, 0f);
+                    if (minion) creep.Standee.Refresh(camera); else hero.Standee.Refresh(camera);
+                }
                 board.Render(BoardModel(2, new HeroOccupancy[0], new MinionOccupancy[0]));
                 var ghost = minion ? board.MinionDefeatGhostFor(creep) : board.HeroDefeatGhostFor(hero);
                 objects.Add(ghost.gameObject);
+                if (initiallyTopDown)
+                {
+                    Assert.That(ghost.StandeePanel, Is.Null);
+                    camera.transform.rotation = Quaternion.Euler(40f, 35f, 0f);
+                    board.AdvanceDefeatFades(0.1f);
+                    Assert.That(ghost.Progress01, Is.Zero, "Camera-facing refresh must not start a held fall.");
+                    held = false;
+                }
                 Assert.That(ghost.StandeePanel, Is.Not.Null);
                 Assert.That(Quaternion.Angle(ghost.StandeePanel.rotation, panelPose), Is.LessThan(0.01f));
                 Assert.That(ghost.GetComponentsInChildren<Collider>(), Is.Empty);
                 Assert.That(ghost.GetComponentsInChildren<PrimitiveHeroView>(), Is.Empty);
                 Assert.That(ghost.GetComponentsInChildren<StandardMinionView>(), Is.Empty);
                 Assert.That((minion ? creep.gameObject : hero.gameObject).activeSelf, Is.False);
+                if (!minion)
+                {
+                    var baseRenderer = ghost.GetComponent<MeshRenderer>();
+                    Assert.That(baseRenderer.enabled, Is.True);
+                    Assert.That(baseRenderer.sharedMaterials.All(m => m == baseRenderer.sharedMaterials[0]), Is.True,
+                        "A standing removal echo keeps its solid team base, without a second portrait underneath.");
+                }
                 var scale = ghost.transform.localScale;
+                var feet = ghost.StandeePanel.position;
                 board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds * 0.5f);
                 Assert.That(Quaternion.Angle(ghost.StandeePanel.rotation, panelPose), Is.GreaterThan(35f));
+                Assert.That(Vector3.Dot(ghost.StandeePanel.up,
+                    Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up)), Is.LessThan(-0.2f),
+                    "The rigid figure falls toward the viewer instead of appearing to rise away.");
                 Assert.That(ghost.transform.localScale, Is.EqualTo(scale), "The readable fall precedes the shrink.");
+                Assert.That(Vector3.Distance(ghost.StandeePanel.position, feet), Is.LessThan(0.0001f));
+                board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds * 0.2f);
+                Assert.That(Vector3.Dot(ghost.StandeePanel.up, Vector3.up), Is.LessThan(0.15f));
+                Assert.That(ghost.transform.localScale, Is.EqualTo(scale), "The complete fall is still full size.");
                 board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds);
                 Assert.That(ghost.gameObject.activeSelf, Is.False);
                 board.Render(drawn);

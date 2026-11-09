@@ -303,6 +303,18 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>How many scenes are waiting behind the active one.</summary>
         public int PendingSceneCount => pending.Count;
 
+        /// <summary>Where a still piece waits for its already-queued, still-current travel to start.</summary>
+        public GuardsDigital.Core.Board.HexCoordinate? WaitingTravelOriginFor(
+            KineticSubject subject, GuardsDigital.Core.Board.HexCoordinate current)
+        {
+            foreach (var scene in pending)
+            foreach (var cue in scene.Cues)
+                if (cue.Kind == KineticCueKind.Slide && cue.Subject.Equals(subject) &&
+                    cue.Route.Count >= 2 && cue.Route[cue.Route.Count - 1].Equals(current))
+                    return cue.Route[0];
+            return null;
+        }
+
         /// <summary>
         /// Whether the active scene has finished its motion and is waiting for the viewer to continue.
         /// </summary>

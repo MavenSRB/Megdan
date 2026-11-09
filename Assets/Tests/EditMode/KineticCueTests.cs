@@ -74,6 +74,33 @@ namespace GuardsDigital.Tests.EditMode
             return stream.Observe(rows);
         }
 
+        [TestCase(false, false, 1)]
+        [TestCase(true, false, 0)]
+        [TestCase(false, true, 0)]
+        public void AResolvedAdjacentRelocationGetsOneVisualTravel_UnlessDefendedOrRespawned(
+            bool defended, bool respawned, int expected)
+        {
+            var projection = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState()).Projection;
+            var hero = projection.Heroes.First();
+            var origin = new HexCoordinate(hero.Coordinate.Q - 1, hero.Coordinate.R);
+            var rows = new List<MatchLogEntry>
+            {
+                Row(5, MatchLogEntryKind.Attack, subjectHero: hero.HeroId, targetHero: Defender,
+                    origin: origin, destination: hero.Coordinate, hasOrigin: true, hasDestination: true,
+                    outcome: defended ? MatchLogOutcome.AttackSuccessfullyDefended : MatchLogOutcome.AttackSuccessful)
+            };
+            if (respawned) rows.Add(Row(6, MatchLogEntryKind.HeroRespawned, subjectHero: hero.HeroId));
+            var stream = PrimedStream();
+            var scenes = stream.ObserveScenes(rows, projection);
+            Assert.That(scenes.Count(scene => scene.Label.StartsWith("after-strike-travel:")), Is.EqualTo(expected));
+            Assert.That(stream.ObserveScenes(rows, projection), Is.Empty, "A refresh never repeats the relocation.");
+            rows.Add(Row(7, MatchLogEntryKind.Move, subjectHero: hero.HeroId, origin: origin,
+                destination: hero.Coordinate, hasOrigin: true, hasDestination: true));
+            var withLoggedMovement = PrimedStream().ObserveScenes(rows, projection);
+            Assert.That(withLoggedMovement.Count(scene => scene.Cues.Any(cue => cue.Kind == KineticCueKind.Slide)), Is.EqualTo(1),
+                "An ordinary logged Move must not acquire a second inferred travel.");
+        }
+
         // ---- One case per event kind: the brief's own requirement.
 
         [Test]

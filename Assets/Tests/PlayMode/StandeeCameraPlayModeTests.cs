@@ -78,10 +78,10 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(resolved.Outcome, Is.EqualTo(outcome == "defeated" ?
                     GuardsDigital.Core.Diagnostics.MatchLogOutcome.AttackSuccessful : GuardsDigital.Core.Diagnostics.MatchLogOutcome.AttackSuccessfullyDefended));
                 Assert.That(runtime.Heroes.Any(h => h.HeroId.Equals(defenderId)), Is.EqualTo(outcome != "defeated"));
-                var directory = Path.GetFullPath("tmp/w189-real-" + outcome + "-frames");
+                var directory = Path.GetFullPath("tmp/w190-real-" + outcome + "-frames");
                 Directory.CreateDirectory(directory);
-                bool sawLean = false, sawBump = false, sawFall = false;
-                for (var frame = 0; frame < 180; frame++)
+                bool sawLean = false, sawBump = false, sawFall = false, sawTravel = false;
+                for (var frame = 0; frame < 240; frame++)
                 {
                     const float delta = 1f / 60f; // half-speed export, same production clocks and curves
                     runtime.SpotlightPresenter.Tick(delta);
@@ -94,14 +94,45 @@ namespace GuardsDigital.Tests.PlayMode
                     sawBump |= Vector3.Distance(defender.transform.position, startPosition) > 0.01f;
                     var ghost = runtime.BoardView.HeroDefeatGhostFor(defender);
                     sawFall |= ghost != null && ghost.StandeePanel != null && ghost.Progress01 > 0.2f;
+                    if (outcome == "defeated")
+                    {
+                        var actorMotion = runtime.KineticView.Playback.MotionFor(KineticSubject.ForHero(attackerId));
+                        sawTravel |= actorMotion.HasRouteTravel;
+                        if (actorMotion.HasRouteTravel)
+                            Assert.That(ghost == null || !ghost.IsFading, Is.True,
+                                "The card's resolved relocation is displayed after the fallen figure clears.");
+                        if (!sawLean && actorMotion.LungeLean <= 0f)
+                            Assert.That(Vector3.Distance(actor.transform.position,
+                                HexWorldLayout.ToWorld(attackAt, actor.OuterRadius) + Vector3.up * actor.VerticalOffset),
+                                Is.LessThan(0.001f), "The attacker waits at the strike origin before impact.");
+                        if (ghost != null && ghost.Progress01 <= 0f && actor.Standee.IsStanding)
+                            Assert.That(ghost.StandeePanel, Is.Not.Null,
+                                "A held defender follows the camera into standee view before it falls.");
+                        if (ghost != null && ghost.StandeePanel != null && ghost.Progress01 > 0.15f)
+                        {
+                            Assert.That(Vector3.Dot(ghost.StandeePanel.up,
+                                Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up)), Is.LessThan(0f),
+                                "The falling figure tips toward the viewer with its feet anchored.");
+                            Assert.That(Vector3.Distance(actor.transform.position, startPosition), Is.GreaterThan(0.7f),
+                                "After-attack movement waits until the falling defender has cleared.");
+                        }
+                    }
                     yield return null;
                     CaptureRuntimeCameraFrame(Camera.main, directory, frame);
                 }
                 Assert.That(sawLean, Is.True, "The resolved attack must visibly lean in its production spotlight.");
                 if (outcome == "bumped") Assert.That(sawBump, Is.True);
                 if (outcome == "planted") Assert.That(sawBump, Is.False);
-                if (outcome == "defeated") Assert.That(sawFall, Is.True);
-                Assert.That(Directory.GetFiles(directory, "frame-*.jpg"), Has.Length.EqualTo(180));
+                if (outcome == "defeated")
+                {
+                    Assert.That(sawFall, Is.True);
+                    Assert.That(sawTravel, Is.True);
+                    var actor = runtime.BoardView.HeroViews.Single(h => h.Occupancy.HeroId.Equals(attackerId));
+                    Assert.That(Vector3.Distance(actor.transform.position,
+                        HexWorldLayout.ToWorld(actor.Coordinate, actor.OuterRadius) + Vector3.up * actor.VerticalOffset),
+                        Is.LessThan(0.001f), "Playback finishes exactly at the already-resolved placement.");
+                }
+                Assert.That(Directory.GetFiles(directory, "frame-*.jpg"), Has.Length.EqualTo(240));
             }
         }
 

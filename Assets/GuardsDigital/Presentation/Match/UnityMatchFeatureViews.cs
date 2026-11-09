@@ -1777,7 +1777,9 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public void AdvanceDefeatFades(float deltaSeconds)
         {
-            if (DeferDefeatFades?.Invoke() == true) return;
+            // Pausing the removal clock must not freeze its token/standee representation while
+            // the attack camera is moving. Advance(0) refreshes geometry without starting the fall.
+            if (DeferDefeatFades?.Invoke() == true) deltaSeconds = 0f;
             AdvanceGhosts(heroDefeatGhosts, freeHeroDefeatGhosts, deltaSeconds);
             AdvanceGhosts(minionDefeatGhosts, freeMinionDefeatGhosts, deltaSeconds);
             ReleaseDeferredMinionMovesIfReady();

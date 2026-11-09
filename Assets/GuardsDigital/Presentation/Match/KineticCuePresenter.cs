@@ -520,6 +520,7 @@ namespace GuardsDigital.Presentation.Match
                 Append(scenes, entry, projection, DefendedWithCard(log, index));
             }
 
+            AppendVacatedSpaceTravel(scenes, log, projection, observedSequence, highest);
             observedSequence = highest;
 
             // Milestone 8.35z11. THE BURST NO LONGER TRUNCATES HERE, and that is the conductor's
@@ -666,6 +667,35 @@ namespace GuardsDigital.Presentation.Match
         /// contract; a kind with no kinetic meaning writes nothing, which is why the log's other
         /// twenty-odd kinds pass through here silently rather than needing a case each.
         /// </summary>
+        private static void AppendVacatedSpaceTravel(List<KineticScene> scenes, IReadOnlyList<MatchLogEntry> log,
+            IMatchReadModel projection, int previousSequence, int highest)
+        {
+            if (projection == null) return;
+            var seen = new HashSet<HeroId>();
+            for (var index = log.Count - 1; index >= 0; index--)
+            {
+                var attack = log[index];
+                if (attack == null || attack.Sequence <= previousSequence || attack.Kind != MatchLogEntryKind.Attack ||
+                    !seen.Add(attack.SubjectHeroId)) continue;
+                if (attack.Outcome != MatchLogOutcome.AttackSuccessful || !attack.HasOrigin || !attack.HasDestination ||
+                    HexDistanceQuery.Calculate(attack.Origin, attack.Destination) != 1) continue;
+                var bodies = projection.Heroes.Where(hero => hero.HeroId.Equals(attack.SubjectHeroId)).ToArray();
+                if (bodies.Length != 1 || !bodies[0].Coordinate.Equals(attack.Destination)) continue;
+                if (log.Any(entry => entry != null && entry.Sequence > attack.Sequence &&
+                    entry.SubjectHeroId.Equals(attack.SubjectHeroId) &&
+                    (entry.Kind == MatchLogEntryKind.HeroRemoved || entry.Kind == MatchLogEntryKind.HeroRespawned))) continue;
+                var subject = KineticSubject.ForHero(attack.SubjectHeroId);
+                if (scenes.Any(scene => scene.Cues.Any(cue => cue.Kind == KineticCueKind.Slide &&
+                    cue.Subject.Equals(subject)))) continue;
+                // This is the already-projected adjacent endpoint, not an invented action or path.
+                // Ordinary logged Movement owns its own route; direct after-attack effects need
+                // this visual catch-up after the strike and removal scenes have played.
+                scenes.Add(new KineticScene(highest + 1, KineticSceneKind.Board,
+                    new[] { new KineticCue(attack.Sequence, KineticCueKind.Slide, subject,
+                        route: new[] { attack.Origin, attack.Destination }) }, label: "after-strike-travel:" + attack.SubjectHeroId));
+            }
+        }
+
         private static bool DefendedWithCard(IReadOnlyList<MatchLogEntry> log, int attackIndex)
         {
             var attack = log[attackIndex];

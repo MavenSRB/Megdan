@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-190 Corrected defeat staging and lower attack camera
+
+User rejected W-189's defeat presentation and requested a lower camera. The attacker now waits at the recorded strike origin, the held defender follows the camera into standee representation, and its unchanged rigid figure tips toward the viewer at full size before shrinking. Hero echoes retain their solid team base. An already-resolved adjacent move into the vacated space is displayed after removal clears. Illustrated attack elevation is 45 degrees. Acceptance: failing-then-passing camera/fall/teleport regressions, focused motion/ghost/conductor/minion and real-HUD/body checks, actual resolved-command videos with temporal/geometry assertions, frame inspection, MP4 decoding, living-document validation and local commit. Replacement MP4s supersede the rejected clips, which remain preserved. No rules, package, snapshot/wire or publication changes.
+
+Historical evidence: immutable `work/W-190`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-190 | Corrected strike/fall/follow-through ordering and 45-degree attack camera | `work/W-190` |
+
 ### [x] W-189 Standee attacks and real outcome videos
 
 User requested adapting attacks to the supplied standees with a lean, small lunge and outcome reactions, then MP4s of real implementation rather than mockups. Illustrated attackers now lean and lunge with level bases; successful card defenses recoil, other defended outcomes stay planted, and removed figures fall on decorative echoes. The attack close-up keeps illustrations upright; historical strike coordinates and interruption restoration are retained. Two private half-speed MP4s record actual resolved defense and defeat commands in a seeded local match. Acceptance: focused motion/standee/ghost/spotlight Edit Mode and real-HUD Play Mode regressions, rendered frame inspection, exact MP4 decoding/metadata checks, documentation validation and local commit. No rules, wire/schema, package or publication changes.

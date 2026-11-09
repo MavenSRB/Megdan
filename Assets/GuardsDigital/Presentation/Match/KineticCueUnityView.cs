@@ -83,6 +83,9 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The clock, exposed so a Play Mode case can assert what is playing.</summary>
         public KineticPlayback Playback => playback;
 
+        /// <summary>Presentation-only strike staging while the spotlight has not released its hit.</summary>
+        public Func<KineticSubject, HexCoordinate, HexCoordinate?> WaitingStrikeOrigin { get; set; }
+
         /// <summary>
         /// Raised after a conducted kinetic scene has entered playback. Presentation that must wait
         /// for motion to genuinely start uses this boundary rather than equating queue release with
@@ -198,6 +201,15 @@ namespace GuardsDigital.Presentation.Match
             hero.Standee?.SetAttackLean(WorldDirection(hero.transform, reaction), cameraSource());
             if (motion.IsStill)
             {
+                var waiting = WaitingStrikeOrigin?.Invoke(subject, hero.Coordinate) ??
+                    conductor.WaitingTravelOriginFor(subject, hero.Coordinate);
+                if (waiting.HasValue)
+                {
+                    Remember(hero.transform, hero.gameObject, null);
+                    hero.transform.localPosition = HexWorldLayout.ToWorld(waiting.Value, hero.OuterRadius) +
+                        Vector3.up * hero.VerticalOffset;
+                    return true;
+                }
                 Restore(hero.transform);
                 return false;
             }
