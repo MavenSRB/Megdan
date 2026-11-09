@@ -38,7 +38,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
             var initial = BroganUiJourneyPlayModeTests.Root().Runtime;
             var removed = initial.BoardView.Model.Minions.Select(m => m.MinionId).ToArray();
-            foreach (var outcome in new[] { "bumped", "defeated" })
+            foreach (var outcome in new[] { "defeated", "bumped" })
             {
                 MatchSceneCompositionRoot.NextComposedSeat = null;
                 MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
@@ -78,7 +78,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(resolved.Outcome, Is.EqualTo(outcome == "defeated" ?
                     GuardsDigital.Core.Diagnostics.MatchLogOutcome.AttackSuccessful : GuardsDigital.Core.Diagnostics.MatchLogOutcome.AttackSuccessfullyDefended));
                 Assert.That(runtime.Heroes.Any(h => h.HeroId.Equals(defenderId)), Is.EqualTo(outcome != "defeated"));
-                var directory = Path.GetFullPath("tmp/w190-real-" + outcome + "-frames");
+                var directory = Path.GetFullPath("tmp/w191-real-" + outcome + "-frames");
                 Directory.CreateDirectory(directory);
                 bool sawLean = false, sawBump = false, sawFall = false, sawTravel = false;
                 for (var frame = 0; frame < 240; frame++)
@@ -93,10 +93,23 @@ namespace GuardsDigital.Tests.PlayMode
                     sawLean |= actor.Standee.IsStanding && Vector3.Dot(actor.Standee.PanelRenderer.transform.up, Vector3.up) < 0.995f;
                     sawBump |= Vector3.Distance(defender.transform.position, startPosition) > 0.01f;
                     var ghost = runtime.BoardView.HeroDefeatGhostFor(defender);
+                    if (defender.gameObject.activeInHierarchy && defender.Standee.IsStanding)
+                    {
+                        var baseProperties = new MaterialPropertyBlock();
+                        defender.GetComponent<MeshRenderer>().GetPropertyBlock(baseProperties);
+                        Assert.That(baseProperties.isEmpty, Is.True, "Defense keeps the base's resting colour.");
+                    }
                     sawFall |= ghost != null && ghost.StandeePanel != null && ghost.Progress01 > 0.2f;
                     if (outcome == "defeated")
                     {
                         var actorMotion = runtime.KineticView.Playback.MotionFor(KineticSubject.ForHero(attackerId));
+                        if (runtime.KineticView.Playback.LungeTargetFor(KineticSubject.ForHero(attackerId)).IsDefined && ghost != null)
+                        {
+                            Assert.That(ghost.Progress01, Is.Zero, "The fall waits until the attack lunge has ended.");
+                            if (ghost.StandeePanel != null)
+                                Assert.That(Vector3.Dot(ghost.StandeePanel.up, Vector3.up), Is.GreaterThan(0.999f),
+                                    "The defeated standee stays upright for the entire attack lunge.");
+                        }
                         sawTravel |= actorMotion.HasRouteTravel;
                         if (actorMotion.HasRouteTravel)
                             Assert.That(ghost == null || !ghost.IsFading, Is.True,
@@ -111,8 +124,8 @@ namespace GuardsDigital.Tests.PlayMode
                         if (ghost != null && ghost.StandeePanel != null && ghost.Progress01 > 0.15f)
                         {
                             Assert.That(Vector3.Dot(ghost.StandeePanel.up,
-                                Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up)), Is.LessThan(0f),
-                                "The falling figure tips toward the viewer with its feet anchored.");
+                                Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up)), Is.GreaterThan(0f),
+                                "The falling figure tips backward with its feet anchored.");
                             Assert.That(Vector3.Distance(actor.transform.position, startPosition), Is.GreaterThan(0.7f),
                                 "After-attack movement waits until the falling defender has cleared.");
                         }

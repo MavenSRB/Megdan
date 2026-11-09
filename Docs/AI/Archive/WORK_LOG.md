@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-191 Stable defense bases and delayed backward defeat fall
+
+User accepted the defense motion, reported base flashing, and requested a backward fall after the attack animation ends. Standing hero bases now retain their resting colour through defense recoil. Defeated figures remain upright throughout the matching attack lunge, then fall backward at full size before shrinking. The 45-degree camera, anchored feet and later relocation remain. Acceptance: failing-then-passing base/fall/timing checks, affected Edit Mode and real-HUD/body Play Mode regressions, real-command replacement videos with frame inspection, MP4 checks, living-document validation and local commit. Earlier private clips remain preserved. No rules, snapshot/wire, package or publication changes.
+
+Historical evidence: immutable `work/W-191`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-191 | Steady defense base colour; backward fall after the attack lunge | `work/W-191` |
+
 ### [x] W-190 Corrected defeat staging and lower attack camera
 
 User rejected W-189's defeat presentation and requested a lower camera. The attacker now waits at the recorded strike origin, the held defender follows the camera into standee representation, and its unchanged rigid figure tips toward the viewer at full size before shrinking. Hero echoes retain their solid team base. An already-resolved adjacent move into the vacated space is displayed after removal clears. Illustrated attack elevation is 45 degrees. Acceptance: failing-then-passing camera/fall/teleport regressions, focused motion/ghost/conductor/minion and real-HUD/body checks, actual resolved-command videos with temporal/geometry assertions, frame inspection, MP4 decoding, living-document validation and local commit. Replacement MP4s supersede the rejected clips, which remain preserved. No rules, package, snapshot/wire or publication changes.

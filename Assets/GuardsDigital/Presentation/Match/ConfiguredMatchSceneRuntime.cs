@@ -330,11 +330,12 @@ namespace GuardsDigital.Presentation.Match
                     fadingAttack = scene;
                     strikeStarted = false;
                 }
-                // Releasing queued cues is not the strike: earlier HUD flights can still own
-                // the conductor. Retain only the decorative echo until the lunge actually starts.
-                if (scene != null && KineticView.Playback.LungeTargetFor(scene.Attacker).IsDefined)
-                    strikeStarted = true;
-                return scene != null && (SpotlightPresenter.DefersCues || !strikeStarted);
+                // Retain the upright decorative echo through the complete matching attack lunge.
+                // The removal fall is the next visual beat, after the attacker has returned.
+                var lunging = scene != null &&
+                    KineticView.Playback.LungeTargetFor(scene.Attacker).Equals(scene.Defender);
+                if (lunging) strikeStarted = true;
+                return scene != null && (SpotlightPresenter.DefersCues || !strikeStarted || lunging);
             };
             BoardView.IsDefeatedMinionAwaitingPresentation = minionId =>
             {
@@ -363,8 +364,8 @@ namespace GuardsDigital.Presentation.Match
             SpotlightPresenter.CuesReleased += () => KineticPresenter.Resume();
             // Queue release is not necessarily attack start: an earlier reveal or flight can still
             // own the conductor. This first attempt handles an interruption (whose stage is gone),
-            // while SceneStarted retries at each actual scene boundary. The predicate above releases
-            // only when the framed attack's lunge has entered playback.
+            // while SceneStarted retries at each actual scene boundary. Decision-window timing
+            // remains independent of the held defeat fall.
             void ResumeDecisionPresentation()
             {
                 DecisionWindowPresenter.ResumePresentation();

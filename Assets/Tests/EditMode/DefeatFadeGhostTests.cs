@@ -114,8 +114,8 @@ namespace GuardsDigital.Tests.EditMode
                 board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds * 0.5f);
                 Assert.That(Quaternion.Angle(ghost.StandeePanel.rotation, panelPose), Is.GreaterThan(35f));
                 Assert.That(Vector3.Dot(ghost.StandeePanel.up,
-                    Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up)), Is.LessThan(-0.2f),
-                    "The rigid figure falls toward the viewer instead of appearing to rise away.");
+                    Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up)), Is.GreaterThan(0.2f),
+                    "The rigid figure falls backward, away from the viewing side.");
                 Assert.That(ghost.transform.localScale, Is.EqualTo(scale), "The readable fall precedes the shrink.");
                 Assert.That(Vector3.Distance(ghost.StandeePanel.position, feet), Is.LessThan(0.0001f));
                 board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds * 0.2f);

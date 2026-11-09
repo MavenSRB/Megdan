@@ -69,6 +69,9 @@ namespace GuardsDigital.Tests.EditMode
                     Assert.That(attacker.Standee.PanelRenderer.transform.up.x, Is.GreaterThan(0.05f));
                     Assert.That(Vector3.Distance(defender.transform.localPosition, defendStart) > 0.01f, Is.EqualTo(landed));
                     Assert.That(defender.transform.localScale, Is.EqualTo(Vector3.one), "No standee ballooning.");
+                    var baseProperties = new MaterialPropertyBlock();
+                    defender.GetComponent<MeshRenderer>().GetPropertyBlock(baseProperties);
+                    Assert.That(baseProperties.isEmpty, Is.True, "Defense recoil must not flash the team base.");
                 }
                 else Assert.That(defender.transform.localPosition, Is.EqualTo(defendStart));
 

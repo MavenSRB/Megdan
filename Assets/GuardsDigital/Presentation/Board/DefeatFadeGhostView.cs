@@ -252,11 +252,10 @@ namespace GuardsDigital.Presentation.Board
                     if (facing.sqrMagnitude > 0.0001f)
                         panelRotation = Quaternion.Inverse(transform.rotation) * Quaternion.LookRotation(facing, Vector3.up);
                 }
-                // Tip the unchanged rigid panel toward the viewer, feet fixed at the base. Complete
-                // the fall at full size before the brief removal shrink; an away-facing fall made
-                // the figure travel up-screen and read as levitation.
+                // Tip the unchanged rigid panel backward, feet fixed at the base. Complete the
+                // full-size fall before the brief removal shrink.
                 var fall = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.70f));
-                standeePanel.localRotation = panelRotation * Quaternion.Euler(-85f * fall, 0f, 0f);
+                standeePanel.localRotation = panelRotation * Quaternion.Euler(85f * fall, 0f, 0f);
             }
             if (spriteRenderer != null)
             {

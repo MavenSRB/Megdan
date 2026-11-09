@@ -480,16 +480,20 @@ namespace GuardsDigital.Presentation.Match
 
         private void ApplyHeroTint(PrimitiveHeroView hero, KineticPieceMotion motion)
         {
-            if (motion.FlashStrength <= 0f)
-            {
-                return;
-            }
-
             var renderer = hero.GetComponent<MeshRenderer>();
             if (renderer == null)
             {
                 return;
             }
+
+            // The standee already reacts with a physical recoil. Keep its team base at its resting
+            // colour, including a token-to-standee switch during a running legacy hit flash.
+            if (hero.Standee != null && hero.Standee.IsStanding)
+            {
+                renderer.SetPropertyBlock(null);
+                return;
+            }
+            if (motion.FlashStrength <= 0f) return;
 
             // A property block rather than a material write: it allocates no material, mutates nothing
             // shared, and is dropped whole when the flash ends. A shader without these properties
