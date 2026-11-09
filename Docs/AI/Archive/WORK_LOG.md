@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-188 Phone-friendly minion standee orbit video
+
+User requested an in-chat video while on a phone. A deterministic non-batch live-game capture starts with whole-board context, moves through Red and Blue Heavy/Melee/Ranged close passes, widens to an angled orbit, and finishes top-down on the unchanged old token icons. The private MP4 is 11.8 seconds, 1280x720 H.264 at 15 fps and 8.1 MB. Acceptance: 177-frame capture passed, representative frames and the top-down transition were inspected, the MP4 decoded with the expected frame count/dimensions, documentation validation and local commit. No runtime behavior, rules, package or publication.
+
+Historical evidence: immutable `work/W-188`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-188 | Private phone-friendly live minion-standee orbit and top-down video | `work/W-188` |
+
 ### [x] W-187 Veljko enemy standees with unchanged 2D tokens
 
 User supplied six team-specific Heavy, Melee and Ranged illustrations and requested them as standees while retaining the old 2D icons. Angled play now uses Veljko's red or blue upright figure for each authoritative team/type on the existing team-colour base; at the 69/70-degree boundary the panel switches back to the exact prior flat token. Original pixels and provenance remain private, and the preparation tool derives only silhouette wall geometry. Acceptance: all six mappings and switch boundaries, affected minion-view/standee regressions, non-batch angled/close/top-down inspection, documentation validation and local commit. No rules, enemy behavior, card faces, package or publication.

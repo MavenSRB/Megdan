@@ -1,5 +1,8 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -15,6 +18,141 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class StandeeCameraPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator CapturePhoneFriendlyMinionStandeeOrbitFrames()
+        {
+            var roster = RegisteredHeroRoster.ForThisBuild;
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                new[] { "brogan", "misa", "rowenna" }.Select(id => roster.Single(h => h.ContentId.Value == id)),
+                new[] { "tigerclaw", "gydion", "tali" }.Select(id => roster.Single(h => h.ContentId.Value == id)));
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            UiPlayer.SetPlayerViewport(1280, 720, "W-188 minion standee orbit video");
+            yield return new WaitForSecondsRealtime(1f);
+
+            var root = BroganUiJourneyPlayModeTests.Root();
+            var camera = Camera.main;
+            var minions = root.MapView.CurrentMinionViews
+                .Where(value => value.gameObject.activeInHierarchy)
+                .ToArray();
+            Assert.That(minions, Is.Not.Empty);
+            var boardCentre = minions.Aggregate(Vector3.zero, (sum, value) => sum + value.transform.position) /
+                minions.Length;
+            var shots = new List<OrbitShot>
+            {
+                OrbitShot.Angled(boardCentre, 0f, 20f, 10f, 12f),
+            };
+            foreach (var team in new[] { TeamSide.Red, TeamSide.Blue })
+            foreach (var type in new[] { StandardMinionType.Heavy, StandardMinionType.Melee, StandardMinionType.Ranged })
+            {
+                var view = minions.First(value =>
+                    value.Occupancy.TeamSide == team && value.Occupancy.MinionType == type);
+                Assert.That(view.Standee.HasArtwork, Is.True, team + " " + type);
+                shots.Add(OrbitShot.Angled(
+                    view.transform.position,
+                    shots.Count * 42f,
+                    6.2f,
+                    3.2f,
+                    2.6f));
+            }
+            shots.Add(OrbitShot.Angled(boardCentre, 300f, 17f, 8f, 8.5f));
+            shots.Add(OrbitShot.TopDown(boardCentre, 30f, 15f));
+
+            var frameDirectory = Path.GetFullPath("tmp/w188-minion-standee-orbit-frames");
+            Directory.CreateDirectory(frameDirectory);
+            foreach (var oldFrame in Directory.GetFiles(frameDirectory, "frame-*.jpg"))
+            {
+                File.Delete(oldFrame);
+            }
+
+            const int transitionFrames = 12;
+            const int holdFrames = 10;
+            var frame = 0;
+            Apply(camera, shots[0]);
+            yield return null;
+            yield return CaptureFrame(frameDirectory, frame++);
+            for (var shotIndex = 1; shotIndex < shots.Count; shotIndex++)
+            {
+                var from = shots[shotIndex - 1];
+                var to = shots[shotIndex];
+                for (var step = 1; step <= transitionFrames; step++)
+                {
+                    var amount = Mathf.SmoothStep(0f, 1f, step / (float)transitionFrames);
+                    Apply(camera, OrbitShot.Lerp(from, to, amount));
+                    yield return CaptureFrame(frameDirectory, frame++);
+                }
+                for (var hold = 0; hold < holdFrames; hold++)
+                {
+                    Apply(camera, to);
+                    yield return CaptureFrame(frameDirectory, frame++);
+                }
+            }
+
+            Assert.That(frame, Is.EqualTo(177));
+            Assert.That(minions.All(value => !value.Standee.IsStanding), Is.True,
+                "The final top-down shot shows the old token icons.");
+            Assert.That(Directory.GetFiles(frameDirectory, "frame-*.jpg"), Has.Length.EqualTo(frame));
+        }
+
+        private static IEnumerator CaptureFrame(string directory, int frame)
+        {
+            yield return new WaitForEndOfFrame();
+            var capture = ScreenCapture.CaptureScreenshotAsTexture();
+            try
+            {
+                File.WriteAllBytes(
+                    Path.Combine(directory, $"frame-{frame:0000}.jpg"),
+                    capture.EncodeToJPG(84));
+            }
+            finally
+            {
+                Object.Destroy(capture);
+            }
+        }
+
+        private static void Apply(Camera camera, OrbitShot shot)
+        {
+            camera.transform.SetPositionAndRotation(shot.Position, shot.Rotation);
+            camera.orthographicSize = shot.OrthographicSize;
+        }
+
+        private readonly struct OrbitShot
+        {
+            public OrbitShot(Vector3 position, Quaternion rotation, float orthographicSize)
+            {
+                Position = position;
+                Rotation = rotation;
+                OrthographicSize = orthographicSize;
+            }
+
+            public Vector3 Position { get; }
+            public Quaternion Rotation { get; }
+            public float OrthographicSize { get; }
+
+            public static OrbitShot Angled(
+                Vector3 focus,
+                float yaw,
+                float distance,
+                float height,
+                float orthographicSize)
+            {
+                var offset = Quaternion.Euler(0f, yaw, 0f) * new Vector3(0f, height, -distance);
+                var position = focus + offset;
+                var rotation = Quaternion.LookRotation((focus + Vector3.up * 0.65f) - position, Vector3.up);
+                return new OrbitShot(position, rotation, orthographicSize);
+            }
+
+            public static OrbitShot TopDown(Vector3 focus, float height, float orthographicSize) =>
+                new OrbitShot(focus + Vector3.up * height, Quaternion.Euler(90f, 0f, 0f), orthographicSize);
+
+            public static OrbitShot Lerp(OrbitShot from, OrbitShot to, float amount) =>
+                new OrbitShot(
+                    Vector3.Lerp(from.Position, to.Position, amount),
+                    Quaternion.Slerp(from.Rotation, to.Rotation, amount),
+                    Mathf.Lerp(from.OrthographicSize, to.OrthographicSize, amount));
+        }
+
         [UnityTest]
         public IEnumerator CaptureThreeHeroMirrorDemo()
         {
