@@ -67,6 +67,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
                 var defender = runtime.BoardView.HeroViews.Single(h => h.Occupancy.HeroId.Equals(defenderId));
                 var startPosition = defender.transform.position;
+                var restingScale = defender.transform.localScale;
                 if (outcome == "bumped")
                 {
                     var card = runtime.Cards.Single(c => c.OwnerId.Equals(defenderId) && c.DefinitionReference.DefinitionId.Equals(
@@ -78,7 +79,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(resolved.Outcome, Is.EqualTo(outcome == "defeated" ?
                     GuardsDigital.Core.Diagnostics.MatchLogOutcome.AttackSuccessful : GuardsDigital.Core.Diagnostics.MatchLogOutcome.AttackSuccessfullyDefended));
                 Assert.That(runtime.Heroes.Any(h => h.HeroId.Equals(defenderId)), Is.EqualTo(outcome != "defeated"));
-                var directory = Path.GetFullPath("tmp/w191-real-" + outcome + "-frames");
+                var directory = Path.GetFullPath("tmp/w192-real-" + outcome + "-frames");
                 Directory.CreateDirectory(directory);
                 bool sawLean = false, sawBump = false, sawFall = false, sawTravel = false;
                 for (var frame = 0; frame < 240; frame++)
@@ -123,9 +124,16 @@ namespace GuardsDigital.Tests.PlayMode
                                 "A held defender follows the camera into standee view before it falls.");
                         if (ghost != null && ghost.StandeePanel != null && ghost.Progress01 > 0.15f)
                         {
-                            Assert.That(Vector3.Dot(ghost.StandeePanel.up,
-                                Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up)), Is.GreaterThan(0f),
-                                "The falling figure tips backward with its feet anchored.");
+                            Assert.That(ghost.transform.localScale, Is.EqualTo(restingScale),
+                                "The defeated figure must not shrink during or after its fall.");
+                            if (ghost.Progress01 >= 0.70f)
+                            {
+                                var away = HexWorldLayout.ToWorld(defendAt, actor.OuterRadius) -
+                                    HexWorldLayout.ToWorld(attackAt, actor.OuterRadius);
+                                Assert.That(Vector3.Dot(ghost.StandeePanel.up, away.normalized), Is.GreaterThan(0.999f),
+                                    "The figure lies flat away from the attacker's recorded strike space.");
+                                Assert.That(Mathf.Abs(Vector3.Dot(ghost.StandeePanel.forward, Vector3.up)), Is.GreaterThan(0.999f));
+                            }
                             Assert.That(Vector3.Distance(actor.transform.position, startPosition), Is.GreaterThan(0.7f),
                                 "After-attack movement waits until the falling defender has cleared.");
                         }

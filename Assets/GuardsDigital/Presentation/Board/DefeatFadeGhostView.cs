@@ -57,10 +57,16 @@ namespace GuardsDigital.Presentation.Board
         private Material[] flatBaseMaterials;
         private Material[] standingBaseMaterials;
         private bool baseIsStanding;
+        private Vector3 fallAway;
+
+        public void SetFallAwayFrom(Vector3 attackerWorldPosition)
+        {
+            fallAway = Vector3.ProjectOnPlane(transform.position - attackerWorldPosition, Vector3.up).normalized;
+        }
 
         public Transform StandeePanel => standeePanel != null && standeePanel.gameObject.activeSelf ? standeePanel : null;
 
-        /// <summary>Copy only visible geometry. The echo has no identity, scripts or picking surfaces.</summary>
+        /// <summary>Copy figure geometry only. The echo has no identity, scripts or picking surfaces.</summary>
         public void ConfigureStandee(Renderer source)
         {
             if (source == null) return;
@@ -163,6 +169,7 @@ namespace GuardsDigital.Presentation.Board
             if (spriteRenderer != null) spriteRenderer.enabled = true;
             if (meshRenderer != null) meshRenderer.enabled = true;
             hasStandee = false;
+            fallAway = Vector3.zero;
             transform.SetPositionAndRotation(source.position, source.rotation);
             baseScale = source.localScale;
             transform.localScale = baseScale;
@@ -241,8 +248,7 @@ namespace GuardsDigital.Presentation.Board
         {
             RefreshRepresentation();
             var standing = StandeePanel != null;
-            var shrink = standing ? Mathf.Clamp01((t - 0.75f) / 0.25f) : t;
-            transform.localScale = Vector3.Lerp(baseScale, baseScale * ShrinkToScale, shrink);
+            transform.localScale = standing ? baseScale : Vector3.Lerp(baseScale, baseScale * ShrinkToScale, t);
             if (standing)
             {
                 var camera = Camera.main;
@@ -252,10 +258,18 @@ namespace GuardsDigital.Presentation.Board
                     if (facing.sqrMagnitude > 0.0001f)
                         panelRotation = Quaternion.Inverse(transform.rotation) * Quaternion.LookRotation(facing, Vector3.up);
                 }
-                // Tip the unchanged rigid panel backward, feet fixed at the base. Complete the
-                // full-size fall before the brief removal shrink.
-                var fall = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.70f));
-                standeePanel.localRotation = panelRotation * Quaternion.Euler(85f * fall, 0f, 0f);
+                var upright = transform.rotation * panelRotation;
+                var away = fallAway.sqrMagnitude > 0.0001f ? fallAway : upright * Vector3.forward;
+                // Align the rigid sheet with its fall so both its width and height stay above the
+                // board. Use the nearer of its identical front/back faces to avoid a half-turn.
+                var normal = Vector3.Dot(upright * Vector3.forward, away) >= 0f ? away : -away;
+                var aligned = Quaternion.LookRotation(normal, Vector3.up);
+                var turn = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.15f));
+                var fall = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.15f) / 0.50f));
+                var hinge = Vector3.Cross(Vector3.up, away).normalized;
+                standeePanel.rotation = Quaternion.AngleAxis(90f * fall, hinge) * Quaternion.Slerp(upright, aligned, turn);
+                // Hold the complete, full-size lying pose for the rest of the clock. Advance
+                // deactivates the echo at the end; illustrated figures never shrink away.
             }
             if (spriteRenderer != null)
             {
@@ -264,11 +278,8 @@ namespace GuardsDigital.Presentation.Board
                     baseSpriteColor.r, baseSpriteColor.g, baseSpriteColor.b, baseSpriteColor.a * opacity);
             }
 
-            // A hero's material is the standard opaque URP Lit/Unlit pair
-            // (PrimitiveHeroView.CreatePlaceholderMaterial/CreateTokenFaceMaterial) with no alpha
-            // channel wired up, so the shrink alone carries a hero's fade - the same "the scale punch
-            // carries the flash on its own if the tint does nothing" idiom KineticCueUnityView's own
-            // Flash cue already relies on for exactly the same reason.
+            // Flat legacy echoes retain their shrink/fade fallback. Illustrated echoes keep their
+            // original scale throughout the complete fall and disappear only when Advance ends.
         }
     }
 }

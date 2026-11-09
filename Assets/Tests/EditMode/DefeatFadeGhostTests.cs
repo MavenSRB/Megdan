@@ -111,16 +111,27 @@ namespace GuardsDigital.Tests.EditMode
                 }
                 var scale = ghost.transform.localScale;
                 var feet = ghost.StandeePanel.position;
+                var away = minion ? (initiallyTopDown ? Vector3.back : Vector3.forward) :
+                    (initiallyTopDown ? Vector3.left : Vector3.right);
+                ghost.SetFallAwayFrom(ghost.transform.position - away * 3f);
                 board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds * 0.5f);
                 Assert.That(Quaternion.Angle(ghost.StandeePanel.rotation, panelPose), Is.GreaterThan(35f));
-                Assert.That(Vector3.Dot(ghost.StandeePanel.up,
-                    Vector3.ProjectOnPlane(camera.transform.forward, Vector3.up)), Is.GreaterThan(0.2f),
-                    "The rigid figure falls backward, away from the viewing side.");
+                Assert.That(Vector3.Dot(ghost.StandeePanel.up, away), Is.GreaterThan(0.2f),
+                    "The rigid figure falls away from its attacker, independently of camera bearing.");
                 Assert.That(ghost.transform.localScale, Is.EqualTo(scale), "The readable fall precedes the shrink.");
                 Assert.That(Vector3.Distance(ghost.StandeePanel.position, feet), Is.LessThan(0.0001f));
                 board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds * 0.2f);
-                Assert.That(Vector3.Dot(ghost.StandeePanel.up, Vector3.up), Is.LessThan(0.15f));
+                Assert.That(Mathf.Abs(Vector3.Dot(ghost.StandeePanel.up, Vector3.up)), Is.LessThan(0.001f),
+                    "The complete fall lays the figure flat.");
+                Assert.That(Vector3.Dot(ghost.StandeePanel.up, away), Is.GreaterThan(0.999f));
+                Assert.That(Mathf.Abs(Vector3.Dot(ghost.StandeePanel.forward, Vector3.up)), Is.GreaterThan(0.999f),
+                    "The whole sheet lies on the board, not just its long axis.");
+                var geometry = ghost.StandeePanel.GetComponent<MeshFilter>().sharedMesh;
+                Assert.That(geometry.vertices.Min(v => ghost.StandeePanel.TransformPoint(v).y),
+                    Is.GreaterThan(feet.y - 0.03f), "The rigid figure must not rotate through the board.");
                 Assert.That(ghost.transform.localScale, Is.EqualTo(scale), "The complete fall is still full size.");
+                board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds * 0.2f);
+                Assert.That(ghost.transform.localScale, Is.EqualTo(scale), "The fallen figure holds at full size until it disappears.");
                 board.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds);
                 Assert.That(ghost.gameObject.activeSelf, Is.False);
                 board.Render(drawn);

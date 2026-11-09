@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-192 Full-size fall away from the attacker, then disappearance
+
+User reported that the defeated standee only appeared to shrink and requested a backward fall away from the attacker followed by disappearance. The decorative figure now uses the recorded attacker position, aligns its rigid sheet with the fall, lies completely flat at its original size, holds briefly, then disappears without shrinking. Feet stay anchored and geometry remains above the board. Post-lunge timing, steady bases, 45-degree camera and later relocation remain. Acceptance: failing-then-passing flat-pose/scale/direction checks, four-direction hero/minion geometry tests, real-HUD/body regressions, inspected real-command video, MP4 decoding, documentation validation and local commit. Older clips remain preserved. No rules, snapshot/wire, package or publication changes.
+
+Historical evidence: immutable `work/W-192`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-192 | Full-size attacker-relative fall, brief flat pose and disappearance | `work/W-192` |
+
 ### [x] W-191 Stable defense bases and delayed backward defeat fall
 
 User accepted the defense motion, reported base flashing, and requested a backward fall after the attack animation ends. Standing hero bases now retain their resting colour through defense recoil. Defeated figures remain upright throughout the matching attack lunge, then fall backward at full size before shrinking. The 45-degree camera, anchored feet and later relocation remain. Acceptance: failing-then-passing base/fall/timing checks, affected Edit Mode and real-HUD/body Play Mode regressions, real-command replacement videos with frame inspection, MP4 checks, living-document validation and local commit. Earlier private clips remain preserved. No rules, snapshot/wire, package or publication changes.

@@ -325,6 +325,7 @@ namespace GuardsDigital.Presentation.Match
             BoardView.DeferDefeatFades = () =>
             {
                 var scene = SpotlightPresenter.Stage.Current;
+                AimDefeatFallAwayFromAttacker(scene);
                 if (!ReferenceEquals(scene, fadingAttack))
                 {
                     fadingAttack = scene;
@@ -1397,6 +1398,29 @@ namespace GuardsDigital.Presentation.Match
             var invocation = RoundView.Model?.InitiativeChoices.SingleOrDefault(value =>
                 value.Command.CardInstanceId.Equals(cardId));
             return RoundPresenter.Submit(invocation);
+        }
+
+        private void AimDefeatFallAwayFromAttacker(AttackSpotlightScene scene)
+        {
+            if (scene == null || !scene.AttackerSpace.HasValue) return;
+            PrimitiveHeroView attacker = null;
+            foreach (var hero in BoardView.HeroViews)
+                if (hero != null && hero.Occupancy.HeroId.Equals(scene.Attacker.HeroId)) { attacker = hero; break; }
+            if (attacker == null) return;
+            var local = HexWorldLayout.ToWorld(scene.AttackerSpace.Value, attacker.OuterRadius) + UnityEngine.Vector3.up * attacker.VerticalOffset;
+            var origin = attacker.transform.parent == null ? local : attacker.transform.parent.TransformPoint(local);
+            if (scene.Defender.Kind == KineticSubjectKind.Hero)
+            {
+                foreach (var hero in BoardView.HeroViews)
+                    if (hero != null && hero.Occupancy.HeroId.Equals(scene.Defender.HeroId))
+                        BoardView.HeroDefeatGhostFor(hero)?.SetFallAwayFrom(origin);
+            }
+            else
+            {
+                foreach (var minion in BoardView.MinionViews)
+                    if (minion != null && minion.Occupancy != null && minion.Occupancy.MinionId.Equals(scene.Defender.MinionId))
+                        BoardView.MinionDefeatGhostFor(minion)?.SetFallAwayFrom(origin);
+            }
         }
 
         public bool SubmitDefenseCard(CardInstanceId cardId)

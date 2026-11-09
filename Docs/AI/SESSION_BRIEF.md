@@ -18,7 +18,7 @@ Current private Windows package: **W179 Shield and Bush Fixes**, `Builds/Playtes
 
 Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-191**.
+- Last completed work: **W-192**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
