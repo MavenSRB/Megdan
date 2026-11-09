@@ -26,6 +26,12 @@ namespace GuardsDigital.Presentation.Units.Minions
             return $"Minions/{team}-{type}";
         }
 
+        public static string GetStandeeResourcePath(TeamSide teamSide, StandardMinionType minionType)
+        {
+            var flatPath = GetResourcePath(teamSide, minionType);
+            return "Private/Megdan/MinionStandees/" + flatPath.Substring("Minions/".Length);
+        }
+
         public static Sprite Load(TeamSide teamSide, StandardMinionType minionType)
         {
             var resourcePath = GetResourcePath(teamSide, minionType);

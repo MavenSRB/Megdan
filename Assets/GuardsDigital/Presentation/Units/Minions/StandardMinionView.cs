@@ -31,7 +31,10 @@ namespace GuardsDigital.Presentation.Units.Minions
         private Mesh tokenBodyMesh;
         private Material tokenBodyMaterial;
         private GameObject tokenBody;
+        private IllustratedMinionStandeeView standee;
         public Renderer TokenBodyRenderer => tokenBody == null ? null : tokenBody.GetComponent<MeshRenderer>();
+        public IllustratedMinionStandeeView Standee => standee;
+        public bool HasTokenVisual => GetComponent<SpriteRenderer>().sprite != null;
 
         public MinionOccupancy Occupancy => occupancy;
         public MinionId BoundMinionId => occupancy != null
@@ -63,11 +66,13 @@ namespace GuardsDigital.Presentation.Units.Minions
             }
 
             defenseContributionAmount = amount;
-            GetComponent<SpriteRenderer>().color = amount > 0
+            var color = amount > 0
                 ? HexCornerHighlightTemplate.DefensePositiveColor
                 : amount < 0
                     ? HexCornerHighlightTemplate.DefenseNegativeColor
                     : Color.white;
+            GetComponent<SpriteRenderer>().color = color;
+            standee?.SetTint(color);
         }
 
         public void Configure(MinionOccupancy state, float outerRadius)
@@ -90,6 +95,10 @@ namespace GuardsDigital.Presentation.Units.Minions
             renderer.sprite = StandardMinionArtCatalog.Load(state.TeamSide, state.MinionType);
             renderer.sortingOrder = 10;
             EnsureTokenBody(renderer.sprite);
+            standee ??= gameObject.GetComponent<IllustratedMinionStandeeView>() ??
+                gameObject.AddComponent<IllustratedMinionStandeeView>();
+            standee.Configure(this, state.TeamSide, state.MinionType);
+            standee.SetTint(renderer.color);
             if (identityChanged)
             {
                 SetDefenseContributionHighlight(0);
@@ -237,6 +246,12 @@ namespace GuardsDigital.Presentation.Units.Minions
             ? transform.position.y - DefaultVerticalOffset
             : transform.parent.TransformPoint(Vector3.zero).y;
 
+        public void SetStandeeRepresentation(bool standing)
+        {
+            var renderer = GetComponent<SpriteRenderer>();
+            renderer.enabled = !standing;
+        }
+
         public void RefreshTokenFacing(Camera camera)
         {
             if (camera == null) return;
@@ -245,7 +260,15 @@ namespace GuardsDigital.Presentation.Units.Minions
                 transform.rotation = Quaternion.LookRotation(Vector3.up, up);
         }
 
-        private void LateUpdate() => RefreshTokenFacing(Camera.main);
+        private void LateUpdate()
+        {
+            var camera = Camera.main;
+            standee?.Refresh(camera);
+            if (standee?.IsStanding != true)
+            {
+                RefreshTokenFacing(camera);
+            }
+        }
 
         private void Awake()
         {

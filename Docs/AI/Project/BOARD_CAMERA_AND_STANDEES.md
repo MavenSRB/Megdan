@@ -34,9 +34,11 @@ Current same-camera W-172 stills: `tmp/w172-grass-low-angle-live-match.png` and 
 
 ## Creeps and evidence
 
-Standard creeps keep their existing sprite faces and board rotation. A circular team-colour body extends 0.16 world units beneath the face, staying above the board and retaining the same footprint, identity and selection path. Removal/respawn follows the existing parent view lifecycle.
+Standard Heavy, Melee and Ranged units use Veljko's six team-specific transparent illustrations as upright panels in angled views: Blue units use the blue variants and Red units use the red variants. They share the hero standees' 69/70-degree hysteresis, yaw-only camera facing, bounded panel geometry, silhouette edge thickness and cutout material. Their circular team-colour bodies remain beneath the panels, and movement, removal/respawn, target cues, contribution tinting, occupancy, identity and selection paths retain the existing parent-view lifecycle.
 
-Live screenshots: `tmp/w165-angled-live-match.png`, `tmp/w165-top-down-live-match.png`, `tmp/w165-standee-detail.png`, and `tmp/w165-creep-detail.png`. These are runtime captures, separate from W-164's generated product concept. Existing packages remain unchanged; no publication is authorized.
+The pre-existing six minion sprite faces remain independent resources and are unchanged. At top-down angles each upright panel hides and its exact prior team/type token returns with the established camera-aligned board rotation. `Tools/Prepare-MegdanMinionStandees.py` copies the supplied PNGs unchanged from the private source area and derives only their silhouette wall geometry; source and prepared artwork remain excluded and private.
+
+Current minion evidence: `tmp/w187-minion-standees-angled.png`, `tmp/w165-creep-detail.png` (close view) and `tmp/w187-minion-tokens-top-down.png`. Earlier W-165 hero/creep captures remain preserved for comparison. These are runtime captures, separate from W-164's generated product concept. Existing packages remain unchanged; no publication is authorized.
 
 ## Defense indicators
 

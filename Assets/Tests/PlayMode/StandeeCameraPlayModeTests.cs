@@ -191,12 +191,21 @@ namespace GuardsDigital.Tests.PlayMode
                     Assert.That(minion.TokenBodyRenderer, Is.Not.Null);
                     Assert.That(minion.TokenBodyRenderer.bounds.size.y, Is.GreaterThan(0.15f));
                     Assert.That(minion.GetComponent<SpriteRenderer>().sprite, Is.Not.Null);
+                    Assert.That(minion.Standee.HasArtwork, Is.True);
+                    Assert.That(minion.Standee.IsStanding, Is.True);
+                    Assert.That(minion.GetComponent<SpriteRenderer>().enabled, Is.False,
+                        "Angled play shows Veljko's panel instead of the flat icon.");
+                    var expectedArt = minion.Occupancy.TeamSide.ToString().ToLowerInvariant() + "-" +
+                        minion.Occupancy.MinionType.ToString().ToLowerInvariant();
+                    Assert.That(minion.Standee.PanelRenderer.sharedMaterials[0].mainTexture.name,
+                        Is.EqualTo(expectedArt));
                 }
                 Assert.That(heroes.Select(h => h.Occupancy), Is.EqualTo(identities));
                 navigation.ResetView();
                 navigation.Navigate(Vector2.zero, new Vector2(0, 35f), 0, 0);
                 yield return new WaitForSecondsRealtime(2f);
                 yield return UiPlayer.CaptureScreen("tmp/w165-angled-live-match.png");
+                yield return UiPlayer.CaptureScreen("tmp/w187-minion-standees-angled.png");
                 // A close view through the same live camera, so panel edges/base depth can be judged.
                 var focal = heroes.First(h => h.HeroContentId.Value.Value == "misa").transform.position;
                 camera.transform.position = focal + new Vector3(0, 5.5f, -7.5f);
@@ -220,6 +229,9 @@ namespace GuardsDigital.Tests.PlayMode
                         "Flat hero artwork follows camera heading.");
                 foreach (var minion in minions)
                 {
+                    Assert.That(minion.Standee.IsStanding, Is.False);
+                    Assert.That(minion.GetComponent<SpriteRenderer>().enabled, Is.True,
+                        "Top-down play restores the old icon.");
                     Assert.That(Vector3.Dot(minion.transform.up, camera.transform.up), Is.GreaterThan(0.999f),
                         "Flat creep artwork follows camera heading.");
                     Assert.That(Vector3.Dot(minion.transform.forward, Vector3.up), Is.GreaterThan(0.999f),
@@ -228,6 +240,7 @@ namespace GuardsDigital.Tests.PlayMode
                 navigation.ResetView();
                 yield return null; yield return null;
                 yield return UiPlayer.CaptureScreen("tmp/w165-top-down-live-match.png");
+                yield return UiPlayer.CaptureScreen("tmp/w187-minion-tokens-top-down.png");
                 navigation.Navigate(Vector2.right, Vector2.zero, 0, 0.2f);
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Home));
                 yield return null;

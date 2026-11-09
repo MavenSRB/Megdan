@@ -350,6 +350,69 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(StandardMinionArtCatalog.Load(teamSide, minionType), Is.Not.Null);
         }
 
+        [TestCase(TeamSide.Red, StandardMinionType.Heavy, "Private/Megdan/MinionStandees/red-heavy")]
+        [TestCase(TeamSide.Red, StandardMinionType.Melee, "Private/Megdan/MinionStandees/red-melee")]
+        [TestCase(TeamSide.Red, StandardMinionType.Ranged, "Private/Megdan/MinionStandees/red-ranged")]
+        [TestCase(TeamSide.Blue, StandardMinionType.Heavy, "Private/Megdan/MinionStandees/blue-heavy")]
+        [TestCase(TeamSide.Blue, StandardMinionType.Melee, "Private/Megdan/MinionStandees/blue-melee")]
+        [TestCase(TeamSide.Blue, StandardMinionType.Ranged, "Private/Megdan/MinionStandees/blue-ranged")]
+        public void StandeeCatalog_MapsEveryTeamAndTypeWithoutReplacingTheFlatIcon(
+            TeamSide teamSide,
+            StandardMinionType minionType,
+            string expectedStandeePath)
+        {
+            Assert.That(StandardMinionArtCatalog.GetStandeeResourcePath(teamSide, minionType),
+                Is.EqualTo(expectedStandeePath));
+            Assert.That(Resources.Load<Texture2D>(expectedStandeePath), Is.Not.Null);
+            Assert.That(Resources.Load<TextAsset>(expectedStandeePath), Is.Not.Null);
+            Assert.That(StandardMinionArtCatalog.Load(teamSide, minionType), Is.Not.Null,
+                "The old 2D icon remains independently available.");
+        }
+
+        [TestCase(TeamSide.Red, StandardMinionType.Heavy)]
+        [TestCase(TeamSide.Red, StandardMinionType.Melee)]
+        [TestCase(TeamSide.Red, StandardMinionType.Ranged)]
+        [TestCase(TeamSide.Blue, StandardMinionType.Heavy)]
+        [TestCase(TeamSide.Blue, StandardMinionType.Melee)]
+        [TestCase(TeamSide.Blue, StandardMinionType.Ranged)]
+        public void AngledViewUsesVeljkoStandeeAndTopDownRestoresTheSameFlatIcon(
+            TeamSide teamSide,
+            StandardMinionType minionType)
+        {
+            var minionObject = new GameObject("standee minion");
+            var cameraObject = new GameObject("standee camera", typeof(Camera));
+            try
+            {
+                var state = CreateState($"{teamSide}-{minionType}", teamSide, minionType);
+                var view = minionObject.AddComponent<StandardMinionView>();
+                view.Configure(state, HexWorldLayout.DefaultOuterRadius);
+                var renderer = minionObject.GetComponent<SpriteRenderer>();
+                var flatIcon = renderer.sprite;
+                var camera = cameraObject.GetComponent<Camera>();
+
+                Assert.That(view.Standee.HasArtwork, Is.True);
+                camera.transform.rotation = Quaternion.Euler(55f, 135f, 0f);
+                view.Standee.Refresh(camera);
+                Assert.That(view.Standee.IsStanding, Is.True);
+                Assert.That(renderer.enabled, Is.False,
+                    "The old flat icon is hidden, not overwritten, while the panel stands.");
+                Assert.That(view.TokenBodyRenderer.enabled, Is.True,
+                    "The authoritative team-colour base remains under the standee.");
+
+                camera.transform.rotation = Quaternion.Euler(70.1f, 0f, 0f);
+                view.Standee.Refresh(camera);
+                Assert.That(view.Standee.IsStanding, Is.False);
+                Assert.That(renderer.enabled, Is.True);
+                Assert.That(renderer.sprite, Is.SameAs(flatIcon),
+                    "Top-down returns to the exact pre-existing 2D icon.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(minionObject);
+                Object.DestroyImmediate(cameraObject);
+            }
+        }
+
         [Test]
         public void Configure_ProjectsStableAuthoritativeIdentityAndPlacementWithoutReadingArtMetadata()
         {
@@ -390,11 +453,17 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static MinionOccupancy CreateState(string id) =>
+            CreateState(id, TeamSide.Blue, StandardMinionType.Melee);
+
+        private static MinionOccupancy CreateState(
+            string id,
+            TeamSide teamSide,
+            StandardMinionType minionType) =>
             MinionOccupancy.FromSetup(new QuickGameMinionSetupState(
                 new MinionId(id),
-                new TeamId("blue-team"),
-                TeamSide.Blue,
-                StandardMinionType.Melee,
+                new TeamId(teamSide == TeamSide.Blue ? "blue-team" : "red-team"),
+                teamSide,
+                minionType,
                 new ConfiguredSpawnPointReference(new MapId("test-map"), new SpawnPointId($"{id}-spawn")),
                 new ConfiguredSpaceReference(new MapId("test-map"), new SpaceId("q1_r0")),
                 new HexCoordinate(1, 0)));

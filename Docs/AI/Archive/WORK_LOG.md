@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-187 Veljko enemy standees with unchanged 2D tokens
+
+User supplied six team-specific Heavy, Melee and Ranged illustrations and requested them as standees while retaining the old 2D icons. Angled play now uses Veljko's red or blue upright figure for each authoritative team/type on the existing team-colour base; at the 69/70-degree boundary the panel switches back to the exact prior flat token. Original pixels and provenance remain private, and the preparation tool derives only silhouette wall geometry. Acceptance: all six mappings and switch boundaries, affected minion-view/standee regressions, non-batch angled/close/top-down inspection, documentation validation and local commit. No rules, enemy behavior, card faces, package or publication.
+
+Historical evidence: immutable `work/W-187`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-187 | Team-specific Veljko minion standees with exact old-token top-down fallback | `work/W-187` |
+
 ### [x] W-186 Three-hero demo and supplied Tali artwork
 
 User requested Riki, Rowenna and Tali on each demo team and supplied separate full-body/portrait photos for Tali with blue background removed. Private demo selection now offers three team-bound instances per side; original content IDs remain unchanged and Blue copies receive separate instance IDs. Shared dealing selects content independently from instance ownership. Transparent Tali standee/card and token/tray portrait resources are prepared, with originals/provenance preserved privately. Acceptance: selection/ownership/client/composition regressions, non-batch mirrored-lineup and Tali captures, documentation validation and local commit. DEV-012 isolates the user-approved demo uniqueness departure. No new package or publication.
