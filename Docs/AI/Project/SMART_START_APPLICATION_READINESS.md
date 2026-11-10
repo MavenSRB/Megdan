@@ -120,6 +120,14 @@ Reviewer estimate for the written application alone: usefulness/advantage **22/3
 
 The overall narrative is coherent: existing prototype to original six-hero PC MVP, with optional tablet/mobile exploration and publisher-led commercialization. Evidence priorities are competitor differentiation, audience alignment, commercial validation and team-production proof. These findings are review proposals, not authorization for content rewrites or publication.
 
+### Approved application revisions — 10 November 2026
+
+The applicant approved the complete old/new proposal and its application to a separate private copy: `tmp/w194/Prijava-azurirana.docx`. Individual players and groups now appear consistently in summary, problem, solution, market and target answers. Pantheon Tactics and historical Atlas Reactor are named as closer comparisons; differentiation focuses on the shared card resource and team objectives. Weak League/Hearthstone monthly estimates were removed while both titles remain audience references. Existing dated Steam and category evidence stays qualified; no reachable-sales forecast is asserted. The delivery answer specifies the planned 12–18 new players recruited individually and in groups, and the team answer assigns coordination, commercial validation and animation integration responsibilities.
+
+Unused member 3–5 fields and the returning-project field are marked not applicable, and the prototype typo is corrected. All answers are non-italic; official instructions, protection/settings, form structure, checkboxes, biographies, budget and unapproved answers are preserved. The original supplied document is unchanged. Every final field fits its limit: problem 222/300; affected players 148/200; solution 288/300; advantage 61/200; technology 188/200; feedback 105/200; market 232/300; target 134/200; business 249/300; IP 131/200; team 228/400; mentor 135/200. All eleven Word-rendered pages were visually checked. The earlier 74/100 estimate is historical, not a rescore of this revised copy.
+
+This closes the approved wording and mechanical findings. Supplier scope/quotes, production evidence, rights/declaration accuracy and final video remain open prerequisites as applicable. The video field stays pending; no submission, contact or publication occurred.
+
 ### Five-day closing plan — review of 10 November 2026
 
 This is preparation sequencing, not authorization to send, publish, procure or submit. Existing completion states are documentary evidence only; work completed outside the chat remains unknown until reported. Official indexed [program guidance](https://inovacionifond.rs/lat/program/smart-start) and [FAQ 18/21](https://www.inovacionifond.rs/lat/program/smart-start/faq) were rechecked for deadlines and the submission package. One direct program fetch returned older 2025 navigation; the current indexed 2026 call agrees with the retained version-6 dossier. No fresh template hash/layout audit is claimed.

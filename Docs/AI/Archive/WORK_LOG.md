@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-194 Approved Smart Start application revisions
+
+Applied the applicant-approved old/new wording to a separate private Word copy: individual players and groups, close competitors, bounded market evidence, concrete testing and team responsibilities, plus unused-field and typo cleanup. Official form, non-italic answers, unchanged fields, budget and source document are preserved. Acceptance: exact approved replacements, field limits, package/structure integrity, all eleven rendered pages, living-document validation and local commit. Video remains pending; rights, procurement and submission are outside this edit.
+
+Historical evidence: immutable `work/W-194`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-194 | Approved revised private application, official form preserved | `work/W-194` |
+
 ### [x] W-193 Smart Start readiness review and supplied application formatting
 
 User requested remaining-application priorities, then supplied Prijava.docx for non-italic answer formatting, coherence review and criterion-based scoring. Recorded inactive-sole-proprietor eligibility, applicant-led portal creation (project 55801), preparation status and a bounded closing plan. Returned a separate private formatting-only Word copy, preserving all wording, form structure and source. Acceptance: answer formatting, text/package integrity, all field limits, budget sums, full rendered-page inspection, explicit provisional scoring and evidence limitations, living-document validation and local commit. Review findings and user decisions remain in the preparation/readiness owners; no submission, remote publication, procurement, rules or asset changes.
