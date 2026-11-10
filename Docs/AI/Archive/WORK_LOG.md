@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-193 Smart Start readiness review and supplied application formatting
+
+User requested remaining-application priorities, then supplied Prijava.docx for non-italic answer formatting, coherence review and criterion-based scoring. Recorded inactive-sole-proprietor eligibility, applicant-led portal creation (project 55801), preparation status and a bounded closing plan. Returned a separate private formatting-only Word copy, preserving all wording, form structure and source. Acceptance: answer formatting, text/package integrity, all field limits, budget sums, full rendered-page inspection, explicit provisional scoring and evidence limitations, living-document validation and local commit. Review findings and user decisions remain in the preparation/readiness owners; no submission, remote publication, procurement, rules or asset changes.
+
+Historical evidence: immutable `work/W-193`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-193 | Smart Start closing review and private formatted application | `work/W-193` |
+
 ### [x] W-192 Full-size fall away from the attacker, then disappearance
 
 User reported that the defeated standee only appeared to shrink and requested a backward fall away from the attacker followed by disappearance. The decorative figure now uses the recorded attacker position, aligns its rigid sheet with the fall, lies completely flat at its original size, holds briefly, then disappears without shrinking. Feet stay anchored and geometry remains above the board. Post-lunge timing, steady bases, 45-degree camera and later relocation remain. Acceptance: failing-then-passing flat-pose/scale/direction checks, four-direction hero/minion geometry tests, real-HUD/body regressions, inspected real-command video, MP4 decoding, documentation validation and local commit. Older clips remain preserved. No rules, snapshot/wire, package or publication changes.
