@@ -56,6 +56,29 @@ namespace GuardsDigital.Presentation.Units.Minions
 
             var geometry = JsonUtility.FromJson<IllustratedStandeeView.Outline>(outline.text);
             mesh = IllustratedStandeeView.BuildPanel(geometry);
+            // Size by unit type rather than fitting every silhouette into the hero width cap.
+            // Scale both artwork axes equally, keeping the supplied proportions and feet at zero.
+            var figureScale = GetFigureHeight(minionType) / mesh.bounds.size.y;
+            var footLeft = 1f;
+            var footRight = 0f;
+            for (var i = 0; i < geometry.edges.Length; i += 2)
+            {
+                if (geometry.edges[i + 1] > 0.08f) continue;
+                footLeft = Mathf.Min(footLeft, geometry.edges[i]);
+                footRight = Mathf.Max(footRight, geometry.edges[i]);
+            }
+            var footOffset = footRight >= footLeft
+                ? ((footLeft + footRight) * 0.5f - 0.5f) * mesh.bounds.size.x
+                : 0f;
+            var vertices = mesh.vertices;
+            for (var i = 0; i < vertices.Length; i++)
+            {
+                vertices[i].x = (vertices[i].x - footOffset) * figureScale;
+                vertices[i].y *= figureScale;
+            }
+            mesh.vertices = vertices;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
             face = new Material(Resources.Load<Material>("Rendering/StandeeCutoutTemplate"));
             face.name = "Unchanged Veljko minion standee";
             face.SetTexture("_BaseMap", texture);
@@ -82,6 +105,17 @@ namespace GuardsDigital.Presentation.Units.Minions
             if (face != null)
             {
                 face.color = color;
+            }
+        }
+
+        public static float GetFigureHeight(StandardMinionType type)
+        {
+            switch (type)
+            {
+                case StandardMinionType.Melee: return 1.2f;
+                case StandardMinionType.Ranged: return 1.4f;
+                case StandardMinionType.Heavy: return 1.8f;
+                default: throw new System.ArgumentOutOfRangeException(nameof(type));
             }
         }
 

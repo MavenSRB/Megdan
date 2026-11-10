@@ -38,7 +38,9 @@ Standard Heavy, Melee and Ranged units use Veljko's six team-specific transparen
 
 The six matching minion weapon tokens remain independent resources. At top-down angles each upright panel hides and its authoritative team/type token returns with the established camera-aligned board rotation. `Tools/Prepare-MegdanMinionStandees.py` copies the supplied resized standees unchanged, derives their silhouette wall geometry, and crops/downsamples the preserved high-resolution token sources to the existing 256x256 runtime footprint. The 2026-11-10 transfer omitted Blue Melee's resized standee, so that one panel retains W187's supplied source rather than inventing a replacement. Source and prepared artwork remain excluded and private.
 
-Current minion evidence: `tmp/w195-minion-standees-angled.png`, `tmp/w195-minion-standee-detail.png` and `tmp/w195-minion-tokens-top-down.png`. W187 and W165 captures remain preserved for comparison. These are runtime captures, separate from W164's generated product concept. Existing packages remain unchanged; no publication is authorized.
+W196 sets distinct figure heights: Melee 1.2, Ranged 1.4 and Heavy 1.8 world units for both teams. The minion adapter uniformly scales the panel's artwork axes around its feet after silhouette construction, preserving aspect and thickness without the shared hero-width cap shrinking Heavy. The midpoint of the silhouette's bottom 8% centers the feet on the token; weapons and wide figures may overhang. Circular bases, selection footprints and top-down tokens retain their existing sizes.
+
+Current minion evidence: `tmp/w196-minion-standees-angled.png`, `tmp/w196-minion-standee-detail.png` and `tmp/w196-minion-tokens-top-down.png`. Earlier captures remain preserved for comparison. These are runtime captures, separate from W164's generated product concept. Existing packages remain unchanged; no publication is authorized.
 
 ## Defense indicators
 

@@ -389,6 +389,28 @@ namespace GuardsDigital.Tests.EditMode
                 StandardMinionArtCatalog.GetStandeeResourcePath(teamSide, minionType));
             Assert.That(standee.width, Is.EqualTo(expectedStandeeWidth));
             Assert.That(standee.height, Is.EqualTo(expectedStandeeHeight));
+            var figure = new GameObject("Sized minion");
+            try
+            {
+                var view = figure.AddComponent<StandardMinionView>();
+                view.Configure(CreateState($"{teamSide}-{minionType}", teamSide, minionType),
+                    HexWorldLayout.DefaultOuterRadius);
+                var bounds = view.Standee.PanelRenderer.GetComponent<MeshFilter>().sharedMesh.bounds;
+                var expectedHeight = minionType == StandardMinionType.Heavy ? 1.8f :
+                    minionType == StandardMinionType.Ranged ? 1.4f : 1.2f;
+                Assert.That(bounds.size.y, Is.EqualTo(expectedHeight).Within(0.001f));
+                Assert.That(bounds.min.y, Is.EqualTo(0f).Within(0.001f));
+                var outline = JsonUtility.FromJson<IllustratedStandeeView.Outline>(
+                    Resources.Load<TextAsset>(StandardMinionArtCatalog.GetStandeeResourcePath(
+                        teamSide, minionType)).text);
+                Assert.That(bounds.size.x / bounds.size.y, Is.EqualTo(outline.aspect).Within(0.001f));
+                var mesh = view.Standee.PanelRenderer.GetComponent<MeshFilter>().sharedMesh;
+                var feet = mesh.vertices.Skip(8).Where(v => v.y <= expectedHeight * 0.08f).ToArray();
+                Assert.That(feet.Length, Is.GreaterThan(0));
+                Assert.That((feet.Min(v => v.x) + feet.Max(v => v.x)) * 0.5f,
+                    Is.EqualTo(0f).Within(0.001f), "Feet are centered on the team token.");
+            }
+            finally { Object.DestroyImmediate(figure); }
         }
 
         [TestCase(TeamSide.Red, StandardMinionType.Heavy)]

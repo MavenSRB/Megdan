@@ -18,11 +18,13 @@ Current private Windows package: **W179 Shield and Bush Fixes**, `Builds/Playtes
 
 Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-195**.
+- Last completed work: **W-196**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
 W195 replaces minion art with Veljko's resized standees and six matching weapon tokens. The transfer omitted resized Blue Melee, so W187's source remains. Team/type authority, bases, identifiers, rules, 256x256 token footprint and the 69/70-degree switch are unchanged. Private source only; no package or publication.
+
+W196 sizes Melee/Ranged/Heavy at 1.2/1.4/1.8 world units with feet centered on tokens, preserving proportions and allowing overhang. Token footprints remain unchanged.
 
 W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared initiative order, gives each lane its own active Battle Zone and push progression, and ends the whole match when either lane reaches the opposing Throne. Green's snow, water and forest centers and lava's bridge center are separate playable off-lane Zones, never terrain or lane-push spaces. Hosts choose official per-lane or shared-total Waves. Five-player teams retain one full rail and four thin token/card/current-card rails. Source-only; no package or publication.
 

@@ -505,7 +505,7 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return new WaitForSecondsRealtime(2f);
                 yield return UiPlayer.CaptureScreen("tmp/w165-angled-live-match.png");
                 yield return UiPlayer.CaptureScreen("tmp/w187-minion-standees-angled.png");
-                yield return UiPlayer.CaptureScreen("tmp/w195-minion-standees-angled.png");
+                yield return UiPlayer.CaptureScreen("tmp/w196-minion-standees-angled.png");
                 // A close view through the same live camera, so panel edges/base depth can be judged.
                 var focal = heroes.First(h => h.HeroContentId.Value.Value == "misa").transform.position;
                 camera.transform.position = focal + new Vector3(0, 5.5f, -7.5f);
@@ -519,7 +519,7 @@ namespace GuardsDigital.Tests.PlayMode
                 camera.orthographicSize = 3f;
                 yield return new WaitForSecondsRealtime(0.5f);
                 yield return UiPlayer.CaptureScreen("tmp/w165-creep-detail.png");
-                yield return UiPlayer.CaptureScreen("tmp/w195-minion-standee-detail.png");
+                yield return UiPlayer.CaptureScreen("tmp/w196-minion-standee-detail.png");
                 navigation.ResetView();
                 yield return null; yield return null;
                 Assert.That(heroes.All(h => !h.Standee.IsStanding), Is.True);
@@ -542,7 +542,7 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null; yield return null;
                 yield return UiPlayer.CaptureScreen("tmp/w165-top-down-live-match.png");
                 yield return UiPlayer.CaptureScreen("tmp/w187-minion-tokens-top-down.png");
-                yield return UiPlayer.CaptureScreen("tmp/w195-minion-tokens-top-down.png");
+                yield return UiPlayer.CaptureScreen("tmp/w196-minion-tokens-top-down.png");
                 navigation.Navigate(Vector2.right, Vector2.zero, 0, 0.2f);
                 InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Home));
                 yield return null;

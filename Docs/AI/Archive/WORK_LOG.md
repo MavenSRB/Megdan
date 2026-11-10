@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-196 Distinct minion figure sizes
+
+User reported Heavy appearing smaller than Melee/Ranged and requested distinct sizes and figures centered on their tokens with overhang allowed. Melee/Ranged/Heavy now stand at 1.2/1.4/1.8 world units, preserving artwork proportions with centered, anchored feet. Heavy is visibly largest; bases, top-down tokens and gameplay remain unchanged. Acceptance: all six actual mesh height/aspect/foot-centering checks, affected minion/camera regressions and inspected live close/angled captures, documentation validation and local commit.
+
+Historical evidence: immutable `work/W-196`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-196 | Distinct Melee, Ranged and Heavy standee sizes | `work/W-196` |
+
 ### [x] W-195 Resized minion standees and matching tokens
 
 User supplied resized minion figures and matching team/type weapon tokens and requested a live-game preview. Angled play now uses the supplied resized Heavy and Ranged standees for both teams plus Red Melee; Blue Melee retains W187's source because the transfer omitted its resized file. Top-down uses the six new matching tokens at the existing footprint. Non-power-of-two import preserves the supplied figure proportions; identifiers, team/type authority, bases, rules and camera switch remain unchanged. Acceptance: asset mapping/footprint regressions, camera/standee regressions, non-batch live scene capture, three inspected stills, documentation validation and local commit. No package or publication.
