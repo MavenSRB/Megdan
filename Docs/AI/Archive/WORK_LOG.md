@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-195 Resized minion standees and matching tokens
+
+User supplied resized minion figures and matching team/type weapon tokens and requested a live-game preview. Angled play now uses the supplied resized Heavy and Ranged standees for both teams plus Red Melee; Blue Melee retains W187's source because the transfer omitted its resized file. Top-down uses the six new matching tokens at the existing footprint. Non-power-of-two import preserves the supplied figure proportions; identifiers, team/type authority, bases, rules and camera switch remain unchanged. Acceptance: asset mapping/footprint regressions, camera/standee regressions, non-batch live scene capture, three inspected stills, documentation validation and local commit. No package or publication.
+
+Historical evidence: immutable `work/W-195`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-195 | Resized team/type standees and matching top-down weapon tokens | `work/W-195` |
+
 ### [x] W-194 Approved Smart Start application revisions
 
 Applied the applicant-approved old/new wording to a separate private Word copy: individual players and groups, close competitors, bounded market evidence, concrete testing and team responsibilities, plus unused-field and typo cleanup. Official form, non-italic answers, unchanged fields, budget and source document are preserved. Acceptance: exact approved replacements, field limits, package/structure integrity, all eleven rendered pages, living-document validation and local commit. Video remains pending; rights, procurement and submission are outside this edit.

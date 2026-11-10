@@ -356,7 +356,7 @@ namespace GuardsDigital.Tests.EditMode
         [TestCase(TeamSide.Blue, StandardMinionType.Heavy, "Private/Megdan/MinionStandees/blue-heavy")]
         [TestCase(TeamSide.Blue, StandardMinionType.Melee, "Private/Megdan/MinionStandees/blue-melee")]
         [TestCase(TeamSide.Blue, StandardMinionType.Ranged, "Private/Megdan/MinionStandees/blue-ranged")]
-        public void StandeeCatalog_MapsEveryTeamAndTypeWithoutReplacingTheFlatIcon(
+        public void StandeeCatalog_MapsEveryTeamAndTypeWithoutReplacingTheFlatResource(
             TeamSide teamSide,
             StandardMinionType minionType,
             string expectedStandeePath)
@@ -366,7 +366,29 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Resources.Load<Texture2D>(expectedStandeePath), Is.Not.Null);
             Assert.That(Resources.Load<TextAsset>(expectedStandeePath), Is.Not.Null);
             Assert.That(StandardMinionArtCatalog.Load(teamSide, minionType), Is.Not.Null,
-                "The old 2D icon remains independently available.");
+                "The matching 2D token remains independently available.");
+        }
+
+        [TestCase(TeamSide.Red, StandardMinionType.Heavy, 1021, 883)]
+        [TestCase(TeamSide.Red, StandardMinionType.Melee, 359, 398)]
+        [TestCase(TeamSide.Red, StandardMinionType.Ranged, 476, 485)]
+        [TestCase(TeamSide.Blue, StandardMinionType.Heavy, 1021, 883)]
+        [TestCase(TeamSide.Blue, StandardMinionType.Melee, 2048, 2048)]
+        [TestCase(TeamSide.Blue, StandardMinionType.Ranged, 476, 485)]
+        public void SuppliedResizedStandeesKeepMatchingTokenFootprints(
+            TeamSide teamSide,
+            StandardMinionType minionType,
+            int expectedStandeeWidth,
+            int expectedStandeeHeight)
+        {
+            var token = StandardMinionArtCatalog.Load(teamSide, minionType);
+            Assert.That(token.texture.width, Is.EqualTo(256));
+            Assert.That(token.texture.height, Is.EqualTo(256));
+
+            var standee = Resources.Load<Texture2D>(
+                StandardMinionArtCatalog.GetStandeeResourcePath(teamSide, minionType));
+            Assert.That(standee.width, Is.EqualTo(expectedStandeeWidth));
+            Assert.That(standee.height, Is.EqualTo(expectedStandeeHeight));
         }
 
         [TestCase(TeamSide.Red, StandardMinionType.Heavy)]
@@ -395,7 +417,7 @@ namespace GuardsDigital.Tests.EditMode
                 view.Standee.Refresh(camera);
                 Assert.That(view.Standee.IsStanding, Is.True);
                 Assert.That(renderer.enabled, Is.False,
-                    "The old flat icon is hidden, not overwritten, while the panel stands.");
+                    "The matching flat token is hidden, not overwritten, while the panel stands.");
                 Assert.That(view.TokenBodyRenderer.enabled, Is.True,
                     "The authoritative team-colour base remains under the standee.");
 

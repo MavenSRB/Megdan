@@ -8,8 +8,8 @@ using UnityEngine.Rendering;
 namespace GuardsDigital.Presentation.Units.Minions
 {
     /// <summary>
-    /// Veljko's team-specific minion illustration on a thin upright panel. The existing minion
-    /// sprite remains the independent flat/top-down representation and is never replaced.
+    /// Veljko's team-specific minion illustration on a thin upright panel. Its matching minion
+    /// token remains the independent flat/top-down representation.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class IllustratedMinionStandeeView : MonoBehaviour

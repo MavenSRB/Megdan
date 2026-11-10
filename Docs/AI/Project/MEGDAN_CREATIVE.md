@@ -46,6 +46,8 @@ W-162 refines the runtime stat rail into continuous vector silhouettes with matc
 
 W-165 implements the six illustrated standees and a movable board camera; [presentation](PRESENTATION.md) owns controls, angle thresholds and creep-token depth. The supplied portrait PNGs are copied unchanged into private resources, with derived thin silhouette sidewalls. These are 2.5D standees, not sculpted/rigged heroes. Live angled, top-down and detail captures are under `tmp/w165-*.png`.
 
+W-195 replaces the minion presentation art with Veljko's resized standee crops and six matching weapon tokens while retaining W-187's Blue Melee standee because the new transfer omitted that one file. The source transfer is preserved privately; runtime token derivatives retain the existing footprint. Inspected stills: `tmp/w195-minion-standees-angled.png`, `tmp/w195-minion-standee-detail.png` and `tmp/w195-minion-tokens-top-down.png`.
+
 W-154: Five supplied WhatsApp JPEGs are preserved in Art/Inputs/Grass (originals also retained in Downloads); two are byte-identical, leaving four distinct grass variants. All four are composed into the existing board still using preview-grass.py, adapting flat-top source hexes to the existing point-top lattice while retaining upright decorations. W-160 later prepared the available grass and biome references for the private runtime. No game-rule change.
 
 ## Latest artifacts

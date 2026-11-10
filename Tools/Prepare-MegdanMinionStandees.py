@@ -1,7 +1,9 @@
-"""Copy Veljko's six transparent minion illustrations and derive panel outlines.
+"""Prepare Veljko's resized minion illustrations and matching top-down tokens.
 
-The supplied PNGs and prepared PNG/JSON resources stay private and Git-ignored. The
-source pixels are copied unchanged; only the edge geometry is derived here.
+The supplied PNGs and prepared resources stay private and Git-ignored. Supplied
+standee pixels are copied unchanged and only their edge geometry is derived. Token
+sources are preserved unchanged, then cropped to their common visible circle and
+downsampled to the existing 256-pixel runtime footprint.
 """
 import json
 import shutil
@@ -11,16 +13,28 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "Art/Supplied20261109/MinionStandees"
-OUTPUT = ROOT / "Assets/Resources/Private/Megdan/MinionStandees"
-NAMES = (
-    "blue-heavy",
-    "blue-melee",
-    "blue-ranged",
-    "red-heavy",
-    "red-melee",
-    "red-ranged",
-)
+SOURCE = ROOT / "Art/Supplied20261110/MinionResizes"
+FALLBACK_SOURCE = ROOT / "Art/Supplied20261109/MinionStandees"
+STANDEE_OUTPUT = ROOT / "Assets/Resources/Private/Megdan/MinionStandees"
+TOKEN_OUTPUT = ROOT / "Assets/Resources/Minions"
+STANDEE_SOURCES = {
+    "blue-heavy": SOURCE / "heavy 1.png",
+    # The 2026-11-10 transfer contains no blue Melee standee. Preserve W-187's
+    # supplied source rather than inventing or recolouring a replacement.
+    "blue-melee": FALLBACK_SOURCE / "blue-melee.png",
+    "blue-ranged": SOURCE / "range 1.png",
+    "red-heavy": SOURCE / "heavy 2.png",
+    "red-melee": SOURCE / "meelee 2.png",
+    "red-ranged": SOURCE / "range 2.png",
+}
+TOKEN_SOURCES = {
+    "blue-heavy": SOURCE / "h token 2.PNG",
+    "blue-melee": SOURCE / "m token 2.PNG",
+    "blue-ranged": SOURCE / "r token 2.PNG",
+    "red-heavy": SOURCE / "h token 1.PNG",
+    "red-melee": SOURCE / "m token 1.PNG",
+    "red-ranged": SOURCE / "r token 1.PNG",
+}
 
 
 def derive_outline(source: Path) -> dict:
@@ -62,17 +76,36 @@ def derive_outline(source: Path) -> dict:
         }
 
 
+def prepare_token(source: Path, destination: Path) -> None:
+    with Image.open(source) as image:
+        rgba = image.convert("RGBA")
+        bounds = rgba.getchannel("A").getbbox()
+        if bounds is None:
+            raise ValueError(f"{source.name} has no visible token pixels")
+        cropped = rgba.crop(bounds)
+        if cropped.width != cropped.height:
+            raise ValueError(
+                f"{source.name} visible bounds must be square, got {cropped.size}"
+            )
+        cropped.resize((256, 256), Image.Resampling.LANCZOS).save(destination)
+
+
 def main() -> None:
-    OUTPUT.mkdir(parents=True, exist_ok=True)
-    for name in NAMES:
-        source = SOURCE / f"{name}.png"
+    STANDEE_OUTPUT.mkdir(parents=True, exist_ok=True)
+    TOKEN_OUTPUT.mkdir(parents=True, exist_ok=True)
+    for name, source in STANDEE_SOURCES.items():
         if not source.exists():
             raise FileNotFoundError(source)
-        shutil.copyfile(source, OUTPUT / f"{name}.png")
-        (OUTPUT / f"{name}.json").write_text(
+        shutil.copyfile(source, STANDEE_OUTPUT / f"{name}.png")
+        (STANDEE_OUTPUT / f"{name}.json").write_text(
             json.dumps(derive_outline(source)), encoding="utf-8"
         )
-        print(f"{name}: original PNG and panel outline prepared")
+        print(f"{name}: standee PNG and panel outline prepared")
+    for name, source in TOKEN_SOURCES.items():
+        if not source.exists():
+            raise FileNotFoundError(source)
+        prepare_token(source, TOKEN_OUTPUT / f"{name}.png")
+        print(f"{name}: matching 256x256 token prepared")
 
 
 if __name__ == "__main__":
