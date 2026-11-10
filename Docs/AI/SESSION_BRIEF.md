@@ -18,7 +18,7 @@ Current private Windows package: **W179 Shield and Bush Fixes**, `Builds/Playtes
 
 Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-196**.
+- Last completed work: **W-197**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
@@ -78,7 +78,7 @@ PVE-D38 extends PVE-D28's playing host/two joiners to one-to-three players shari
 
 - Existing rules and reused tabletop behavior: [rules ledger](RULES_LEDGER.md). Original PvE decisions: [PvE design](Project/PVE_DESIGN.md).
 - Preserve authoritative state, privacy, command/choice, snapshot, Undo and replay contracts.
-- Scope stays private/noncommercial for the user and friends. Remote publication is limited to tracked source, the authorized rulebook and prepared runtime artwork authorized under W-008 and W-020; raw reference corpora, source ZIPs, screenshots, builds, logs and all other excluded or untracked material remain private.
+- Scope stays private/noncommercial for the user and friends. Remote publication is limited to tracked source, the authorized rulebook, prepared runtime artwork authorized under W-008/W-020 and W-197's explicitly authorized Veljko runtime derivatives; raw reference corpora, source ZIPs, screenshots, builds, logs and all other excluded or untracked material remain private.
 - Build requests use changed/affected checks plus exact-artifact smokes; untouched green coverage is reused under [testing policy](Testing/POLICY.md).
 - Unfinished legacy items and prerequisites remain in the [shared backlog](Roadmap/BACKLOG.md); parked coverage and risks are not passes.
 

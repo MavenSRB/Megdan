@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-197 Publish Veljko runtime artwork
+
+User authorized publication of Veljko's prepared runtime artwork so the collaborating agent can inspect the current Megdan presentation from GitHub. The repository now includes 153 prepared runtime files across grass, biomes, grass standees, menu, hero portraits, hero standees and minion standees, with all 57 binary assets routed through Git LFS. Raw inputs, references, inherited board art, PvE cards, builds, captures, logs and other evidence remain excluded. Acceptance: exact staged-scope and extension audits, LFS attribute/status verification, living-document validation and diff checks passed; no Unity run was required because existing runtime bytes and behavior were unchanged.
+
+Historical evidence: immutable `work/W-197`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-197 | Veljko runtime artwork published through Git LFS | `work/W-197` |
+
 ### [x] W-196 Distinct minion figure sizes
 
 User reported Heavy appearing smaller than Melee/Ranged and requested distinct sizes and figures centered on their tokens with overhang allowed. Melee/Ranged/Heavy now stand at 1.2/1.4/1.8 world units, preserving artwork proportions with centered, anchored feet. Heavy is visibly largest; bases, top-down tokens and gameplay remain unchanged. Acceptance: all six actual mesh height/aspect/foot-centering checks, affected minion/camera regressions and inspected live close/angled captures, documentation validation and local commit.

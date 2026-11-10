@@ -4,6 +4,8 @@ Return to [project context](../PROJECT_CONTEXT.md). Private presentation studies
 
 ## Current decisions
 
+W-197 publishes only Veljko's prepared runtime derivatives needed by the collaborating agent: grass and biome tiles, grass-decoration standees, menu assets, six hero portraits/standees and six minion standees, including Unity metadata and derived geometry. The user explicitly authorized these files for the shared GitHub repository on 2026-11-10. Raw inputs, editable sources, reference corpora, inherited board art, PvE cards, builds and validation evidence remain private. This publication decision does not itself close the separate provenance/licensing evidence work in the Smart Start IP checklist.
+
 The current demo source limits each PvP team to Riki/Misa, Rowenna and Tali. The existing private-package compile flag selects six independent instances of these three definitions; Blue copies use stable `-demo-blue` instance IDs while original content IDs stay intact. Per-team picks are unique and seat-authorized. The full-roster editor/ordinary build remains unchanged; no new package has been created. [DEV-012](../RULES_LEDGER.md#approved-deviations) records the explicitly requested mirrored demo lineup.
 
 Tali now uses the attached full-body frog illustration for standee/card art and the separate close-up for token/tray portraits. Blue scenery, fish, bubbles, black exterior and painted ground were removed with built-in image editing. Private originals and extraction provenance are under `Art/Supplied20261106/TaliOriginals`; cutouts are under its sibling `Standees` and `Portraits` directories. Existing transparent-cutout limitations apply. Her previous art remains preserved in the original concept sources.

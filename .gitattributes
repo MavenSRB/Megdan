@@ -50,3 +50,8 @@ Docs/AI/Archive/Pre-Governance/config.toml binary
 /Assets/Resources/Private/OfficialBoard/**/*.png filter=lfs diff=lfs merge=lfs -text
 /Assets/Resources/Private/Spells/**/*.png filter=lfs diff=lfs merge=lfs -text
 /Assets/Resources/Private/Tokens/**/*.png filter=lfs diff=lfs merge=lfs -text
+
+# User-authorized Veljko-derived Megdan runtime artwork (W-197)
+/Assets/Resources/Private/Megdan/**/*.png filter=lfs diff=lfs merge=lfs -text
+/Assets/Resources/Private/Megdan/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+/Assets/Resources/Private/Megdan/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
