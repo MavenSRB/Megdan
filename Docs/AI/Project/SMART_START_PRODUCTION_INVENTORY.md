@@ -75,6 +75,8 @@ The free camera needs mouse/keyboard movement, rotation/orbit and zoom; bounded 
 
 ## Animation and VFX quotation units
 
+The [MVP animation/audio feasibility review](SMART_START_ANIMATION_AUDIO_FEASIBILITY.md) compares published prices with the current allowances. Stock audio is price-feasible; animation remains conditionally plausible with reuse and an itemized freelance quote. These research findings do not change approved scope or adopt new prices.
+
 Each hero requires a reusable locomotion/combat set sufficient for idle, movement, basic attack/action, receiving a hit, defeat and return/respawn, plus bounded signature ability presentations. Each minion family requires idle, movement, attack, hit and defeat, with any genuinely distinct Heavy/Ranged behavior itemized. The environment requires only interactions visible in the final match.
 
 The number of hero-specific signature clips is not derivable from the 108 card faces: several cards can share motion language, while one complex ability may require several clips. Before requesting offers, create an action-presentation matrix that maps all 108 playable faces to:

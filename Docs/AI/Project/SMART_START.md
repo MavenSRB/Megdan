@@ -44,6 +44,8 @@ Generic engine, networking, Undo and replay are candidates for reuse, subject to
 
 ## Dossier
 
+- [MVP animation and audio budget feasibility](SMART_START_ANIMATION_AUDIO_FEASIBILITY.md) — published-price review, reuse assumptions and remaining quotation requirements.
+
 - [Sources, requirements and strategy fit](SMART_START_REQUIREMENTS.md)
 - [Megdan / Pantheon Tactics / Atlas Reactor comparison and proposed innovation wording](SMART_START_COMPETITOR_COMPARISON.md)
 - [English application working draft](SMART_START_APPLICATION.md)

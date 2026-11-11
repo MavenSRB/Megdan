@@ -1,5 +1,15 @@
 # Work completion index
 
+### [x] W-199 Investigate animation and audio budget feasibility
+
+User requested a realistic assessment of RSD 835,000 animation and RSD 30,000 audio, explicitly for an MVP. Scope: source-backed desk research, scope/count and arithmetic review, bounded recommendations; no purchases, supplier contact, budget adoption or game changes. Acceptance: compare published supplier prices/audio licences with the production inventory, distinguish estimates from quotes and founder labour from external costs, preserve findings/limitations, validate documentation and commit locally. Result: table arithmetic is correct; stock audio is price-feasible; animation is conditionally plausible with shared motions and a bounded freelance package, pending a mesh-specific quote. [Research owner](../Project/SMART_START_ANIMATION_AUDIO_FEASIBILITY.md).
+
+Historical evidence: immutable `work/W-199`; exact checks, results and limitations live in its commit body.
+
+| Work | Outcome | Commit |
+| --- | --- | --- |
+| W-199 | MVP animation/audio price feasibility and procurement limits recorded | `work/W-199` |
+
 ### [x] W-198 Normalize the existing Megdan menu background into LFS
 
 W-197's final integrity check found the already tracked `main-menu-background.jpg` matched the new Megdan LFS rule but remained an ordinary Git blob. The byte-identical file is now stored as an LFS pointer, restoring a clean LFS object model without changing artwork or runtime behavior. Acceptance: staged-pointer inspection, LFS status/fsck, living-document validation and diff checks.

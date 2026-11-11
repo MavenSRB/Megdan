@@ -11,6 +11,7 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 - [SMART_START_PROTOTYPE_EVIDENCE](Project/SMART_START_PROTOTYPE_EVIDENCE.md)
 
 - [SMART_START_PRODUCTION_INVENTORY](Project/SMART_START_PRODUCTION_INVENTORY.md)
+- [MVP animation and audio budget feasibility](Project/SMART_START_ANIMATION_AUDIO_FEASIBILITY.md)
 
 - [SMART_START_PLAN](Project/SMART_START_PLAN.md)
 
